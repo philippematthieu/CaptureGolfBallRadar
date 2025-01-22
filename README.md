@@ -1,21 +1,21 @@
 
 # Golf Ball Simulator in Scilab (java and cpp)
-<img src="sc/img/Pasted image 20250120171635.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250120171635.png"  width="560" height="380">
 
 # Flight Analyzer captured by little Radars
-<img src="sc/img/Pasted image 20250122082849.png"  width="560" height="380">
-<img src="sc/img/Pasted image 20250122082902.png"  width="560" height="380">
-<img src="sc/img/Pasted image 20250122082913.png"  width="560" height="380">
-<img src="sc/img/Pasted image 20250122082924.png"  width="560" height="380">
-<img src="sc/img/Pasted image 20250122082939.png"  width="560" height="380">
-<img src="sc/img/Pasted image 20250122082950.png"  width="560" height="380">
-<img src="sc/img/Pasted image 20250122082958.png"  width="560" height="380">
-<img src="sc/img/Pasted image 20250122083320.png"  width="560" height="380">
-<img src="sc/img/Pasted image 20250122083456.png"  width="560" height="380">
-<img src="sc/img/Pasted image 20250122083851.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122082849.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122082902.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122082913.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122082924.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122082939.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122082950.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122082958.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122083320.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122083456.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122083851.png"  width="560" height="380">
 
-<img src="sc/img/Pasted image 20250120172329.png"  width="560" height="380">
-<img src="sc/img/Pasted image 20250120172502.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250120172329.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250120172502.png"  width="560" height="380">
 
 
 exec('GolfBall-master\sci\comet3d2.sci', -1)
