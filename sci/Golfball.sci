@@ -363,10 +363,12 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
         comet3d2(XX(:,1),ZZ(:,1),YY(:,1),'colors',color('blue')); // Trace du vol; Remplace la boucle for precedante.
        //% %%%%%%%%%%%%%%%%%%%%%%%%%
        a.data_bounds = [ 0 , 250 ,-40-ZmaxMin, 40+ZmaxMin , 0, 40];
+
+       param3d(XX(:,1),ZZ(:,1),(X(:,3)), 177,63,'Long@Large@Haut@Large',[0,0],[ 0 , 250 ,-40-ZmaxMin, 40+ZmaxMin , 0, 50]); // ombre Ligne sur sol du vol
+       param3d(XX(:,1),ZZ(:,1),zeros(X(:,3)), 177,63,'Long@Large@Haut@Large',[0,0],[ 0 , 250 ,-40-ZmaxMin, 40+ZmaxMin , 0, 50]); // ombre Ligne sur sol du vol
        drawlater();
-        param3d(XX(:,1),ZZ(:,1),zeros(X(:,3)), 177,63,'Long@Large@Haut@Large',[0,0],[ 0 , 250 ,-40-ZmaxMin, 40+ZmaxMin , 0, 50]); // ombre Ligne sur sol du vol
-        
-        v = format();format(6); // affichage des distances au point de chute
+       
+       v = format();format(6); // affichage des distances au point de chute
         xstring(XX($,1),ZZ($,1),[string(Xchute), string(Zchute);string(XX($,1)), string(ZZ($,1));' ', ' ']);
         format(v(2));
         subplot(3,2,1);  a = gca(); a.background = 1;
