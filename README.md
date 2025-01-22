@@ -14,7 +14,6 @@
 <img src="sci/img/Pasted image 20250122083456.png"  width="560" height="380">
 <img src="sci/img/Pasted image 20250122083851.png"  width="560" height="380">
 
-<img src="sci/img/Pasted image 20250120172329.png"  width="560" height="380">
 <img src="sci/img/Pasted image 20250120172502.png"  width="560" height="380">
 
 
