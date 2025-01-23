@@ -2,7 +2,7 @@
 # Golf Ball Simulator in Scilab (java and cpp)
 <img src="sci/img/Pasted image 20250120171635.png"  width="560" height="380">
 
-# Flight Analyzer captured by little Radars
+## Flight Analyzer captured by little Radars
 <img src="sci/img/Pasted image 20250122082849.png"  width="560" height="380">
 <img src="sci/img/Pasted image 20250122082902.png"  width="560" height="380">
 <img src="sci/img/Pasted image 20250122082913.png"  width="560" height="380">
@@ -16,7 +16,13 @@
 
 <img src="sci/img/Pasted image 20250120172502.png"  width="560" height="380">
 
+## The HW
+<img src="sci/img/Pasted image 20250123184355.png"  width="560" height="380">
+<img src="sci/img/20250123_132345.jpg"  width="560" height="380">
+<img src="sci/img/20250123_132310.jpg"  width="560" height="380">
+<img src="sci/img/20250123_132304.jpg"  width="560" height="380">
 
+## Simples Scilab Commands
 exec('GolfBall-master\sci\comet3d2.sci', -1)
 exec('GolfBall-master\sci\FFT_Mat.sce', -1)
 exec('GolfBall-master\sci\Golfball.sci', -1)
