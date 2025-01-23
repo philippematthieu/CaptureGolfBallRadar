@@ -17,10 +17,10 @@
 <img src="sci/img/Pasted image 20250120172502.png"  width="560" height="380">
 
 ## The HW
-<img src="sci/img/Pasted image 20250123184355.png"  width="560" height="380">
-<img src="sci/img/20250123_132345.jpg"  width="560" height="380">
-<img src="sci/img/20250123_132310.jpg"  width="560" height="380">
-<img src="sci/img/20250123_132304.jpg"  width="560" height="380">
+<img src="sci/img/Pasted image 20250123184355.png"  width="380" height="560">
+<img src="sci/img/20250123_132345.jpg"  width="380" height="560">
+<img src="sci/img/20250123_132310.jpg"  width="380" height="560">
+<img src="sci/img/20250123_132304.jpg"  width="380" height="560">
 
 ## Simples Scilab Commands
 exec('GolfBall-master\sci\comet3d2.sci', -1)
