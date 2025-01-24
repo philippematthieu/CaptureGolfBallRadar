@@ -14,7 +14,18 @@
 <img src="sci/img/Pasted image 20250122083456.png"  width="560" height="380">
 <img src="sci/img/Pasted image 20250122083851.png"  width="560" height="380">
 
+# Find backspeed
+
 <img src="sci/img/Pasted image 20250120172502.png"  width="560" height="380">
+
+Given d = 0.04267m
+
+ V = F / 19,48
+ 
+rpm = 1000*(F_sommet - F_balle)/(19.48*60*%pi*d)
+
+As mesured and as seen above, we can see that the ball speed is around 160km/h and the maximum echo is 191km/h.
+So that the backspin could be estimated as 3854rpm.
 
 ## The HW
 <img src="sci/img/Pasted image 20250123184355.png"  width="380" height="560">
