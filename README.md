@@ -45,6 +45,10 @@ Place aluminum tape to increase the surface area of ​​the radar echo.
 
 <img src="sci/img/PatchedBall.png"  width="690" height="382">
 
+### Radar HB100
+<img src="sci/img/IMG_2429"  width="690" height="382">
+
+
 ## Simples Scilab Commands
 exec('GolfBall-master\sci\comet3d2.sci', -1)
 exec('GolfBall-master\sci\FFT_Mat.sce', -1)
