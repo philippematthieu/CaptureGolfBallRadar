@@ -11,6 +11,21 @@
 
 <img src="sci/img/Pasted image 20250120172502.png"  width="560" height="380">
 
+## Data catch with SkyTack
+
+Club : iron 7
+
+Club Speed : 111kh
+
+Ball Speed : 150kmh
+
+Length : 123m
+
+Backspin : 5274trm
+
+Sidespin : 210trm
+
+## Backspine calculation with the radar
 Given d = 0.04267m
 
  V = F / 19,48
@@ -18,7 +33,7 @@ Given d = 0.04267m
 rpm = 1000*(F_sommet - F_balle)/(19.48\*60\*%pi*d)
 
 As mesured and as seen above, we can see that the ball speed is around 160km/h and the maximum echo is 191km/h.
-So that the backspin could be estimated as 3854rpm.
+So that the backspin could be estimated as 5097trm.
 
 ## The HW
 ### The suitecase
