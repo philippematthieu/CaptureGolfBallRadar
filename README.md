@@ -28,10 +28,22 @@ As mesured and as seen above, we can see that the ball speed is around 160km/h a
 So that the backspin could be estimated as 3854rpm.
 
 ## The HW
+### The suitecase
 <img src="sci/img/Pasted image 20250123184355.png"  width="380" height="560">
+
+### Arduino
 <img src="sci/img/20250123_132345.jpg"  width="380" height="560">
+
+###
 <img src="sci/img/20250123_132310.jpg"  width="380" height="560">
+
+###
 <img src="sci/img/20250123_132304.jpg"  width="380" height="560">
+
+### Aluminium Patch
+Place aluminum tape to increase the surface area of ​​the radar echo.
+
+<img src="sci/img/PatchedBall.png"  width="690" height="382">
 
 ## Simples Scilab Commands
 exec('GolfBall-master\sci\comet3d2.sci', -1)
