@@ -3,16 +3,9 @@
 <img src="sci/img/Pasted image 20250120171635.png"  width="560" height="380">
 
 ## Flight Analyzer captured by little Radars
-<img src="sci/img/Pasted image 20250122082849.png"  width="560" height="380">
-<img src="sci/img/Pasted image 20250122082902.png"  width="560" height="380">
-<img src="sci/img/Pasted image 20250122082913.png"  width="560" height="380">
-<img src="sci/img/Pasted image 20250122082924.png"  width="560" height="380">
-<img src="sci/img/Pasted image 20250122082939.png"  width="560" height="380">
-
-<img src="sci/img/Pasted image 20250122082958.png"  width="560" height="380">
-<img src="sci/img/Pasted image 20250122083320.png"  width="560" height="380">
-<img src="sci/img/Pasted image 20250122083456.png"  width="560" height="380">
-<img src="sci/img/Pasted image 20250122083851.png"  width="560" height="380">
+<img src="sci/img/Pasted image 20250122082849.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122082902.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122082913.png"  width="280" height="190">
+<img src="sci/img/Pasted image 20250122082924.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122082939.png"  width="280" height="190"><img src="sci/img/Pasted image 20250122082958.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122083320.png"  width="280" height="190">
+<img src="sci/img/Pasted image 20250122083456.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122083851.png"  width="280" height="190">
 
 # Find backspin
 
@@ -31,23 +24,37 @@ So that the backspin could be estimated as 3854rpm.
 ### The suitecase
 <img src="sci/img/Pasted image 20250123184355.png"  width="380" height="560">
 
-### Arduino
-<img src="sci/img/20250123_132345.jpg"  width="380" height="560">
+### Internal with Arduino, Radar, Amplifier, Audio Boards
+<img src="sci/img/20250123_132345.jpg"  width="190" height="280"> <img src="sci/img/20250123_132310.jpg"  width="190" height="280"> <img src="sci/img/20250123_132304.jpg"  width="190" height="280">
 
-###
-<img src="sci/img/20250123_132310.jpg"  width="380" height="560">
-
-###
-<img src="sci/img/20250123_132304.jpg"  width="380" height="560">
-
-### Aluminium Patch
+### Aluminium Tape
 Place aluminum tape to increase the surface area of ​​the radar echo.
 
-<img src="sci/img/PatchedBall.png"  width="690" height="382">
+<img src="sci/img/PatchedBall.png"  width="345" height="191">
+
+### Arduino Tennsy 3.6
+
+<img src="sci/img/IMG_2427.jpeg"  width="400" height="114">
+
+see here : [Arduino Tennsy 3.6](https://www.pjrc.com/store/teensy36.html)
 
 ### Radar HB100
-<img src="sci/img/IMG_2429.png"  width="690" height="382">
 
+<img src="sci/img/IMG_2429.png"  width="400" height="400">
+
+see here : [Radar HB100](https://www.otronic.nl/fr/capteur-radar-doppler-hyperfrequence.html)
+
+### Amplification Stage Outputs
+
+<img src="sci/img/PCB_Back_s.jpg"  width="350" height="244">
+
+see here : [Amplification Stage Outputs](https://www.limpkin.fr/index.php?post/2013/08/09/Making-the-electronics-for-a-%247-USD-doppler-motion-sensor)
+
+### Audio Board
+
+<img src="sci/img/IMG_2428.jpeg"  width="485" height="364">
+
+see here : [Audio Board](https://www.pjrc.com/store/teensy3_audio.html)
 
 ## Simples Scilab Commands
 exec('GolfBall-master\sci\comet3d2.sci', -1)
