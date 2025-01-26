@@ -234,7 +234,7 @@ function [M1, tt, f] = animDensite(s2,Fs,nbEchantillon,pas,anim,seuil1,normalize
     //s2Centre=[s2Centre, zeros(nbEchantillon - b,1)'];//     s2Centre=[s2Centre, zeros(2*(nbEchantillon - b),1)'];
 
 
-    if (anim > 0) then 
+    if (anim ==1) then 
         figure();
         subplot(2,1,1);
         a = gca();
@@ -252,7 +252,7 @@ function [M1, tt, f] = animDensite(s2,Fs,nbEchantillon,pas,anim,seuil1,normalize
     end;
     M1=[];tt=[];
     for ii=1:pas:(size(s2Centre,2) - nbEchantillon),
-        if (anim > 1) then 
+        if (anim ==1) then 
             drawlater();
             delete(e);
             subplot(2,1,1);
@@ -284,7 +284,7 @@ function [M1, tt, f] = animDensite(s2,Fs,nbEchantillon,pas,anim,seuil1,normalize
         //        end;
         tt = [tt;t(ii)];
         M1 = [M1;s2_densite];
-        if (anim > 1) then 
+        if (anim == 1) then 
             subplot(2,1,2);
             plot(f(1:$/2),s2_densite(1,1:$/2-1));xlabel('(t)');ylabel('Speed (km/h)');
             drawnow();
@@ -292,8 +292,9 @@ function [M1, tt, f] = animDensite(s2,Fs,nbEchantillon,pas,anim,seuil1,normalize
     end;
     M1 = M1(:,1:$/2);
     f= f(1:$/2);
-    if (anim > 0) then 
+    if (anim < 3 ) then 
         subplot(2,1,2);
+    else
         //xset("colormap",jetcolormap(64));
         colormap(jet);
         Sgrayplot(tt,f/19.49,M1(:,1:$-1)/19.49);xlabel('(t)');ylabel('Speed (km/h)');
