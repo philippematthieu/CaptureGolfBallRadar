@@ -11,7 +11,7 @@
 
 <img src="sci/img/Pasted image 20250120172502.png"  width="560" height="380">
 
-## Data catch with SkyTack
+## Data catched with SkyTack
 
 Club : iron 7
 
@@ -25,7 +25,7 @@ Backspin : 5274trm
 
 Sidespin : 210trm
 
-## Backspine calculation with the radar
+## Backspin estimated with the radar
 Given d = 0.04267m
 
  V = F / 19,48
