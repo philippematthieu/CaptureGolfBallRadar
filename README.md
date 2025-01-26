@@ -11,7 +11,7 @@
 
 <img src="sci/img/Pasted image 20250120172502.png"  width="560" height="380">
 
-## Data catched with SkyTack
+## Data catched with SkyTak
 
 Club : iron 7
 
