@@ -5,7 +5,7 @@ pause;
 abort;
 pause;
 pause;
-// Copyright (C) 2017 - Corporation - Author
+// Copyright (C) 2017 - mm - Author
 //
 // About your license if you have any
 //
@@ -1202,7 +1202,7 @@ fichier = 'serie211.wav';
 
 
 //fichier='Serie34.wav';
-//fichier = uigetfile("*.wav", "D:\Users\f009770\Documents\Golf\Radar\");[x,Fs,bits]=wavread(fichier); xg = x(1,:);xd = x(2,:);
+//fichier = uigetfile("*.wav", "D:\Users\mm\Documents\Golf\Radar\");[x,Fs,bits]=wavread(fichier); xg = x(1,:);xd = x(2,:);
 [x,Fs,bits]=wavread(fichier); xg = x(1,:);
 Fs = 44100;
 Vlumiere = 299792458 ; // m/s 
@@ -1252,7 +1252,7 @@ figure();plot(f1(1:$/2), yfft(1:$/2)/max(yfft(1:$/2)),'b');
 MAX = (f1(B))
 
 
-fichier = uigetfile("*.wav", "C:\Users\f009770\Documents\GolfBall-master\sci");[x,Fs,bits]=wavread(fichier); xg = x(1,$/1.4:$/1.25);xd = x(2,$/1.4:$/1.25);
+fichier = uigetfile("*.wav", "C:\Users\mm\Documents\GolfBall-master\sci");[x,Fs,bits]=wavread(fichier); xg = x(1,$/1.4:$/1.25);xd = x(2,$/1.4:$/1.25);
 //xg = x(1,1:$/1.15);xd = x(2,1:$/1.15);
 
 [wft,wfm,fr] = wfir('bp',256,[1800/Fs 6000/Fs ],'hm',[-1 -1]);
@@ -1285,7 +1285,7 @@ plot(tt5(l),f5(c),'b*');
 /// instantaneous frequency of the result.                //////
 /// F(t) = d(phase)/dt / (2*%pi))  Frequence instantanéé  //////
 ///
-fichier = uigetfile("*.wav", "D:\Users\f009770\Documents\Golf\Radar\");[x,Fs,bits]=wavread(fichier); 
+fichier = uigetfile("*.wav", "D:\Users\mm\Documents\Golf\Radar\");[x,Fs,bits]=wavread(fichier); 
 xg = x(1,1:$);xd = x(2,1:$);
 xg = x(1,$/1.4:$/1.25);xd = x(2,$/1.4:$/1.25);
 //xg = x(1,1:$/1.15);xd = x(2,1:$/1.15);
@@ -1361,7 +1361,7 @@ fig = figure();fig.color_map = jetcolormap(64);Sgrayplot(t,[1:64]*Fs/(64*1000),a
 tfrqview
 
 //////////////////////////////////////////////////////
-fichier = uigetfile("*.wav", "D:\Users\f009770\Documents\Golf\Radar\");[x,Fs,bits]=wavread(fichier); 
+fichier = uigetfile("*.wav", "D:\Users\mm\Documents\Golf\Radar\");[x,Fs,bits]=wavread(fichier); 
 xg = x(1,1:$);xd = x(2,1:$);
 u = filter(wft,1,xg);
 a=((diff(unwrap(angle(hilbert(filter(wft1,1,filter(wft,1,xg($/3.5:$/2)))))))/(2*%pi*1/Fs)));
@@ -1374,7 +1374,7 @@ figure();plot(f5,sum(M52($/2:$,1:$-1),'r'),'b'); // vitesse du club (1er pic), v
 Freq2RpmSpin(f5(k));
 
 
-fichier = uigetfile("*.wav", "D:\Users\f009770\Documents\Golf\Radar\");[x,Fs,bits]=wavread(fichier); xg = x(1,1:$);xd = x(2,1:$);
+fichier = uigetfile("*.wav", "D:\Users\mm\Documents\Golf\Radar\");[x,Fs,bits]=wavread(fichier); xg = x(1,1:$);xd = x(2,1:$);
 [vBall, vClub, SmashFactor,thetaLoft, ShafLeanImp, launchAngle, SpinZC, SpinZM, SpinLR, gamaFacePath,a] = Info2(filter(wft,1,xg),'7'),fichier
 N = size(xg,2);
 dt = 1/Fs;
@@ -1589,7 +1589,7 @@ ylaunchAngle = ann_PERCEPTRON_run(P , wlaunchAngle , blaunchAngle);
 // simulation de signal
 //
 ////////////////////////////
-fichier = uigetfile("*.wav", "D:\Users\f009770\Documents\Golf\Radar\");[x,Fs,bits]=wavread(fichier); 
+fichier = uigetfile("*.wav", "D:\Users\mm\Documents\Golf\Radar\");[x,Fs,bits]=wavread(fichier); 
 xg = x(1,1:$);xd = x(2,1:$);xg = xg - mean(xg);xd = xd - mean(xd);
 xgp = padding(xg,2);
 xgp = padding2(xg);
@@ -1736,15 +1736,15 @@ plot(xd,'g');plot(xgpf,'r');
 [m,k]=max(SP($/2+1:$));F(size(SP($/2:$),'r')+k)*44100*2
 
 
-[xd,SP, F] = Info3('7', 'D:\Users\f009770\Documents\Golf\Radar\2019-02-24-F7-133m-160kmh-5432trm-311trm-cs117.wav');
+[xd,SP, F] = Info3('7', 'D:\Users\mm\Documents\Golf\Radar\2019-02-24-F7-133m-160kmh-5432trm-311trm-cs117.wav');
 
 fichier = uigetfile("*.wav", "D:\Golf\Radar\");
 
 fichier = 'D:\Golf\Radar\2019-02-24-F7-133m-160kmh-5432trm-311trm-cs117.wav';
-fichier = 'D:\Users\f009770\Documents\Golf\Radar\2019-05-05-2.wav';
-fichier = 'D:\Users\f009770\Documents\Golf\Radar\2019-05-05-debruite.wav';
-fichier = 'D:\Users\f009770\Documents\Golf\Radar\1150_TrMin.wav';
-fichier = 'D:\Users\f009770\Documents\Golf\Radar\test1_7_dehors_metal.wav';
+fichier = 'D:\Users\mm\Documents\Golf\Radar\2019-05-05-2.wav';
+fichier = 'D:\Users\mm\Documents\Golf\Radar\2019-05-05-debruite.wav';
+fichier = 'D:\Users\mm\Documents\Golf\Radar\1150_TrMin.wav';
+fichier = 'D:\Users\mm\Documents\Golf\Radar\test1_7_dehors_metal.wav';
 [x,Fs,bits]=wavread(fichier); 
 xg = x(1,1:$);xg = xg - mean(xg); LeWav =xg;//pour AnaSpecEga
 xd = x(2,1:$);xd = xd - mean(xd);LeWav=xg;xgp = xg;
@@ -1904,11 +1904,11 @@ f=Fs*(0:(nbEchantillon)-1)/nbEchantillon;
 plot(f,s);
 
 
-fichier = 'C:\Users\F009770\Documents\Golf\Radar\2019-02-24-F7-133m-160kmh-5432trm-311trm-cs117.wav';
-fichier = 'C:\Users\F009770\Documents\Golf\Radar\2019-05-05-2.wav';
-fichier = 'C:\Users\F009770\Documents\Golf\Radar\2019-05-05-debruite.wav';
-fichier = 'C:\Users\F009770\Documents\Golf\Radar\1150_TrMin.wav';
-fichier = 'C:\Users\F009770\Documents\Golf\Radar\test1_7_dehors_metal.wav';
+fichier = 'C:\Users\mm\Documents\Golf\Radar\2019-02-24-F7-133m-160kmh-5432trm-311trm-cs117.wav';
+fichier = 'C:\Users\mm\Documents\Golf\Radar\2019-05-05-2.wav';
+fichier = 'C:\Users\mm\Documents\Golf\Radar\2019-05-05-debruite.wav';
+fichier = 'C:\Users\mm\Documents\Golf\Radar\1150_TrMin.wav';
+fichier = 'C:\Users\mm\Documents\Golf\Radar\test1_7_dehors_metal.wav';
 [x,Fs,bits]=wavread(fichier); 
 xg = x(1,1:$);mu= [mean(x);stdev(x)];xg = (xg - mu(1))/mu(2);
 xg = xg(5000:9095);//Pour mettre la taille en puissance de 2
