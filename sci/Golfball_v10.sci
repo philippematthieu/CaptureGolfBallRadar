@@ -1,4 +1,4 @@
-// Copyright (C) 2016 - Corporation - Author
+// Copyright (C) 2016 - mm - Author
 //
 // About your license if you have any
 //

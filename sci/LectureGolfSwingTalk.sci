@@ -1,5 +1,5 @@
 function [t,x9,Res,Valeurs] = lanceGolfBall(GraphOn,allFiles,Files)
-// Copyright (C) 2016 - Corporation - Author
+// Copyright (C) 2016 - mm - Author
 //
 // About your license if you have any
 //
