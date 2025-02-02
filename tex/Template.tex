@@ -1,0 +1,374 @@
+\documentclass[10pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{makeidx}
+\usepackage[pdftex]{graphicx}
+\usepackage{lmodern}
+\usepackage{kpfonts}
+%\usepackage{fourier}
+\usepackage{multicol,caption}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{ifthen}
+\usepackage{etoolbox}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\usepackage{lipsum}
+\usepackage{appendix}
+\usepackage[left=2cm,right=2cm,top=3cm,bottom=4cm, headsep=55pt, , inner=2.5cm, outer=1.5cm]{geometry}
+\usepackage[skip=10pt plus1pt, indent=0pt]{parskip}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{tabularray}
+\usepackage{tocloft}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{tikz-cd}
+\usetikzlibrary{fit,shapes.geometric}
+
+\usepackage{calrsfs}
+\DeclareMathAlphabet{\pazocal}{OMS}{zplm}{m}{n}
+
+
+\tikzset{
+   actor/.style={
+     circle,
+     draw=black,
+     minimum size=3mm
+   },
+   arrow/.style={
+     -latex,
+     thick,
+     shorten <=2pt,
+     shorten >=2pt
+   },
+   column/.style={
+   -latex,
+   sep=-6ex, 
+   row sep=1ex
+   }
+}
+
+%%gmedina solution
+\newcommand{\listequationsname}{List of Equations}
+\newlistof{myequations}{equ}{\listequationsname}
+\newcommand{\myequations}[1]{%
+\addcontentsline{equ}{myequations}{\protect\numberline{\theequation}#1}\par}
+\setlength{\cftmyequationsnumwidth}{2.5em}% Width of equation number in List of Equations
+
+
+\newcommand{\listremarksname}{List of Remarks}
+\newlistof{myremarks}{rmk}{\listremarksname}
+\newcounter{rmkcntr}
+\newcommand{\myremarks}[2]{%
+\stepcounter{rmkcntr}%
+\addcontentsline{rmk}{myremarks}{\protect\numberline{\thermkcntr}#1}\par\fbox{%
+\begin{minipage}[c]{0.3\textwidth}
+\textit{\textbf{Remark \thermkcntr: #1 }}
+\end{minipage}%
+\vrule\enskip\vrule\quad
+\begin{minipage}{\dimexpr 0.7\textwidth-0.8pt-1.5em}
+\textit{#2} 
+%\label{rq:rq0}
+\end{minipage} \\
+}}
+\setlength{\cftmyremarksnumwidth}{2.5em}% Width of remark number in List of remarks
+
+
+
+\newcommand{\listdefinitionsname}{List of definitions}
+\newlistof{mydefinitions}{def}{\listdefinitionsname}
+\newcounter{defcntr}
+\newcommand{\mydefinitions}[2]{%
+\stepcounter{defcntr}%
+\addcontentsline{def}{mydefinitions}{\protect\numberline{\thedefcntr}#1}\par\fbox{%
+\begin{minipage}[c]{0.3\textwidth}
+\textit{\textbf{definition \thedefcntr: #1 }}
+\end{minipage}%
+\vrule\enskip\vrule\quad
+\begin{minipage}{\dimexpr 0.7\textwidth-0.8pt-1.5em}
+\textit{#2} 
+%\label{rq:rq0}
+\end{minipage} \\
+}}
+\setlength{\cftmydefinitionsnumwidth}{2.5em}% Width of definition number in List of definitions
+
+
+
+\pagestyle{headings}
+% definition paragaph en subsubsubsection
+\setcounter{secnumdepth}{5}
+\setcounter{tocdepth}{5}
+\makeatletter
+\newcommand\subsubsubsection{\@startsection{paragraph}{4}{\z@}{-2.5ex\@plus -1ex \@minus -.25ex}{1.25ex \@plus .25ex}{\normalfont\normalsize\bfseries}}
+\newcommand\subsubsubsubsection{\@startsection{subparagraph}{5}{\z@}{-2.5ex\@plus -1ex \@minus -.25ex}{1.25ex \@plus .25ex}{\normalfont\normalsize\bfseries}}
+\makeatother
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\fontsize{8pt}{8pt}\selectfont,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=5
+}
+
+\fancypagestyle{plain}{
+\fancyhf{}% Clear header/footer
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[LO,LE]{\includegraphics[width=1cm]{Logo-golfball.jpg}\hrule}
+\fancyhead[RO,RE]{ \textbf{Golf Simulator in Scilab} v0.1 \\}
+\fancyhead[CO,CE]{\textcolor{red}{free}}
+\fancyfoot[LO,CE]{\fontsize{8}{11}\selectfont\textit{\begin{center}This document and the information contained herein are the property of Matthieu PHILIPPE.\\They must not be copied or disclosed to third parties without prior written authorization.\end{center}}\begin{flushright}-M\end{flushright}}
+}
+
+\renewcommand{\chaptermark}[1]{\markboth{#1}{#1}}
+
+\fancypagestyle{plain2}{
+\fancyhf{}% Clear header/footer
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[LO,LE]{\includegraphics[width=1cm]{Logo-golfball.jpg}\hrule}
+\fancyhead[RO,RE]{ \textbf{\chaptername\ \thechapter\ --\ \leftmark\ }\\Page \thepage\  / \pageref{LastPage} }
+\fancyhead[CO,CE]{\textcolor{red}{free}}
+\fancyfoot[LO,CE]{\fontsize{8}{11}\selectfont\textit{\begin{center}This document and the information contained herein are the property of Matthieu PHILIPPE.\\They must not be copied or disclosed to third parties without prior written authorization.\end{center}}\begin{flushright}-M\end{flushright}}
+}
+
+\fancypagestyle{plainstar}{
+\fancyhf{}% Clear header/footer
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[LO,LE]{\includegraphics[width=1cm]{Logo-golfball.jpg}\hrule}
+\fancyhead[RO,RE]{ \textbf{\ }\\Page \thepage\  / \pageref{LastPage} }
+\fancyhead[CO,CE]{\textcolor{red}{free}}
+\fancyfoot[LO,CE]{\fontsize{8}{11}\selectfont\textit{\begin{center}This document and the information contained herein are the property of Matthieu PHILIPPE.\\They must not be copied or disclosed to third parties without prior written authorization.\end{center}}\begin{flushright}-M\end{flushright}}
+}
+
+
+
+\fancypagestyle{noheader}{
+\fancyhf{}% Clear header/footer
+\fancyhead[LO,LE]{}
+\fancyhead[CO,CE]{\textcolor{red}{free}}
+\fancyhead[RO,RE]{}
+}
+
+\lstset{style=mystyle}
+
+\usepackage[left=2cm,right=2cm,top=3cm,bottom=4cm, headsep=55pt]{geometry}
+
+\author{Matthieu PHILIPPE\\Publication Perso}
+
+\title{\textbf{Golf Simulator in Scilab:\\Capturing a swing and estimating the cary\\with a tiny low-cost  Radar}}
+
+\begin{document}
+\sffamily
+\pagestyle{plain}
+
+\rmfamily\maketitle\sffamily
+%\noindent\makebox[\linewidth]{\rule{\textwidth}{0.4pt}}
+\tableofcontents
+\listoffigures
+\listoftables
+\lstlistoflistings
+\listofmyequations
+\listofmyremarks
+\listofmydefinitions
+
+\newpage
+\pagestyle{plainstar}
+\section*{ABSTRACT}\setcounter{page}{1}
+By using the equations of golf ball flight dynamics, this article demonstrates how to code a swing simulator for a ball in Scilab.
+
+The simulator uses an ODE (ordinary differential equation) solver from Scilab, the fluid dynamics equations on a ball (taking into account gravity, drag forces, and Magnus forces), the restitution of forces from a golf club applied to a ball for launches, its  flight, bounce and roll. 
+
+In the second part, the article presents a method for capturing the speed of the ball in flight using 2 low-cost radars, coupled with an Arduino Mini and an adapted sound card. 
+
+The radar signal is recorded in WAV format and filtered to extract speed and spin information during flight, using spectral density.
+
+\emph{\textbf{Keywords:} Golf Ball, Simulator, Scilab, Radar, Spectral dentisty.}
+
+\chapter{Introduction}
+After spending a few years playing golf, I wanted to learn more about the dynamics of the interactions between the club, the ball, and the elements. 
+
+Of course, the academic literature and publications were quite abundant. But I came accross articles \cite{PWBJKH76} written in 1976 and \cite{SASDR94} in 1994. The description of the ball's physics pushed me to undertake modeling this system in Scilab. Subsequently, I did it in Java, C++, and then C\# to use it under \emph{Unity game engine}{\textregistered \texttrademark}.
+
+When the results were satisfactory, I thought about capturing the flight of a golf ball with instrumentation. After tests with sonar, which were largely insufficient, I took small presence detection radars for automatic doors.
+
+I didn't know what I was getting into, but after a updating my knowledge on signal filtering and a few lines of programming in Scilab, I found a way to capture the essential data. Namely the speed and backspin of the flight of a golf ball.
+
+This article describes all items I found, and how I set all them together. Equations, programs, filtering, estimators and electronics compounents to make a Virtual Golf Simulation.
+
+All the equations presented in this article are derived from public publications or books, with references listed in the bibliography. I will not revisit the demonstrations and physical explanations, as they are not the focus of these pages. 
+What matters to me is the relationship between this information and how I have used or adapted it.
+
+\chapter{Golf Ball Flight}
+
+The main equation is the ball's flight. The equation accounts 3 forces : Magnus Force, Air Drag Force and gravity, such as :
+
+\begin{equation}\label{eq:flightforces}
+\sum{F} =  F_{M} - m.g + F_{d}
+\end{equation}\myequations{Flight Forces}
+
+\section{Drag Force}
+\subsection{Air characteristics}
+
+The Air Drag Force resitance is determined by the relation given by \cite{BBRS11} as \ref{eq:aircaracteristic2} :
+
+\begin{eqnarray}
+\rho(T)&=&1,292*\frac{273,15}{273,15+ T}\label{eq:aircaracteristic1}\\
+F_d(V)&=&-\frac{1}{2}.\rho(T).Cd.S.V^2(t)\label{eq:aircaracteristic2}
+\end{eqnarray}\myequations{Air Force Resistance}
+
+where:
+\begin{eqnarray*}\label{eq:aircaracteristiccst}
+\rho(T)\ &=&Rho\ depending\ on\ temperature\ T\\
+Cd\ &=& Drag\ Coefficient,\ depending\ on\ the\ object\\
+F_d(V)\ &=&Drag\ Force\ due\ to\ Air\ Resistance\ depending\ on\ velocity\ V
+\end{eqnarray*}
+
+\subsection{Ball's characteristics in the air}
+
+Considering those characteristics of a dimpled ball model,
+
+\begin{eqnarray*}\label{eq:massdiameterintertia}
+mass\ m&=&0,04593\ g \\
+Dynamic\ viscosity\ \mu&=&1,5.10^{-6} m^2/s\\
+Diameter\ D&=&0,04267\ m\\
+Radius\ r&=&\frac{D}{2}\\
+Inertia\ I&=&\frac{2}{5}.m.R^2\\
+Cross-section\  S&=&\pi.R^2\\
+Ball\ Velocity\ &=&V
+\end{eqnarray*}\myequations{Ball Mass, Diameter, Rayon, Intertia, Section, Reyolds Number}
+
+We have an estimated models,
+
+\begin{eqnarray}\label{eq:dragforce}
+Re&=&\frac{\rho(T).V.D}{\mu}\\
+Cd&=&0,36 + \frac{24}{Re} + \frac{6}{1+\sqrt{Re}}\\
+\overrightarrow{F_{d}} &=& -\frac{1}{2}.\rho(T).Cd.S.\sqrt{(V(x)^2+V(y)^2+V(z)^2)}.\widehat{V}(x)
+\end{eqnarray}\myequations{Drag Coefficient, Drag Force}
+
+where,
+
+\begin{eqnarray*}\label{eq:dragforce}
+Re&=&Reynolds\ Number\ estimator\\
+Cd&=&Drag\ Coefficient\ White's\ relation\\
+\overrightarrow{F_{d}}&=& Drag\ Force
+\end{eqnarray*}
+
+
+\myremarks{Finally, the equation of the drag Force along the 3-axes becomes \ref{eq:vectordragforce}}{\begin{equation}\label{eq:vectordragforce}
+\overrightarrow{F_d} = \begin{pmatrix}
+-\frac{1}{2}.\rho(T).Cd.S.V_{x}^2 \\
+-\frac{1}{2}.\rho(T).Cd.S.V_{y}^2 \\
+-\frac{1}{2}.\rho(T).Cd.S.V_{z}^2
+\end{pmatrix}
+\end{equation}
+}
+
+\section{Magnus Force}
+The main bibliography is \cite{GPA05} et \cite{SASDR94}. The Magnus Force depends on the Lift Coefficient. I have found several ways to calculate the Cl. given in \ref{eq:magnusforce4},  \ref{eq:magnusforce6} or \ref{eq:magnusforce6}. 
+
+Given severals Magnus Force equations bellow, found in litterature,
+ 
+\begin{eqnarray}\label{eq:magnusforce}
+\overrightarrow{F_{M}} &=& Cm.(\overrightarrow{\omega}\ x\  \overrightarrow{V})\label{eq:magnusforce1}\\
+F_M&=& 1/2.Cm.\rho.\mu^2\label{eq:magnusforce2}\\
+Cm&=&\frac{r\omega}{V}\label{eq:magnusforce3}\\
+Cm&=&-0,05+ \sqrt{0,0025 + 0,36\left( \frac{r\omega}{V_m}\right)}\ (\cite{GPA05})\label{eq:magnusforce4}
+\end{eqnarray}\myequations{Magnus Lift Force}
+where,
+\begin{eqnarray*}\label{eq:dragforce}
+\omega&=&spin\ in\ rad/s\\
+V_p&=&r\omega\ periferal\ velocity\\
+V_m&=&Ball\  Velocity
+\end{eqnarray*}
+
+
+And, espacially in \cite{SASDR94} or \cite{AL98}, an expression of Magnus Lift Coefficient.
+\begin{eqnarray}
+Cl&=&\frac{1}{2 + (v/R*sin(\zeta))}\  \zeta\ to\ be\ the\ angle\ between\ the\ axis\ of\ rotation\ and\ the\ direction\ of\ motion\\\label{eq:magnusforce6}
+Cm &=&0,5 . \rho(T). S. R^2. Cl.\mid{\frac{\omega}{Vm}}\mid^{0,4}.Vm\ (\cite{SASDR94})\label{eq:magnusforce5}
+\end{eqnarray}\myequations{Magnus Lift Force}
+
+In order to meet my needs, I have chosen to provide adapted Cl values to (\ref{eq:magnusforce6}) from experience with my own balls (texture and number dipples). These data are recorded in a Scilab table $Cl_1$ :
+\begin{eqnarray}
+Cm &=&0,5 . \rho(T). S. R^2. Cl_1.\mid{\frac{\omega}{Vm}}\mid^{0,4}.Vm\ \label{eq:magnusforce7}
+\end{eqnarray}\myequations{Magnus Lift Force}
+
+\begin{eqnarray*}
+with\ my\ own\ \  Cl_1(Club\ , myball)&=&['D'      ;'W5'     ;'H3'    ;'5'      ;'6'     ;'7'     ;'8'      ;'9'    ;'PW'     ;'AW'    ;'SW'      ;'LW'   ;'PU'   ] \\
+&&[0.64     ;0.65     ;0.54    ;0.54     ;0.83    ;0.42    ;0.53     ;0.53   ;0.52     ;0.52    ;0.51      ;0.51   ;0]
+\end{eqnarray*}\myequations{My Cl1}
+
+\myremarks{Knowing \ref{eq:magnusforce1} and \ref{eq:magnusforce7}, we have the following Magnus force vector}{\begin{equation}\label{eq:vectormagnusforce}
+\overrightarrow{F_m} = \begin{pmatrix}
+Cm*(\omega_j*v_k-\omega_k*v_j) \\
+Cm*(\omega_k*v_i-\omega_i*v_k) \\
+Cm*(\omega_i*v_j-\omega_j*v_i)
+\end{pmatrix}
+\end{equation}
+}
+
+\section{Gravity Force}
+\section{Launch Velocity}
+\cite{PA01}
+\section{Complete Model of flight}
+
+\section{Ball's characteristics bouncing on the grass}
+\cite{rwlc2010}
+\section{Ball's characteristics rolling on the grass}
+\cite{PA07}
+\cite{PA022}
+
+
+\chapter{Golf Ball Capturing}
+\section{section}
+section
+\subsection{subsection}
+subsection
+
+\chapter{Listings}
+\section{Golfball.sci}
+\begin{lstlisting}[language=matlab, caption=Listing of the golf ball fligth, label={lst:gaolfballsci}]
+// Copyright (C) 2016 - Corporation - Author
+//
+// About your license if you have any
+//
+// Date of creation: 16 juin 2016
+//
+//SCI2C: DEFAULT_PRECISION= DOUBLE
+//
+// ReadWave : FFT_Mat.sce
+// 
+
+\end{lstlisting}
+
+\bibliographystyle{alpha}
+\selectlanguage{english}
+	\bibliography{biblioBibTex}
+%\end{multicols}\newpage
+
+
+
+%\input{PageEnd.tex}
+\end{document}
