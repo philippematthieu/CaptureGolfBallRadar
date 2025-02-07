@@ -88,7 +88,7 @@
 \stepcounter{defcntr}%
 \addcontentsline{def}{mydefinitions}{\protect\numberline{\thedefcntr}#1}\par\fbox{%
 \begin{minipage}[c]{0.3\textwidth}
-\textit{\textbf{definition \thedefcntr: #1 }}
+\textit{\textbf{Definition \thedefcntr: #1 }}
 \end{minipage}%
 \vrule\enskip\vrule\quad
 \begin{minipage}{\dimexpr 0.7\textwidth-0.8pt-1.5em}
@@ -225,24 +225,27 @@ What matters to me is the relationship between this information and how I have u
 The main equation is the ball's flight. The equation accounts 3 forces : Magnus Force, Air Drag Force and gravity, such as :
 
 \begin{equation}\label{eq:flightforces}
-\sum{F} =  F_{M} - m.g + F_{d}
+\sum{\overrightarrow{F}} =  \overrightarrow{F_{m}} + \overrightarrow{F_{d}} + \overrightarrow{F_{g}}
 \end{equation}\myequations{Flight Forces}
 
 \section{Drag Force}
 \subsection{Air characteristics}
 
-The Air Drag Force resitance is determined by the relation given by \cite{BBRS11} as \ref{eq:aircaracteristic2} :
+\mydefinitions{The Air Drag Force}{The Air Drag Force is the resitance exposed on the cross-sectional area of an object, orthogonal to the displacement, determined by the relation given by \cite{BBRS11} as \ref{eq:aircaracteristic2}} :
 
 \begin{eqnarray}
-\rho(T)&=&1,292*\frac{273,15}{273,15+ T}\label{eq:aircaracteristic1}\\
-F_d(V)&=&-\frac{1}{2}.\rho(T).Cd.S.V^2(t)\label{eq:aircaracteristic2}
+F_d(V)&=&-\frac{1}{2}.\rho(T).C_d.S.V^2(t)\label{eq:aircaracteristic2}
 \end{eqnarray}\myequations{Air Force Resistance}
 
 where:
 \begin{eqnarray*}\label{eq:aircaracteristiccst}
-\rho(T)\ &=&Rho\ depending\ on\ temperature\ T\\
-Cd\ &=& Drag\ Coefficient,\ depending\ on\ the\ object\\
-F_d(V)\ &=&Drag\ Force\ due\ to\ Air\ Resistance\ depending\ on\ velocity\ V
+\rho(T)&=&1,292*\frac{273,15}{273,15+ T}\label{eq:aircaracteristic1}\\
+\rho(T)\ &=&Air\ density\ Rho\ depending\ on\ temperature\ T\\
+T&=&Temperature\\
+C_d\ &=&Drag\ Coefficient,\ depending\ on\ the\ object\\
+V&=&Object's\ Velocity\\
+F_d(V)\ &=&Drag\ Force\ due\ to\ Air\ Resistance\ depending\ on\ velocity\ V\\
+S&=& The\ cross-sectional\ area\ exposed,\ orthogonal\ to\ the\ displacement.
 \end{eqnarray*}
 
 \subsection{Ball's characteristics in the air}
@@ -262,76 +265,147 @@ Ball\ Velocity\ &=&V
 We have an estimated models,
 
 \begin{eqnarray}\label{eq:dragforce}
-Re&=&\frac{\rho(T).V.D}{\mu}\\
-Cd&=&0,36 + \frac{24}{Re} + \frac{6}{1+\sqrt{Re}}\\
-\overrightarrow{F_{d}} &=& -\frac{1}{2}.\rho(T).Cd.S.\sqrt{(V(x)^2+V(y)^2+V(z)^2)}.\widehat{V}(x)
+Re&=&\frac{\rho(T).V.D}{\mu}\label{eq:reynoldsnb}\\
+C_d&=&0,36 + \frac{24}{Re} + \frac{6}{1+\sqrt{Re}}\\
+\overrightarrow{F_{d}} &=& -\frac{1}{2}.\rho(T).C_d.S.\sqrt{(V(x)^2+V(y)^2+V(z)^2)}.\widehat{V}
 \end{eqnarray}\myequations{Drag Coefficient, Drag Force}
 
 where,
 
 \begin{eqnarray*}\label{eq:dragforce}
+\widehat{V}&=&Unit\ vector\ of\ the\ velocity\\
 Re&=&Reynolds\ Number\ estimator\\
-Cd&=&Drag\ Coefficient\ White's\ relation\\
+C_d&=&Drag\ Coefficient\ White's\ relation\\
 \overrightarrow{F_{d}}&=& Drag\ Force
 \end{eqnarray*}
 
 
 \myremarks{Finally, the equation of the drag Force along the 3-axes becomes \ref{eq:vectordragforce}}{\begin{equation}\label{eq:vectordragforce}
 \overrightarrow{F_d} = \begin{pmatrix}
--\frac{1}{2}.\rho(T).Cd.S.V_{x}^2 \\
--\frac{1}{2}.\rho(T).Cd.S.V_{y}^2 \\
--\frac{1}{2}.\rho(T).Cd.S.V_{z}^2
+-\frac{1}{2}.\rho(T).C_d.S.V_{x}^2 \\
+-\frac{1}{2}.\rho(T).C_d.S.V_{y}^2 \\
+-\frac{1}{2}.\rho(T).C_d.S.V_{z}^2
 \end{pmatrix}
 \end{equation}
 }
 
-\section{Magnus Force}
-The main bibliography is \cite{GPA05} et \cite{SASDR94}. The Magnus Force depends on the Lift Coefficient. I have found several ways to calculate the Cl. given in \ref{eq:magnusforce4},  \ref{eq:magnusforce6} or \ref{eq:magnusforce6}. 
+\section{Magnus Effect}
+\mydefinitions{The Magnus Effect}{The Magnus \cite{magnus1853abweichung} effect is due to the spin of a cylindrical object, moving in a fluid (air). It is called the Robin effect for a ball.} 
 
-Given severals Magnus Force equations bellow, found in litterature,
- 
+But by generalization, the Magnus effect name is applied to any type of object subjected to this suction force. This lift force occurs, altering the ballistic trajectory of the golf ball. The Force depends on the Lift coefficient (\emph{$C_l$}), that is associated with the object, according to its shape, nature and texture. So that the force is written as a composant of Object Velocity, SpinRate and a coefficient of Magnus effect \emph{$C_m$} (\ref{eq:magnusforce1}),
+
+
 \begin{eqnarray}\label{eq:magnusforce}
-\overrightarrow{F_{M}} &=& Cm.(\overrightarrow{\omega}\ x\  \overrightarrow{V})\label{eq:magnusforce1}\\
-F_M&=& 1/2.Cm.\rho.\mu^2\label{eq:magnusforce2}\\
-Cm&=&\frac{r\omega}{V}\label{eq:magnusforce3}\\
-Cm&=&-0,05+ \sqrt{0,0025 + 0,36\left( \frac{r\omega}{V_m}\right)}\ (\cite{GPA05})\label{eq:magnusforce4}
-\end{eqnarray}\myequations{Magnus Lift Force}
+\overrightarrow{F_{m}} &=& C_m.(\overrightarrow{\omega}\ \times\  \overrightarrow{V})\label{eq:magnusforce1}
+\end{eqnarray}\myequations{Magnus Lift effect}
+
+
 where,
 \begin{eqnarray*}\label{eq:dragforce}
 \omega&=&spin\ in\ rad/s\\
 V_p&=&r\omega\ periferal\ velocity\\
-V_m&=&Ball\  Velocity
+V&=&Ball\  Velocity\\
+C_m&=&Coefficient\ of\ Magnus\ effect
 \end{eqnarray*}
 
+The main bibliography for golf ball I used, is \cite{GPA05} and \cite{SASDR94}. I have found several ways to calculate the $C_m$, given in expressions bellow.  The first simple aproximation is given by \ref{eq:magnusforce2}, and the Coefficient of Magnus effect can be given by the first two estimators bellow \ref{eq:magnusforce3}, \ref{eq:magnusforce4} (\cite{GPA05}). But I kept this one \ref{eq:magnusforce5} (\cite{SASDR94},  \cite{AL98}). 
 
-And, espacially in \cite{SASDR94} or \cite{AL98}, an expression of Magnus Lift Coefficient.
+\begin{eqnarray}\label{eq:magnusforce0}
+F_m&=& \frac{1}{2}.C_m.\rho.\mu^2\label{eq:magnusforce2}\\
+C_m&=&\frac{r\omega}{V}\label{eq:magnusforce3}\\
+C_m&=&-0,05+ \sqrt{0,0025 + 0,36\left( \frac{r\omega}{V}\right)}\label{eq:magnusforce4}\\
+C_m &=&0,5 . \rho(T). S. R^2. C_l.\mid{\frac{\omega}{V}}\mid^{0,4}.V\label{eq:magnusforce5}\\
+C_l&=&\frac{1}{2 + (V/R\omega)*sin(\zeta)}\label{eq:magnusforce6}
+\end{eqnarray}\myequations{Magnus effect and different coefficient models}
+
+\cite{GGA} gives a correction or adjustment coefficient $C_{l}$ (\ref{eq:magnusforce6}) to (\ref{eq:magnusforce5}), where $\zeta$ in Lift Coefficient, is the angle between the axis of rotation and the direction of motion. If R$\omega\ll$ V, then $C_l \simeq R\omega \frac{sin\zeta}{V}$. Certainly more appropriate than (\ref{eq:magnusforce3}) to take into account an effect of side spin and backspin.
+
+\begin{eqnarray}\label{eq:zeta}
+sin\zeta = \frac{\parallel\overrightarrow{\omega} \times \overrightarrow{V}\parallel}{\omega.V} = \frac{1}{\omega.V}.\sqrt{((\omega_j.V_k -\omega_k.V_j )^2 + ( \omega_k.V_i -\omega_i.V_k )^2 +( \omega_i.V_j -\omega_j.V_i )^2)}
+\end{eqnarray}\myequations{Angle between mouvment and spin axes}
+
+In order to meet my needs, I have choosen to provide my adapted $C_l$ values to (\ref{eq:magnusforce5}) instead of (\ref{eq:magnusforce6}), from tests with my own balls (texture and  number of dipples impact Reynolds number (\ref{eq:reynoldsnb}) as shown in \cite{ASCM11}). These data are recorded in a Scilab table $C_{l1}$. $C_m$ becomes (\ref{eq:magnusforce7}). 
 \begin{eqnarray}
-Cl&=&\frac{1}{2 + (v/R*sin(\zeta))}\  \zeta\ to\ be\ the\ angle\ between\ the\ axis\ of\ rotation\ and\ the\ direction\ of\ motion\\\label{eq:magnusforce6}
-Cm &=&0,5 . \rho(T). S. R^2. Cl.\mid{\frac{\omega}{Vm}}\mid^{0,4}.Vm\ (\cite{SASDR94})\label{eq:magnusforce5}
-\end{eqnarray}\myequations{Magnus Lift Force}
-
-In order to meet my needs, I have chosen to provide adapted Cl values to (\ref{eq:magnusforce6}) from experience with my own balls (texture and number dipples). These data are recorded in a Scilab table $Cl_1$ :
+C_m &=&0,5 . \rho(T). S. R^2. C_{l1}.\mid{\frac{\omega}{V}}\mid^{0,4}.V\label{eq:magnusforce7}
+\end{eqnarray}
+With my own Club Mizuno JPX and ball  Decthlon :
 \begin{eqnarray}
-Cm &=&0,5 . \rho(T). S. R^2. Cl_1.\mid{\frac{\omega}{Vm}}\mid^{0,4}.Vm\ \label{eq:magnusforce7}
-\end{eqnarray}\myequations{Magnus Lift Force}
+C_{l1} &=&'D'  ;'W5'  ;'H3' ;'I5' ;'I6' ;'I7' ;'I8' ;'I9' ;'PW' ;'AW' ;'SW' ;'LW'\\
+&&0.64;0.65;0.54;0.54;0.83;0.42;0.53;0.53;0.52;0.52;0.51;0.51\label{eq:mycl1}
+\end{eqnarray}
 
-\begin{eqnarray*}
-with\ my\ own\ \  Cl_1(Club\ , myball)&=&['D'      ;'W5'     ;'H3'    ;'5'      ;'6'     ;'7'     ;'8'      ;'9'    ;'PW'     ;'AW'    ;'SW'      ;'LW'   ;'PU'   ] \\
-&&[0.64     ;0.65     ;0.54    ;0.54     ;0.83    ;0.42    ;0.53     ;0.53   ;0.52     ;0.52    ;0.51      ;0.51   ;0]
-\end{eqnarray*}\myequations{My Cl1}
-
-\myremarks{Knowing \ref{eq:magnusforce1} and \ref{eq:magnusforce7}, we have the following Magnus force vector}{\begin{equation}\label{eq:vectormagnusforce}
+\myremarks{Knowing \ref{eq:magnusforce1} and \ref{eq:magnusforce7} and \ref{eq:mycl1}, I chose the following Magnus force model}{\begin{equation}\label{eq:vectormagnusforce}
 \overrightarrow{F_m} = \begin{pmatrix}
-Cm*(\omega_j*v_k-\omega_k*v_j) \\
-Cm*(\omega_k*v_i-\omega_i*v_k) \\
-Cm*(\omega_i*v_j-\omega_j*v_i)
+C_m*(\omega_j*v_k-\omega_k*v_j) \\
+C_m*(\omega_k*v_i-\omega_i*v_k) \\
+C_m*(\omega_i*v_j-\omega_j*v_i)
 \end{pmatrix}
 \end{equation}
 }
 
 \section{Gravity Force}
+\mydefinitions{The gravity force}{The gravity force is determined by the acceleration \emph{g} to the ground.}
+
+So that, the expression is simply,
+\myremarks{The Gravity Force}{\begin{equation}\label{eq:vectorgravityforce}
+\overrightarrow{F_g} = \begin{pmatrix}
+0\\
+-mg\\
+0
+ \end{pmatrix}
+\end{equation}\myequations{Gravity Force}
+}
+
+
 \section{Launch Velocity}
-\cite{PA01}
+Due to the impact of the golf club to the ball, it results a ball flight with a launch angle. The club head loft determines the launch angle, the club head speed and the texture of both determine the launch ball speed and ball spin \cite{PA01}.
+
+Due to the texture we have a loss in energy, that can be taken into account throught the Coefﬁcient Of Restitution \emph{e} (COR \cite{BLSJ94}).
+
+\begin{figure} [H]\centering
+\includegraphics[width=6cm,keepaspectratio, ]{ImpactClubBall.png}
+\caption{Velocity Components}
+\label{fig:impactclubball}
+\end{figure}
+
+
+\cite{PA01} gives an estimation of COR e : 
+\begin{eqnarray}
+e&=&0,86\ -\ 0,0029.V_{ci}.cos(\theta)\\
+V_{bfn}&=&V_{ci}.cos(\theta).\frac{1+e}{1+\frac{m}{M}}\\
+V_{bfp}&=&-V_{ci}.\frac{sin(\theta)}{1+\frac{m}{M} + \frac{5}{2}}\\
+\psi_{bo}&=&\theta + tan^{-1}(\frac{V_{bfp}}{V_{bfn}})\\
+\omega_{bo}&=&\omega_{bf} = -m.V_{bfp}.\frac{R}{I}
+\end{eqnarray}\myequations{Ball velocity and launch angle after the impact of the golf club}
+
+
+where,
+\begin{eqnarray*}
+V_{ci}&=&Initial\ Club\ Velocity,\ parallel\ to\ the\ ground.\\
+V_{bfn}&=&Final\ Ball\ Velocity\ Orthogonal\ to\ golf\ club\ face\\
+V_{bfp}&=&Velocity\ of\ the\ golf\ ball,\ parallel\ of\ the\ club\ face\\
+\theta&=&dynamic\ loft\ (\ club\ loft + Shaft\ Lean\ Impact\ <\  loft)\\
+e&=&COR,\ e\simeq0.78\ for\ Irons,\ e\simeq0.83\ for\ Drives\ and\ Woods\\
+\psi_{bo}&=&Launch\ Angle\\
+\omega_{bo}&=&Spin\ of\ the\ glof\ ball\\
+I&=&Inertia\ (\ref{eq:massdiameterintertia})
+\end{eqnarray*}
+
+\section{Miss the sweet spot}
+It is difficult to perfectly center the ball and the club. The ball velocity model is modified to include a \emph{Miss} parameter. It is the amount by which the sweet spot is missed. The initial ball velocity is (\ref{eq.miss}),
+\begin{equation}\label{eq.miss}
+V_{bi}=(1-35.56*miss).\sqrt{V_{bfn}^2+V_{bfp}^2}\ (miss\ mesured\ in\ meter)
+\end{equation}\myequations{Intial ball velocity after missed the sweet spot}
+
+\section{Club Face Initial Velocity}
+Due to the Club Path ($\alpha_{cp}$) and the Face to Path and Face Angle ($\gamma_{fp}$), the initial ball velocity and spin is modified.
+
+\begin{figure} [H]\centering
+\includegraphics[width=12cm,keepaspectratio, ]{clubpath.png}
+\caption{Club Path}
+\label{fig:clubpath}
+\end{figure}
+
 \section{Complete Model of flight}
 
 \section{Ball's characteristics bouncing on the grass}
@@ -363,9 +437,13 @@ subsection
 
 \end{lstlisting}
 
+//\chapter*{}
+\section*{Conflicts of Interest}
+The authors declare no conflict of interest.
+
 \bibliographystyle{alpha}
 \selectlanguage{english}
-	\bibliography{biblioBibTex}
+\bibliography{biblioBibTex}
 %\end{multicols}\newpage
 
 
