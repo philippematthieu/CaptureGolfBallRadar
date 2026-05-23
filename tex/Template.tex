@@ -279,13 +279,13 @@ We have an estimated models,
 
 \begin{eqnarray}\label{eq:dragforce}
 Re&=&\frac{\rho(T).V.D}{\mu}\label{eq:reynoldsnb}\\
-C_d&=&0,36 + \frac{24}{Re} + \frac{6}{1+\sqrt{Re}}\\
+C_d&=&0,36 + \frac{24}{Re} + \frac{6}{1+\sqrt{Re}}\label{eq:dragforce4}\\
 \overrightarrow{F_{d}} &=& -\frac{1}{2}.\rho(T).C_d.S.\sqrt{(V(x)^2+V(y)^2+V(z)^2)}.\widehat{V}
 \end{eqnarray}\myequations{Drag Coefficient, Drag Force}
 
 where,
 
-\begin{eqnarray*}\label{eq:dragforce}
+\begin{eqnarray*}\label{eq:dragforce2}
 \widehat{V}&=&Unit\ vector\ of\ the\ velocity\\
 Re&=&Reynolds\ Number\ estimator\\
 C_d&=&Drag\ Coefficient\ White's\ relation\\
@@ -314,7 +314,7 @@ But by generalization, the Magnus effect name is applied to any type of object s
 
 
 where,
-\begin{eqnarray*}\label{eq:dragforce}
+\begin{eqnarray*}\label{eq:dragforce3}
 \omega&=&spin\ in\ rad/s\\
 V_p&=&r\omega\ periferal\ velocity\\
 V&=&Ball\  Velocity\\
@@ -453,8 +453,7 @@ V_{b0}\cdot\overrightarrow{j} = V_{bi} \cdot (1 - 0.3556 \cdot miss)
 V_{b0}\cdot\overrightarrow{k}=0 
 \]
 
-Le spin sur $\overrightarrow{i}$ n'est pas une composante dans l'axe du chemin de club. Le spin est applique sur le plan du sol, SideSpin  est dans l'axe de la face de de club sur $\overrightarrow{j}$, et le BackSpin dans l'axe du chemin de club $\overrightarrow{k}$
-\[
+The spin about the $\overrightarrow{i}$ axis is not a component along the club path axis. Spin is applied in the ground plane, with SideSpin aligned along the club face axis $\overrightarrow{j}$, and BackSpin aligned along the club path axis $\overrightarrow{k}$.\[
 w_{\overrightarrow{i}} = 0
 \]
 
@@ -466,7 +465,116 @@ w_{\overrightarrow{j}} = V_{b0}\overrightarrow{j} \cdot sin(\alpha_{cp} - \gamma
 w_{\overrightarrow{k}} = V_{b0}\overrightarrow{i} \cdot sin(\theta)  \cdot Sac.coeffSpin(Sac.Type == Club)
 \]
 
+
+
 \section{Complete Model of flight}
+\subsection{Complete Model of Flight (Matrix/Vector Form)}
+The golf ball's flight is described by the following ODE system for the state vector $\vec{Y} = \begin{pmatrix} x & y & z & V_x & V_y & V_z \end{pmatrix}^T$:
+
+\begin{equation}
+    \frac{d\vec{Y}}{dt} = \begin{pmatrix}
+    V_x \\
+    V_y \\
+    V_z \\
+    -\frac{1}{2m} \rho(T) C_d S \|\vec{V}\| V_x + \frac{C_m}{m} (\omega_y V_z - \omega_z V_y) \\
+    -\frac{1}{2m} \rho(T) C_d S \|\vec{V}\| V_y + \frac{C_m}{m} (\omega_z V_x - \omega_x V_z) - g \\
+    -\frac{1}{2m} \rho(T) C_d S \|\vec{V}\| V_z + \frac{C_m}{m} (\omega_x V_y - \omega_y V_x)
+    \end{pmatrix}
+    \label{eq:ode_system}
+\end{equation}
+
+\noindent
+where:
+\begin{itemize}
+    \item $\vec{V} = \begin{pmatrix} V_x \\ V_y \\ V_z \end{pmatrix}$ is the velocity vector,
+    \item $\vec{\omega} = \begin{pmatrix} \omega_x \\ \omega_y \\ \omega_z \end{pmatrix}$ is the spin vector,
+    \item $\|\vec{V}\| = \sqrt{V_x^2 + V_y^2 + V_z^2}$,
+    \item $C_d$ is the drag coefficient (Equation~\ref{eq:dragforce4}),
+    \item $C_m = 0.5 \rho(T) S R^2 C_{l1} \left( \frac{\|\vec{\omega}\|}{\|\vec{V}\|} \right)^{0.4} \|\vec{V}\|$ (Equation~\ref{eq:magnusforce7}).
+\end{itemize}
+
+\subsubsection{Initial Conditions}
+The initial state vector $\vec{Y}_0$ is:
+\begin{equation}
+    \vec{Y}_0 = \begin{pmatrix}
+    0 \\
+    0 \\
+    0 \\
+    V_{bi} \cos\left( \theta + \arctan\left( \frac{\sin \theta \cdot (1 + \frac{m}{M})}{(1 + e) \cos \theta \cdot (1 + \frac{m}{M} + \frac{5}{2})} \right) \right) \\
+    V_{bi} \sin\left( \theta + \arctan\left( \frac{\sin \theta \cdot (1 + \frac{m}{M})}{(1 + e) \cos \theta \cdot (1 + \frac{m}{M} + \frac{5}{2})} \right) \right) \\
+    0
+    \end{pmatrix}
+    \label{eq:initial_conditions}
+\end{equation}
+with $V_{bi} = (1 - 35.56 \cdot \text{miss}) \sqrt{V_{bfn}^2 + V_{bfp}^2}$ and $\vec{\omega}_0 = \begin{pmatrix} 0 & V_{b0y} \sin(\alpha_{cp} - \gamma_{fp}) \cdot \text{SpinLiftCoeff} & V_{b0x} \sin(\theta) \cdot \text{SpinCoeff} \end{pmatrix}^T$.
+
+\subsection{Complete Model of Flight (Tensor Notation)}
+The golf ball's flight dynamics are described using tensor notation as follows:
+
+\subsubsection{Governing Equation}
+The time evolution of the state vector $\vec{Y} = \begin{pmatrix} \vec{r} \\ \vec{V} \end{pmatrix} \in \mathbb{R}^6$ is given by:
+\begin{equation}
+    \frac{d\vec{Y}}{dt} = \begin{pmatrix}
+    \vec{V} \\
+    \frac{1}{m} \left( \vec{F}_d + \vec{F}_m + \vec{F}_g \right)
+    \end{pmatrix}
+    \label{eq:tensor_ode}
+\end{equation}
+
+\subsubsection{Drag Force}
+The drag force is a nonlinear vector field:
+\begin{equation}
+    \vec{F}_d = -\frac{1}{2} \rho(T) \, C_d(\|\vec{V}\|, Re) \, S \, \|\vec{V}\| \, \vec{V}, \quad \|\vec{V}\| = \sqrt{\vec{V} \cdot \vec{V}}
+    \label{eq:tensor_drag}
+\end{equation}
+where the drag coefficient $C_d$ depends on the Reynolds number $Re = \frac{\rho(T) \|\vec{V}\| D}{\mu}$:
+\begin{equation}
+    C_d = 0.36 + \frac{24}{Re} + \frac{6}{1 + \sqrt{Re}}.
+    \label{eq:tensor_cd}
+\end{equation}
+
+\subsubsection{Magnus Force}
+The Magnus force is expressed using the cross product:
+\begin{equation}
+    \vec{F}_m = C_m \, (\vec{\omega} \times \vec{V}), \quad C_m = \frac{1}{2} \rho(T) \, S \, R^2 \, C_{l1} \, \left( \frac{\|\vec{\omega}\|}{\|\vec{V}\|} \right)^{0.4} \|\vec{V}\|
+    \label{eq:tensor_magnus}
+\end{equation}
+where $\vec{\omega} \times \vec{V}$ is the antisymmetric cross product, representable via the Levi-Civita symbol $\epsilon_{ijk}$:
+\begin{equation}
+    (\vec{\omega} \times \vec{V})_i = \sum_{j,k} \epsilon_{ijk} \, \omega_j \, V_k.
+    \label{eq:tensor_cross}
+\end{equation}
+
+\subsubsection{Gravity Force}
+\begin{equation}
+    \vec{F}_g = -m g \, \hat{e}_y, \quad \hat{e}_y = \begin{pmatrix} 0 \\ 1 \\ 0 \end{pmatrix}.
+    \label{eq:tensor_gravity}
+\end{equation}
+
+\subsubsection{Initial Conditions}
+The initial state vector $\vec{Y}_0$ is:
+\begin{equation}
+    \vec{Y}_0 = \begin{pmatrix} \vec{0} \\ \vec{V}_{b0} \end{pmatrix}, \quad \vec{V}_{b0} = V_{bi} \, \hat{u}(\theta, e, m, M)
+    \label{eq:tensor_initial}
+\end{equation}
+where $V_{bi} = (1 - 35.56 \cdot \text{miss}) \sqrt{V_{bfn}^2 + V_{bfp}^2}$ and the unit direction vector $\hat{u}$ is:
+\begin{equation}
+    \hat{u} = \begin{pmatrix}
+    \cos\left( \theta + \arctan\left( \frac{\sin \theta \cdot (1 + \frac{m}{M})}{(1 + e) \cos \theta \cdot (1 + \frac{m}{M} + \frac{5}{2})} \right) \right) \\
+    \sin\left( \theta + \arctan\left( \frac{\sin \theta \cdot (1 + \frac{m}{M})}{(1 + e) \cos \theta \cdot (1 + \frac{m}{M} + \frac{5}{2})} \right) \right) \\
+    0
+    \end{pmatrix}.
+    \label{eq:tensor_direction}
+\end{equation}
+The initial spin vector $\vec{\omega}_0$ is:
+\begin{equation}
+    \vec{\omega}_0 = \begin{pmatrix}
+    0 \\
+    V_{b0y} \sin(\alpha_{cp} - \gamma_{fp}) \cdot \text{SpinLiftCoeff} \\
+    V_{b0x} \sin(\theta) \cdot \text{SpinCoeff}
+    \end{pmatrix}.
+    \label{eq:tensor_spin}
+\end{equation}
 
 
 \section{External Function for the Ordinary Differential Equation solver}
@@ -506,7 +614,7 @@ w_{\overrightarrow{k}} = V_{b0}\overrightarrow{i} \cdot sin(\theta)  \cdot Sac.c
 
 
 \begin{figure} [H]\centering
-\includegraphics[width=5cm,keepaspectratio, ]{../sci/img/IMG_2428.jpg}
+\includegraphics[width=5cm,keepaspectratio, ]{../sci/img/IMG_2428.jpeg}
 \caption{Audio Board}
 \label{fig:hw6}
 \end{figure}
