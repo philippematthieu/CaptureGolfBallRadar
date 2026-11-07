@@ -23,7 +23,7 @@ g = 9.81  # Accélération gravitationnelle (m/s²)
 
 # Coefficients aérodynamiques
 C_d0 = 0.36  # Coefficient de traînée de base (relation de White, comme Golfball.sci)
-C_l = 0.15   # Coefficient de portance (Magnus)
+C_l = 0.64   # Coefficient de portance Magnus = Cl1('D') du driver dans Golfball.sci (GetSac)
 
 # Paramètres du club (Driver)
 club_type = 'D'
