@@ -43,8 +43,8 @@ function [s2Centre, s2f,MaxFreq] = plotFFT(s2,Fs)
     [s2f zf] = filter(wft,1,s2Centre); // filtrage du signal par le filtre passe bande
 
     //densite spectrale 
-    s2_fft = (fft(s2Centre));
-    s2f_fft = fft(s2f);
+    s2_fft = fft(s2Centre.*window('hn',N));   // fenêtrage Hann (anti-leakage)
+    s2f_fft = fft(s2f.*window('hn',N));
     conjuguee_s2 = conj(s2_fft);
     conjuguee_s2f = conj(s2f_fft);
 
@@ -117,6 +117,7 @@ function [tt,f,M1] = animFFT(s2,Fs,nbEchantillon,pas,anim,seuil)
     tau = 1 / Fs; // interval temporel de l'echantillonnage
     t = (0:N - 1) * tau; // construction du vecteur temps
     f=Fs*(0:(nbEchantillon)-1)/nbEchantillon;
+    pas = min(pas, max(1, round(nbEchantillon/2))); // recouvrement >= 50% (hop = N/2)
     s2Centre = s2;// - mean(s2); // recentrage du signal autour de l'axe abscice.
     b=modulo(N,nbEchantillon);
     s2Centre=[s2Centre, zeros(nbEchantillon - b,1)'];
@@ -146,7 +147,7 @@ function [tt,f,M1] = animFFT(s2,Fs,nbEchantillon,pas,anim,seuil)
             e = gce();
         end;
         //densite spectrale 
-        s2_fft = (fft(s2Centre(1,ii:ii + nbEchantillon)));
+        s2_fft = fft(s2Centre(1,ii:ii + nbEchantillon).*window('hn',nbEchantillon)); // fenêtrage Hann (anti-leakage)
         if max(real(s2_fft)) < seuil then
             s2_densite = zeros(s2_fft);
         else
@@ -231,6 +232,7 @@ function [M1, tt, f] = animDensite(s2,Fs,nbEchantillon,pas,anim,seuil1,normalize
     tau = 1 / Fs; // interval temporel de l'echantillonnage
     t = (0:N - 1) * tau; // construction du vecteur temps
     f=Fs*(0:(nbEchantillon)-1)/nbEchantillon;
+    pas = min(pas, max(1, round(nbEchantillon/2))); // recouvrement >= 50% (hop = N/2)
     s2Centre = s2 - mean(s2); // recentrage du signal autour de l'axe abscice.
     //=modulo(N,nbEchantillon);
     //s2Centre=[s2Centre, zeros(nbEchantillon - b,1)'];//     s2Centre=[s2Centre, zeros(2*(nbEchantillon - b),1)'];
@@ -310,6 +312,7 @@ function [M1, tt, f] = animDensite2(s2,Fs,nbEchantillon,pas,anim,seuil1,normaliz
     tau = 1 / Fs; // interval temporel de l'echantillonnage
     t = (0:N - 1) * tau; // construction du vecteur temps
     f=Fs*(0:(nbEchantillon)-1)/nbEchantillon;
+    pas = min(pas, max(1, round(nbEchantillon/2))); // recouvrement >= 50% (hop = N/2)
     s2Centre = s2 - mean(s2); // recentrage du signal autour de l'axe abscice.
     M1=[];
     tt=[];
@@ -318,7 +321,7 @@ function [M1, tt, f] = animDensite2(s2,Fs,nbEchantillon,pas,anim,seuil1,normaliz
         s2CentreBW = s2CentreBW.*window('hn',length(s2CentreBW));// BARTLETT WELCH
         [s2_densite,F]=frpowerspec(s2CentreBW++0.000000000001*%i);
         s2_densite = dbv(real(s2_densite));
-        a = find(s2_densite) < seuil1;
+        a = find(s2_densite < seuil1); // seuillage en dB (avant : find() sur les indices, inopérant)
         s2_densite(a) = -1000;
         if (normalize == 0) then
             s2_densite = s2_densite;
@@ -351,6 +354,7 @@ function [M1, tt, f] = animDensite3(s2,Fs,nbEchantillon,pas,anim,seuil1,normaliz
     tau = 1 / Fs; // interval temporel de l'echantillonnage
     t = (0:N - 1) * tau; // construction du vecteur temps
     f=Fs*(0:(nbEchantillon)-1)/nbEchantillon;
+    pas = min(pas, max(1, round(nbEchantillon/2))); // recouvrement >= 50% (hop = N/2)
     s2Centre = s2 - mean(s2); // recentrage du signal autour de l'axe abscice.
     M1=[];
     tt=[];
@@ -359,7 +363,7 @@ function [M1, tt, f] = animDensite3(s2,Fs,nbEchantillon,pas,anim,seuil1,normaliz
         s2CentreBW = s2CentreBW.*window('hn',length(s2CentreBW));// BARTLETT WELCH
         [s2_densite,F]=frpowerspec(s2CentreBW+0.000000000001*%i);
         s2_densite = (real(s2_densite));
-        a = find(s2_densite) < seuil1;
+        a = find(dbv(s2_densite) < seuil1); // seuillage en dB (avant : find() sur les indices, inopérant)
         s2_densite(a) = -1000;
         if (normalize == 0) then
             s2_densite = s2_densite;
@@ -392,6 +396,7 @@ function [M1,tt,f] = animHilbert(s2,Fs,nbEchantillon,pas,anim,seuil)
     tau = 1 / Fs; // interval temporel de l'echantillonnage
     t = (0:N - 1) * tau; // construction du vecteur temps
     f=Fs*(0:(nbEchantillon)-1)/nbEchantillon;
+    pas = min(pas, max(1, round(nbEchantillon/2))); // recouvrement >= 50% (hop = N/2)
     s2Centre = s2;// - mean(s2); // recentrage du signal autour de l'axe abscice.
     b=modulo(N,nbEchantillon);
     s2Centre=[s2Centre, zeros(nbEchantillon - b,1)'];
@@ -1206,29 +1211,12 @@ endfunction
 
 
 function [Rxx] = autocorrelation(x)
-    //Autocorrelation of a given Input Sequence
-    //Finding out the period of the signal using autocorrelation technique
-
+    // Autocorrélation par FFT (Wiener-Khinchin) : Rxx = IFFT(|FFT(x)|^2), O(N log N)
+    // (remplace l'ancienne triple boucle O(N^2)); sortie 2L-1 points, max au centre (lag 0) = période
     L = length(x);
-    h = zeros(1,L);
-    for i = 1:L
-        h(L-i+1) = x(i);
-    end
-    N = 2*L-1;
-    Rxx = zeros(1,N);
-    for i = L+1:N
-        h(i) = 0;
-    end
-    for i = L+1:N
-        x(i) = 0;
-    end
-    for n = 1:N
-        for k = 1:N
-            if(n >= k)
-                Rxx(n) = Rxx(n)+x(n-k+1)*h(k);
-            end
-        end
-    end
+    Nfft = 2^nextpow2(2*L-1);        // zero-padding => corrélation linéaire
+    Rxx = real(ifft(abs(fft(x,Nfft)).^2));
+    Rxx = Rxx(1:2*L-1);
     disp('Auto Correlation Result is')
     Rxx
     disp('Center Value is the Maximum of autocorrelation result')
@@ -1238,11 +1226,11 @@ function [Rxx] = autocorrelation(x)
 endfunction
 
 function y=getDistance(u,club)
-    [vBall, vBallCorrigee, vClub, SmashFactor,thetaLoft, ShafLeanImp, launchAngle, SpinZC, SpinZM, SpinLR, gamaFacePath,PointShoot] = Info2(u,club);
+    Fs = 44100;   // Fs défini avant usage (avant : utilisé non défini)
+    [vBall, vBallCorrigee, vClub, SmashFactor,thetaLoft, ShafLeanImp, launchAngle, SpinZC, SpinZM, SpinLR, gamaFacePath,PointShoot] = Info2(u,club,Fs); // Fs en argument (avant : appel à 2 args)
     [wft1,wfm,fr] = wfir('bp',256,[(vBall*19.49-1000)/Fs (vBall*19.49+1000)/Fs ],'hm',[-1 -1]);
     up=[u(PointShoot:$) zeros(1,2^ceil(log2(size(u(PointShoot:$),2)))-size(u(PointShoot:$),2))];
     y=filter(wft1,1,up);
-    Fs = 44100;
     N = size(y,2);
     TailleWin = 256;
     n = N/TailleWin;
@@ -1252,16 +1240,12 @@ function y=getDistance(u,club)
         s2_fft = abs(real(fft(y((1+ii*TailleWin):((ii+1)*TailleWin)))));
         [m(ii+1),k(ii+1)] = max(s2_fft);
     end;
-    pause
 endfunction
 
 
 function xk=getArmonicFFT(u, niem)
-    N=size(u,2);
-    n = 1:N;
-    for k = 1:N
-        xk(1,k) =  sum(u.*exp((-2*%pi*%i/N).*n.*k));
-    end
+    // DFT par FFT (remplace la boucle O(N^2) : xk(k) = sum u(n) exp(-2i pi n k/N))
+    xk = fft(u);
 endfunction
 
 
