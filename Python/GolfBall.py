@@ -84,8 +84,8 @@ x0, y0, z0 = 0, 0.1, 0  # y0 légèrement au-dessus du sol
 # =============================================
 
 def flight_ode(y, t, m, diam, rho_air, mu, C_d0, C_l, g):
-    # Déballage des variables
-    x, y, z, vx, vy, vz, wx, wy, wz = y
+    # Déballage des variables (cl1 en 10e position, mis a 0 apres un rebond comme v(10) dans Golfball.sci)
+    x, y, z, vx, vy, vz, wx, wy, wz, cl1 = y
 
     # Norme de la vitesse
     v_norm = np.sqrt(vx ** 2 + vy ** 2 + vz ** 2)
@@ -104,7 +104,7 @@ def flight_ode(y, t, m, diam, rho_air, mu, C_d0, C_l, g):
     spin_norm = np.sqrt(wx ** 2 + wy ** 2 + wz ** 2)
     if v_norm > 0:
         # Coefficient de Magnus (simplifié)
-        C_m = C_l * (diam / 2) ** 2 * (spin_norm / v_norm) ** 0.4  # facteur (diam/2)^2 comme Golfball.sci
+        C_m = cl1 * (diam / 2) ** 2 * (spin_norm / v_norm) ** 0.4  # facteur (diam/2)^2 comme Golfball.sci (cl1 = Cl1, 0 apres rebond)
         F_M = 0.5 * rho_air * C_m * A * v_norm * np.array([
             wy * vz - wz * vy,
             wz * vx - wx * vz,
@@ -129,14 +129,14 @@ def flight_ode(y, t, m, diam, rho_air, mu, C_d0, C_l, g):
     dvydt = (F_D[1] + F_M[1] + F_G[1]) / m
     dvzdt = (F_D[2] + F_M[2]) / m
 
-    return [dxdt, dydt, dzdt, dvxdt, dvydt, dvzdt, dWdt[0], dWdt[1], dWdt[2]]
+    return [dxdt, dydt, dzdt, dvxdt, dvydt, dvzdt, dWdt[0], dWdt[1], dWdt[2], 0]  # cl1 constant entre les rebonds
 
 # =============================================
 # MODÈLE DE REBOND (basé sur Penner)
 # =============================================
 
 def handle_bounce(y, t):
-    x, y_pos, z, vx, vy, vz, wx, wy, wz = y
+    x, y_pos, z, vx, vy, vz, wx, wy, wz, cl1 = y
 
     # Vitesse d'impact
     vi = np.sqrt(vx ** 2 + vz ** 2)
@@ -190,14 +190,14 @@ def handle_bounce(y, t):
     # Position après rebond (légèrement au-dessus du sol)
     y_new = 0.01
 
-    return [x, y_new, z, vx_new, vy_new, vz_new, wx_new, wy_new, wz_new]
+    return [x, y_new, z, vx_new, vy_new, vz_new, wx_new, wy_new, wz_new, 0]  # cl1 = 0 : plus d'effet Magnus apres rebond (Pos(10,$)=0 dans Golfball.sci)
 
 # =============================================
 # MODÈLE DE ROULEMENT
 # =============================================
 
 def handle_rolling(y, t):
-    x, y_pos, z, vx, vy, vz, wx, wy, wz = y
+    x, y_pos, z, vx, vy, vz, wx, wy, wz, cl1 = y
 
     # Coefficient de frottement (green)
     rhog = 0.131
@@ -225,7 +225,7 @@ def handle_rolling(y, t):
     # Spin (on néglige la décélération du spin en roulement)
     wx_new, wy_new, wz_new = 0, 0, 0
 
-    return [x_new, y_new, z_new, vx_new, vy_new, vz_new, wx_new, wy_new, wz_new]
+    return [x_new, y_new, z_new, vx_new, vy_new, vz_new, wx_new, wy_new, wz_new, 0]
 
 # =============================================
 # SIMULATION COMPLÈTE (VOL + REBONDS + ROULEMENT)
@@ -233,7 +233,7 @@ def handle_rolling(y, t):
 
 def simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3):
     # Conditions initiales
-    y0 = [x0, y0, z0, vx0, vy0, vz0, spin_x, spin_y, spin_z]
+    y0 = [x0, y0, z0, vx0, vy0, vz0, spin_x, spin_y, spin_z, C_l]  # C_l = Cl1 en derniere position (mis a 0 apres rebond)
     t = np.arange(0, t_max, dt)
     y = np.zeros((len(t), len(y0)))
     y[0] = y0
@@ -279,7 +279,7 @@ def simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3):
 # =============================================
 
 t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3)
-x, y_pos, z, vx, vy, vz, wx, wy, wz = y.T
+x, y_pos, z, vx, vy, vz, wx, wy, wz, cl1 = y.T
 
 # =============================================
 # ANIMATION 3D AVEC MATPLOTLIB
@@ -361,7 +361,7 @@ def update(frame):
     # Portance (Magnus)
     spin_norm = np.sqrt(wx[frame] ** 2 + wy[frame] ** 2 + wz[frame] ** 2)
     if v_norm > 0 and spin_norm > 0:
-        F_M_norm = 0.5 * rho_air * C_l * A * v_norm * (diam / 2) ** 2 * (spin_norm / v_norm) ** 0.4
+        F_M_norm = 0.5 * rho_air * cl1[frame] * A * v_norm * (diam / 2) ** 2 * (spin_norm / v_norm) ** 0.4
         F_Mx = F_M_norm * (wy[frame] * vz[frame] - wz[frame] * vy[frame])
         F_My = F_M_norm * (wz[frame] * vx[frame] - wx[frame] * vz[frame])
         F_Mz = F_M_norm * (wx[frame] * vy[frame] - wy[frame] * vx[frame])
