@@ -61,7 +61,7 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
     // 1 rad/sec? The answer is 9.54929659643 RPM
     // spin rate in rpm 
     // ou approximation Spin = Coef * V0 * sin(thetaLoft)
-    // on considerera que la décélération de W est negligeable sur le temps de vol.
+    // la décélération de W est prise en compte en vol : dW/dt = -1e-5 * W * Vm (voir flightg)
     // On recalculera le spin au contact du sol.
     //
     // nombre de Reynolds pour un golfeur professionnel 220000, (src
@@ -159,7 +159,6 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
     miss            = 0;                                    // Point d''impact sur le club en cm
     T               = 20 + 273.15; 
     rho_air         = 1.292*273.15/T;                       // kg/m^3 air density
-    A               = %pi*(diam/2)^2;                       // Section en m^2 %pi*d^2
     //% %%%%%%%%%%%%%%%%%%%%%%%%
     // 
 
@@ -582,8 +581,6 @@ function vprime=rolling(t,v)
      
     //% %%%%%%%%%%%%%%
     // Constantes
-    m = 0.04545;                // en kg
-    T = 20 + 273.15; 
     rhog = 0.131;               // kg/m^3 
     g = 9.81;                   // m/s^2
     vnorm = sqrt(v(6)^2+v(2)^2+v(4)^2); if vnorm < 1e-6 then vnorm = 1e-6; end; // garde anti-division par zero
@@ -647,7 +644,7 @@ function [V0Clubkmh,dynamicLoft_deg, SpinZ] = BallGolf(V0Ballkmh,Psi,miss,e,m,M)
     // tan(Psi)*D*A^2 + (D-1)*A + tan(Psi) = 0
     Psi_rd = Psi *%pi/180;//Passage en radian, pour les formules
     V0Ballms = V0Ballkmh *1000/3600;
-    a = tan(Psi_rd)*D;
+    a = tan(Psi_rd)*D; if abs(a) < 1e-12 then a = 1e-12; end; // garde anti-division par zero si Psi = 0
     b = (D-1);
     c = tan(Psi_rd);
     // a*A^2 + b*A + c = 0 ==>
@@ -694,7 +691,7 @@ function [thetaLoft, ShafLeanImp, launchAngle, SpinZ, gamaFacePath] = LaunchAngl
 //    V0Ballms^2*Km^-2        =  V0Clubms^2*(Ke^2 - sin(thetaLoft)^2*Ke^2 + sin(thetaLoft)^2* (-Kp)^2);
 //    (V0Ballms/(V0Clubms*Km))^2 - Ke^2 = sin(thetaLoft)^2*(-Ke^2 + (-Kp)^2);
 //    ((v0Ballms/(V0Clubms*Km))^2 - Ke^2)/(-Ke^2 + (-Kp)^2) = sin(thetaLoft)^2;
-    thetaLoft = asin(min(1, sqrt(abs( (SmashFactor^2-Ke^2) / (Kp^2-Ke^2)) ))); // min(1,..) : garde du domaine de asin
+    thetaLoft = asin(min(1, sqrt(abs( (SmashFactor^2-Ke^2) / (Kp^2-Ke^2)) ))); // min(1,..): garde domaine asin ; abs(): si SmashFactor < Ke le coup est incoherent, abs evite le NaN mais le resultat n'a plus de sens physique
     
     V0Ballbfnms     =  V0Clubms * cos(thetaLoft) * Ke ;     // Vitesse longitudinale dans le referentiel de decollage après impact (ref: The physics of golf: The optimum loft of a driverA. Raymond Penner)
     V0Ballbfpms     = -V0Clubms * sin(thetaLoft) * Kp;     // Vitesse perpendiculaire dans le referentiel de decollage après impact
