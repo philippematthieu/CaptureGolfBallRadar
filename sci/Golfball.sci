@@ -69,7 +69,7 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
     // CM = 1/(2 + (v/R*sin)) 
     // CD = C + (1/(A + (B *v/R*? *sin(pi/2))^5/2))^2/5
     // Re = rho*UD/µ = VitesseBalle*Diametre/1.5e-5 
-    // µ = 1.5x10^-6 m^2/s
+    // µ = 1.5e-5 m^2/s (viscosité cinématique de l'air à 20°C)
     // G. Palmer, "Physics for game programmers," Apress, 2005. donne ls CL = r.w.sin(alpha))/V (w en rad/s, V en m/s, alpha angle en tre w et V = pi/2)
     // V= C*(1-Femise/Fpercue)/cos(theta)
     // theta = angle de propagation
@@ -144,8 +144,6 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
     //    Kp = 1/(1+m/Sac.Poids(Sac.Type == '7') + 5/2);
     
     Sac = GetSac();
-    TabBallSpeed    = [223.7    ; 205     ; 197.9 ; 180.3    ; 175.4  ; 167.4   ; 160.9  ; 149.7 ; 138.4   ; 111    ; 108.7    ; 104   ; 10]*1000/3600; // en m/s
-    TabBallSpin     = [2628     ; 4501    ; 4693  ; 5081     ; 5943   ; 6699    ; 7494   ; 7589  ; 8403    ; 9300   ; 9600     ; 9300  ; 1]/9.54929659643;  // transforme  en rad / s
      
     //% %%%%%%%%%%%%%%%%%%%%%%%%%
     // 
@@ -164,7 +162,6 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
     A               = %pi*(diam/2)^2;                       // Section en m^2 %pi*d^2
     //% %%%%%%%%%%%%%%%%%%%%%%%%
     // 
-    Inertia = (2/5)*m*(diam/2)^2;
 
     V0Ballbfnms     = V0Clubms * cos(thetaLoft)*(1+e)/(1+m/M) ;     // Vitesse longitudinale dans le referentiel de decollage après impact (ref: The physics of golf: The optimum loft of a driverA. Raymond Penner)
     V0Ballbfpms     = -V0Clubms * sin(thetaLoft)/(1+m/M + 5/2);     // Vitesse perpendiculaire dans le referentiel de decollage après impact
@@ -218,7 +215,6 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
     //Init0 = [V0initms, W',Sac.Cm(Type == Club)]'; 
     Init0 = [V0initms, W',Sac.Cl1(Sac.Type == Club), m, diam]'; 
     T0 = 0; 
-    T=[]; 
     t=[];
     X = []; 
     YE = []; 
@@ -229,9 +225,10 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // resolution de l'angle  des rebonds. ///
          
-         vi = sqrt(Pos(2,$)^2+Pos(6,$)^2); // calcul de la norme de la dernière vitesseplane avant Impact sol du rebond
+         vi = sqrt(Pos(2,$)^2+Pos(6,$)^2); if vi < 1e-6 then vi = 1e-6; end; // norme vitesse plane avant impact (garde anti-div/0)
          viy = Pos(4,$);
-         ImpactAngle = atan(abs(vi/viy)); // prendre vi = sqrt(vx^2+vz^2))
+         viyAbs = abs(viy); if viyAbs < 1e-6 then viyAbs = 1e-6; end; // garde anti-division par zero
+         ImpactAngle = atan(vi/viyAbs); // prendre vi = sqrt(vx^2+vz^2))
          ThetaRebond = 0.2687807 * sqrt(vi^2+viy^2)/18.6*(ImpactAngle/0.7749262 ); // en m/s et degre
          vixprime = vi * cos(ThetaRebond) - abs(viy) * sin(ThetaRebond);
          viyprime = vi * sin(ThetaRebond) + abs(viy) * cos(ThetaRebond); 
@@ -241,7 +238,8 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
                eball = 0.120;
          end;
          muFriction = 0.40;
-         muFrictionCritic = 2 * (vixprime + (diam/2) * Pos(9,$)) / (7*(1+eball) * abs(viyprime));
+         viypAbs = abs(viyprime); if viypAbs < 1e-6 then viypAbs = 1e-6; end; // garde anti-division par zero
+         muFrictionCritic = 2 * (vixprime + (diam/2) * Pos(9,$)) / (7*(1+eball) * viypAbs);
          if (muFriction < muFrictionCritic),
               vrxprime = vixprime - muFriction * abs(viyprime) *(1 + eball);
               vryprime = eball * abs(viyprime);
@@ -265,7 +263,7 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
         Pos(7,$) = 0;                       // nouveau spin à 0 pour le moment, mais à recalculer selon le modèle de terrain
         Pos(8,$) = 0;                       // je considère que le spin Wrx est nul... plus de lift donc.
         Pos(9,$) = Wr;                      // diminution du spin en vol....negligeable        
-        Pos(10,$) = Sac.Cm(Sac.Type == Club);   // diminution du Cm en vol....negligeable, Mais il faudrait avoir un meilleur model car le Cm doit varier, puisque la vitesse  varie !!!
+        Pos(10,$) = 0;   // apres rebond : plus d'effet Magnus (balle trop lente ou en roulement), Cl1 mis a zero
         Init0 =  Pos(:,$); 
         YE = [YE ,Pos];                     // cumule des points
         if ii == 1, 
@@ -282,7 +280,6 @@ function [t,VOL,Res] = Golfball(Tfin, V0Club, Club, alphaClubPath,gamaFacePath,S
     Pos(4,$) = 0;                            // vitesse Y = 0
     Init0 = Pos(:,$); 
     T0 = 0; 
-    T=[]; 
     [Pos, rd] = ode('root',Init0, T0, 0:0.1:Tfin, rolling, 1, events2); // Nouveau calcul de modelisation du roulage sur green
     RD = [RD;rd];
     YE = [YE ,Pos];
@@ -484,9 +481,9 @@ function [value] = events(t,x)
     // soit x(2), x(4) ou x(6) à zero ou inférieur à un seuil de frottement.
     
     if (x(3) < AltiSol(x(1),x(5))) then 
-        value = 0 ;// pour Y il vaut mieux des valeurs < 0     
+        value = x(3) - AltiSol(x(1),x(5)) ; // sous le sol : negatif     
     else
-        value = x(3) ; // pour Y il vaut mieux des valeurs < 0           
+        value = x(3) - AltiSol(x(1),x(5)) ; // au-dessus du sol : positif (changement de signe a l'impact)           
     end;
 endfunction
 
@@ -499,8 +496,8 @@ function Cm = getCm(Vm,Wm,v10)
     // Wm 
     // v10 = CM
     //Cm = Vm/(5*Wm);
-    Cm = v10; // calcul avec sac.Cm
-    Cm = v(10) * ((diam/2) * abs(Wm  / Vm)^0.4); // calcul avec sac.Cl1
+    if Vm < 1e-6 then Vm = 1e-6; end;   // garde anti-division par zero
+    Cm = v10 * ((diam/2) * abs(Wm/Vm)^0.4); // Smits and Smith (1994) : Cm = Cl1*(r*|Wm|/Vm)^0.4, avec v10 = sac.Cl1
 endfunction
 
 ////////////////////////////////
@@ -513,10 +510,8 @@ function vprime=flightg(t,v)
     diam = v(12);//0.043;                     // Diametre Balle
     A = %pi*(diam/2)^2;               // Section en m^2 %pi*r^2
     Vm = sqrt(v(2)^2+v(4)^2+v(6)^2);  // U
+    if Vm < 1e-6 then Vm = 1e-6; end;   // garde anti-division par zero
     Wm = sqrt(v(7)^2+v(8)^2+v(9)^2);  // nu en rad/s
-    // %pi * Nrpm * diam / 60; // 
-    Vp = %pi * 9.549296596425383 * Wm * diam / 60; // Peripheral velocity
-    // Vp/Vm;
     //% %%%%%%%%%%%%%%
     // Drag de l''AIR en vitesse vectorielle
     // Calcul du CD et REynolds
@@ -564,9 +559,9 @@ function vprime=flightg(t,v)
     vprime(4) = -g+(Fdy + Fmy)/m;// Vy = integral(Accely), acceleration sur la hauteur
     vprime(5) = v(6);       // z = integral(Vz)
     vprime(6) = (Fdz + Fmz)/m;// acceleratin du deplacement lateral
-    vprime(7) = 0;          // calcul de la diminution du Spin deceleration, considere comme nul
-    vprime(8) = 0;          // calcul de la diminution du Spin deceleration, considere comme nul
-    vprime(9) = -0;          // calcul de la diminution du Spin deceleration, considere comme nul
+    vprime(7) = -1e-5 * v(7) * Vm;   // deceleration du spin (frottement aerodynamique), comme dans GolfBall.py
+    vprime(8) = -1e-5 * v(8) * Vm;
+    vprime(9) = -1e-5 * v(9) * Vm;
     vprime(10) = 0;         // 
     vprime(11) = 0;         // 
     vprime(12) = 0;         // 
@@ -576,7 +571,7 @@ endfunction
 
 //// ////////////////////////////
 function [value] = events2(t,x)
-    value = x(2) - 0;       // arrêt d'intégration si la vitesse dans le sens du déplacement est null v(X) < seuil
+    value = sqrt(x(2)^2 + x(6)^2) - 0.03;  // arrêt d'intégration si vitesse horizontale < 3 cm/s
 endfunction
 
 //// ////////////////////////////
@@ -591,15 +586,15 @@ function vprime=rolling(t,v)
     T = 20 + 273.15; 
     rhog = 0.131;               // kg/m^3 
     g = 9.81;                   // m/s^2
-    A = %pi*(diam/2)^2;         // Section en m^2 %pi*r^2
+    vnorm = sqrt(v(6)^2+v(2)^2+v(4)^2); if vnorm < 1e-6 then vnorm = 1e-6; end; // garde anti-division par zero
     
     //vprime=zeros(10,1); 
     vprime(1)= v(2);             // 
-    vprime(2)= -(5/7)*rhog*g*v(2)/sqrt(v(6)^2+v(2)^2+v(4)^2); // 
+    vprime(2)= -(5/7)*rhog*g*v(2)/vnorm; // 
     vprime(5)= v(6);                                   // 
-    vprime(6)= -(5/7)*rhog*g*v(6)/sqrt(v(6)^2+v(2)^2+v(4)^2); //     
+    vprime(6)= -(5/7)*rhog*g*v(6)/vnorm; //     
     vprime(3)= v(4);            // y' = x(4), vitesse actuelle
-    vprime(4)= -(5/7)*rhog*g*dAltiSol(v(2),v(6))/sqrt(v(6)^2+v(2)^2+v(4)^2);//dAltiSol(vprime(2),vprime(6))*.1;// Vy = integral(Accely)
+    vprime(4)= -(5/7)*rhog*g*dAltiSol(v(2),v(6))/vnorm;//dAltiSol(vprime(2),vprime(6))*.1;// Vy = integral(Accely)
     vprime(7)=0;                // calcul de la diminution du Spin deceleration, considere comme nul
     vprime(8)=0;                // calcul de la diminution du Spin deceleration, considere comme nul
     vprime(9)=0;                // calcul de la diminution du Spin deceleration, considere comme nul
@@ -614,7 +609,7 @@ function [V0Clubkmh,dynamicLoft_deg, SpinZ] = BallGolf(V0Ballkmh,Psi,miss,e,m,M)
     // la balle et de l'angle de décollage par rapport au sol.
     // V0Ballms vitesse de la balle en km/h
     // Psi : angle de decollage de la balle entree en degre
-    // miss : decentrage de la ballse sur le club, en metre
+    // miss : decentrage de la balle sur le club, en cm (coherent avec le facteur 1-0.3556*miss)
     // e : smash factor
     // m : poid de la balle en kg
     // M : poid du club en kg
@@ -699,7 +694,7 @@ function [thetaLoft, ShafLeanImp, launchAngle, SpinZ, gamaFacePath] = LaunchAngl
 //    V0Ballms^2*Km^-2        =  V0Clubms^2*(Ke^2 - sin(thetaLoft)^2*Ke^2 + sin(thetaLoft)^2* (-Kp)^2);
 //    (V0Ballms/(V0Clubms*Km))^2 - Ke^2 = sin(thetaLoft)^2*(-Ke^2 + (-Kp)^2);
 //    ((v0Ballms/(V0Clubms*Km))^2 - Ke^2)/(-Ke^2 + (-Kp)^2) = sin(thetaLoft)^2;
-    thetaLoft = asin(sqrt(abs( (SmashFactor^2-Ke^2) / (Kp^2-Ke^2)) ));
+    thetaLoft = asin(min(1, sqrt(abs( (SmashFactor^2-Ke^2) / (Kp^2-Ke^2)) ))); // min(1,..) : garde du domaine de asin
     
     V0Ballbfnms     =  V0Clubms * cos(thetaLoft) * Ke ;     // Vitesse longitudinale dans le referentiel de decollage après impact (ref: The physics of golf: The optimum loft of a driverA. Raymond Penner)
     V0Ballbfpms     = -V0Clubms * sin(thetaLoft) * Kp;     // Vitesse perpendiculaire dans le referentiel de decollage après impact
@@ -710,5 +705,5 @@ function [thetaLoft, ShafLeanImp, launchAngle, SpinZ, gamaFacePath] = LaunchAngl
     thetaLoft   = thetaLoft *180/%pi;
     launchAngle = launchAngle*180/%pi;
     ShafLeanImp = thetaLoft - Sac.Loft(Sac.Type == TypeClub); // et transformation en radian
-    gamaFacePath = asin(SpinLR / (v0Ballms * sin(launchAngle) * Sac.coeffSpinLift(Sac.Type == TypeClub)))*180/%pi;
+    gamaFacePath = asin(min(1, abs(SpinLR / (v0Ballms * sin(launchAngle) * Sac.coeffSpinLift(Sac.Type == TypeClub)))))*180/%pi; // min(1,abs(..)) : garde du domaine de asin
 endfunction

@@ -17,12 +17,12 @@ A = np.pi * (diam / 2) ** 2  # Section transversale (m²)
 I = (2 / 5) * m * (diam / 2) ** 2  # Moment d'inertie (kg·m²)
 
 # Propriétés de l'air
-rho_air = 1.292  # Densité (kg/m³) à 20°C
+rho_air = 1.292 * 273.15 / (20 + 273.15)  # Densité (kg/m³) à 20°C — même formule que Golfball.sci
 mu = 1.5e-5  # Viscosité dynamique (m²/s)
 g = 9.81  # Accélération gravitationnelle (m/s²)
 
 # Coefficients aérodynamiques
-C_d0 = 0.25  # Coefficient de traînée de base
+C_d0 = 0.36  # Coefficient de traînée de base (relation de White, comme Golfball.sci)
 C_l = 0.15   # Coefficient de portance (Magnus)
 
 # Paramètres du club (Driver)
@@ -73,8 +73,8 @@ vz0 = -V0_ball_ms * np.cos(launch_angle) * np.sin(alpha_club_path)
 
 # Spin initial (rad/s)
 spin_x = 0
-spin_y = V0_ball_ms * np.sin(gama_face_path) * coeff_spin_lift
-spin_z = V0_ball_ms * np.sin(theta_loft) * coeff_spin
+spin_y = V0_ball_ms * np.sin(launch_angle) * np.sin(gama_face_path) * coeff_spin_lift / 9.54929659643  # sur Vy, converti rpm->rad/s comme Golfball.sci
+spin_z = V0_ball_ms * np.cos(launch_angle) * np.sin(theta_loft) * coeff_spin / 9.54929659643  # sur Vx, converti rpm->rad/s comme Golfball.sci
 
 # Position initiale
 x0, y0, z0 = 0, 0.1, 0  # y0 légèrement au-dessus du sol
@@ -93,11 +93,8 @@ def flight_ode(y, t, m, diam, rho_air, mu, C_d0, C_l, g):
     # Nombre de Reynolds
     Re = rho_air * v_norm * diam / mu
 
-    # Coefficient de traînée (modèle de White pour Re > 1e5)
-    if Re > 1e5:
-        C_d = C_d0 + 0.01 * (Re / 1e5 - 2)
-    else:
-        C_d = C_d0 + 24 / Re + 6 / (1 + np.sqrt(Re))
+    # Coefficient de traînée (relation de White, identique à Golfball.sci)
+    C_d = C_d0 + 24 / Re + 6 / (1 + np.sqrt(Re))
 
     # Force de traînée
     F_D = -0.5 * rho_air * C_d * A * v_norm * np.array([vx, vy, vz])
@@ -107,7 +104,7 @@ def flight_ode(y, t, m, diam, rho_air, mu, C_d0, C_l, g):
     spin_norm = np.sqrt(wx ** 2 + wy ** 2 + wz ** 2)
     if v_norm > 0:
         # Coefficient de Magnus (simplifié)
-        C_m = C_l * (diam / 2) * (spin_norm / v_norm) ** 0.4
+        C_m = C_l * (diam / 2) ** 2 * (spin_norm / v_norm) ** 0.4  # facteur (diam/2)^2 comme Golfball.sci
         F_M = 0.5 * rho_air * C_m * A * v_norm * np.array([
             wy * vz - wz * vy,
             wz * vx - wx * vz,
@@ -364,7 +361,7 @@ def update(frame):
     # Portance (Magnus)
     spin_norm = np.sqrt(wx[frame] ** 2 + wy[frame] ** 2 + wz[frame] ** 2)
     if v_norm > 0 and spin_norm > 0:
-        F_M_norm = 0.5 * rho_air * C_l * A * v_norm * (diam / 2) * (spin_norm / v_norm) ** 0.4
+        F_M_norm = 0.5 * rho_air * C_l * A * v_norm * (diam / 2) ** 2 * (spin_norm / v_norm) ** 0.4
         F_Mx = F_M_norm * (wy[frame] * vz[frame] - wz[frame] * vy[frame])
         F_My = F_M_norm * (wz[frame] * vx[frame] - wx[frame] * vz[frame])
         F_Mz = F_M_norm * (wx[frame] * vy[frame] - wy[frame] * vx[frame])
