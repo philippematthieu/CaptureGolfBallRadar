@@ -16,12 +16,13 @@
 //chdir('D:\Golf\stftb\');
 //exec('D:\Golf\stftb\loader.sce',-1)
 
-chdir('C:\Users\f009770\Documents\GolfBall-master\sci');
+//chdir('C:\Users\f009770\Documents\GolfBall-master\sci'); // chemin en dur, non portable
+chdir(get_absolute_file_path('FFT_Mat.sce')); // répertoire du .sce courant
 //stacksize('max');
 
 /////////////////////////////////////////////////////////////////
 
-function phase = angle(A)
+function phase = argPhase(A) // renomme : ne masque plus le built-in angle() de Scilab
     phase = atan(imag(A),real(A))
 endfunction;
 
@@ -170,8 +171,8 @@ function [tt,f,M1] = animFFT(s2,Fs,nbEchantillon,pas,anim,seuil)
 endfunction
 
 function y = fftpadding(x)
-    //y = fft([x zeros(size(x,2)-1)]);
-    y = fft([x zeros(2-1)]);
+    // zero-padding de 1 échantillon (zeros(2-1)) inutile : fft direct
+    y = fft(x);
 endfunction
 
 function w1 = padding(w,N)
@@ -197,7 +198,7 @@ function w1 = padding3(w)
     w1 = [zeros(1,2*P-1)];
     w1(1:2:$) = w;
     w1(2:2:$) = w2;
-    [w1 zeros(1,(ceil(size(w1,2)/32)-size(w1,2)/32)*32)];
+    w1 = [w1 zeros(1,(ceil(size(w1,2)/32)-size(w1,2)/32)*32)]; // réassignation (avant : résultat perdu)
 endfunction
 
 function [fftFiltree, f1] = FftFiltree(x, Fs, FreqMin, FreqMax, fType)
@@ -206,15 +207,16 @@ function [fftFiltree, f1] = FftFiltree(x, Fs, FreqMin, FreqMax, fType)
         fftFiltree = real(abs(fftpadding(filter(wft,1,x))));
         f1 = Fs*(0:(size(fftFiltree,2))-1)/size(fftFiltree,2);
     else
+        fftFiltree = real(abs(fftpadding(x)));   // spectre de x (avant : f1/fftFiltree non définis ici)
+        f1 = Fs*(0:(size(fftFiltree,2))-1)/size(fftFiltree,2);
         ll = find(((f1) <= FreqMin) | ((f1) >= FreqMax));// Filtrage bourin par suppression de valeur
         fftFiltree(ll) = fftFiltree(ll)/20;    
-        f1 = Fs*(0:(size(fftFiltree,2))-1)/size(fftFiltree,2);
     end;
 endfunction
 
 function xdensite = DensiteSpec(x)
-    xfft = real(abs(fft(x)));
-    xdensite = abs(real(xfft.*conj(xfft)));
+    xfft = abs(fft(x));            // abs() est reel positif : real() inutile
+    xdensite = xfft.*conj(xfft);   // = |fft(x)|^2, reel positif
     xdensite = xdensite(1:$/2);
 endfunction
 
@@ -481,9 +483,9 @@ endfunction
 
 
 function afficheMesCourbes()
-    chdir('C:\Users\F009770\Documents\Golf\portaudio_0.2\');
+    //chdir('C:\Users\F009770\Documents\Golf\portaudio_0.2\'); // chemin en dur Windows
     exec('C:\Users\F009770\Documents\Golf\portaudio_0.2\loader.sce',-1)
-    chdir('C:\Users\F009770\Documents\Golf\Radar');
+    //chdir('C:\Users\F009770\Documents\Golf\Radar'); // chemin en dur Windows
     stacksize('max');
     fichier = 'BalleFil5Tombe.wav';
     fichier = 'fer7Radar.wav';
@@ -1062,27 +1064,37 @@ function Ref = GenereSignalSimu(Fs, N, TImpact, VClub, VBall, RPMSpin,Coeff, Pha
 endfunction
 
 function F=TOC(f,psi,A,B)
-    // f expression littérale de la fonction
-    // psi expression littérale de psi
-    // A facteur d'échelle
-    // B valeur de temps
-    // Le résultat est une matrice comportant autant de lignes
-    // que de facteurs d'échelle A et autant de colonnes
-    // que de valeurs de temps
-    F=zeros(length(A),length(B));
-    [nbl nbc]=size(F);
-    // Valeur du facteur d'échelle
-    for i=1:nbl
-        a=A(i);
-        // Valeur de temps
-        for j=1:nbc
-            b=B(j);
-            // Intégration du produit de l'ondelette par la
-            // fonction au point a,b
-            w=inttrap(t,eval(f).*eval(psi));
-            F(i,j)=w;
+    // Transformée en ondelettes continue (CWT) par convolution rapide (FFT)
+    // F(i,j) = ∫ f(t) * conj( psi((t-B(j))/A(i)) ) / sqrt(A(i)) dt
+    //        = IFFT( FFT(f) .* conj(FFT(psi_a)) ) au point B(j), avec psi_a(t) = psi(t/a)/sqrt(a)
+    // f, psi : expressions littérales de t (t doit etre global) ; A : facteurs d'echelle ; B : positions temporelles
+    // Zero-padding Nfft >= 2N-1 => corrélation linéaire exacte (pas de repliement) pour B dans [t(1),t($)]
+    // (remplace l'ancienne version en double boucle inttrap, O(N^2), qui ne dilatait/translatait pas psi)
+    global t
+    N = length(t);
+    dt = t(2)-t(1);
+    Nfft = 2^nextpow2(2*N-1);        // zero-padding pour corrélation linéaire
+    Fx = fft(eval(f), Nfft);         // spectre du signal, zero-paddé
+    tg = t;
+    F = zeros(length(A), length(B));
+    try
+        for i = 1:length(A)
+            a = A(i);
+            t = tg / a;                              // shadow temporaire de t : ondelette dilatee
+            psi_a = eval(psi) / sqrt(a);             // psi_a(t) = psi(t/a)/sqrt(a)
+            W = fft(psi_a, Nfft);                    // spectre de l'ondelette dilatee
+            C = ifft(Fx .* conj(W));                 // corrélation C(k) = sum_n f(n) conj(psi_a(n-k))
+            Cr = real(C);
+            pos = (B - tg(1))/dt + 1;                // positions de B en indices flottants
+            k1 = floor(pos); k1(k1<1)=1; k1(k1>N-1)=N-1;
+            frac = pos - k1;
+            F(i,:) = (Cr(k1).*(1-frac) + Cr(k1+1).*frac) * dt;  // interpolation linéaire + pas dt
         end
+    catch
+        t = tg;
+        error(lasterror());
     end
+    t = tg;                                  // restaure le vecteur temps global
 endfunction
 ///////////////////////////////////////////////////////////////////////////////////////////////
 function [VBall, VClub, Spin, SpinAxis, xresult]=GetSwing(x, Fs, FreqMin, FreqMax, seuil)
@@ -1170,263 +1182,11 @@ function V=DebruitageGauche(U, scale, delay, threshold)
 endfunction
 
 
-function[y] = pmdemod(x,Vc,Em,Ec,fc,fs)
-    //x - FM modulated signal
-    //Vc- carrier amplitude signal
-    //Em - Message signal amplitude in volts
-    //Ec - Carrier signal amplitude in volts
-    //fc - Carrier signal frequency in Hz
-    //fs - Sampling frequency in samples/sec
-    Xdiff = diff(x); //Converting the FM signal into AM signal
-    //Envelope changes are recovered by taking the difference
-    //between successive samples
-    Xdiff = [Xdiff,Xdiff($)];
-    //AM demodulation using envelope detector
-    Xdem = Xdiff.*Vc;
-    //Digital IIR butterworth filter of 5th order, cutoff freuency = fc/fs
-    H =  iir(5,'lp','butt',[fc/fs,0],[0,0]);
-    num = coeff(H(2));
-    den = coeff(H(3));
-    num = num(length(num):-1:1);
-    den = den(length(den):-1:1);
-    [y,zi] =  filter(num,den,abs(Xdem));//AC to DC conversion and LPF filtering
-    y = filter(num,den,y,zi);
-    plot(y,'r');
-    title('PM demodulated Signal')
-endfunction
 
 
-function y = fmdemod(x,fc,fs)
-    //x - FM modulated signal
-    //Vc- carrier amplitude signal
-    //Em - Message signal amplitude in volts
-    //Ec - Carrier signal amplitude in volts
-    //fc - Carrier signal frequency in Hz
-    //fs - Sampling frequency in samples/sec
-    //Em = 2;//2 volts
-    //Vc = 6;//6 volts
-    //fc = 10;//in hertz
-    //fs = 100;//in samples/sec
-    //y = fmdemod(x,Vc,Em,Ec,fc,fs);
-    Xdiff = diff(x); //Converting the FM signal into AM signal
-    t=getT(xgf,Fs);
-    Vc = cos(2*%pi*fc*t);
-    //Envelope changes are recovered by taking the difference
-    //between successive samples
-    Xdiff = [Xdiff,Xdiff($)];
-    //AM demodulation using envelope detector
-    Xdem = Xdiff.*Vc;
-    //Digital IIR butterworth filter of 5th order, cutoff freuency = fc/fs
-    H =  iir(5,'lp','butt',[fc/fs,0],[0,0]);
-    num = coeff(H(2));
-    den = coeff(H(3));
-    num = num(length(num):-1:1);
-    den = den(length(den):-1:1);
-    [y,zi] =  filter(num,den,abs(Xdem));//AC to DC conversion and LPF filtering
-    y = filter(num,den,y,zi);
-    //plot(y,'r');
-    //title('FM demodulated Signal')
-endfunction
 
-function[y]=ampdemod(x,fc,fs,Em,Ec)
-    //x - AM modulated signal
-    //Vc - carrier signal
-    //fc - carrier frequency
-    //Em - message signal amplitude
-    //Ec- carrier signal amplitude
-    t=getT(xgf,Fs);
-    Vc = cos(2*%pi*fc*t);
-    xdem = x.*Vc;
-    //IIR digital butterworth Low Pass filter of cutoff
-    //frequency fc/fs and order 7
-    H = iir(7,'lp','butt',[fc/fs,0],[.1,.1]);
-    num = coeff(H(2));
-    den = coeff(H(3));
-    num = num(length(num):-1:1);
-    den = den(length(den):-1:1);
-    y = filter(num,den,xdem);
-    //    y = y/Em;
-    //    y = y-Ec;plot()
-endfunction 
+ 
 
-function [x,x2] = demod(y, Fc, Fs, method, P1)
-    //%DEMOD Signal demodulation for communications simulations.
-    //%   X = DEMOD(Y,Fc,Fs,METHOD,OPT) demodulates the carrier signal Y with a 
-    //%   carrier frequency Fc and sampling frequency Fs, using the demodulation
-    //%   scheme in METHOD.  OPT is an extra, sometimes optional, parameter whose
-    //%   purpose depends on the demodulation scheme you choose.
-    //%
-    //%   Fs must satisfy Fs > 2*Fc + BW, where BW is the bandwidth of the
-    //%   modulated signal.
-    //%
-    //%        METHOD            DEMODULATION SCHEME
-    //%    'am',      Amplitude demodulation, double side-band, suppressed carrier
-    //%    'amdsb-sc' OPT not used.
-    //%    'amdsb-tc' Amplitude demodulation, double side-band,transmitted carrier
-    //%               OPT is a scalar which is subtracted from the decoded message
-    //%               signal.  It defaults to zero.
-    //%    'amssb'    Amplitude demodulation, single side-band
-    //%               OPT not used.
-    //%    'fm'       Frequency demodulation
-    //%               OPT is a scalar which specifies the constant of frequency 
-    //%               modulation kf, which defaults to 1.
-    //%    'pm'       Phase demodulation
-    //%               OPT is a scalar which specifies the constant of phase 
-    //%               modulation kp, which defaults to 1.
-    //%    'pwm'      Pulse width demodulation
-    //%               By setting OPT = 'centered' you tell DEMOD that the pulses 
-    //%               are centered on the carrier period rather than being 
-    //%               "left justified".
-    //%    'ppm'      Pulse position demodulation
-    //%               OPT is not used.
-    //%    'qam'      Quadrature amplitude demodulation
-    //%               For QAM signals, use [X1,X2] = DEMOD(Y,Fc,Fs,'qam')
-    //%
-    //%   If Y is a matrix, its columns are demodulated.
-    //%
-    //%   % Example:
-    //%   %   Demodulate a received signal which is frequency modulated at 
-    //%   %   carrier frequency 3KHz.
-    //%   
-    //%   Fs = 8000;                              % sampling frequency
-    //%   t = (0:1000-1)/Fs;                      % time vector
-    //%   s = 4*cos(2*pi*500*t);                  % modulating signal
-    //%   x = modulate(s,3e3,Fs,'fm',0.1);        % modulated signal
-    //%   rx = x + sqrt(1e-3)*randn(size(x));     % received signal
-    //%   y = demod(rx,3e3,Fs,'fm');              % demodulated signal
-    //%   [px,fx] = pwelch(rx,[],0,length(x),Fs); % PSD, received signal
-    //%   [py,fy] = pwelch(y,[],0,length(y),Fs);  % PSD, demodulated signal
-    //% 
-    //%   subplot(211);
-    //%   plot(fx/1e3,px); grid on
-    //%   title('Received signal')
-    //%   ylabel('Amplitude(Watts)')
-    //% 
-    //%   subplot(212);
-    //%   plot(fy/1e3,py,'r'); grid on
-    //%   title('Demodulated Signal')
-    //%   xlabel('Frequency(KHz)');
-    //%   ylabel('Amplitude(Watts)')
-    //%
-    //%   See also MODULATE in the Signal Processing Toolbox, and PAMDEMOD, 
-    //%   QAMDEMOD, GENQAMDEMOD, FSKDEMOD, PSMDEMOD, MSKDEMOD in the
-    //%   Communications System Toolbox.
-    //
-    //%   Copyright 1988-2013 The MathWorks, Inc.
-
-    //narginchk(3,5)
-    //% Cast to enforce precision rules
-    //Fc = signal.internal.sigcasttofloat(Fc,'double','demod','Fc',    'allownumeric');
-    //Fs = signal.internal.sigcasttofloat(Fs,'double','demod','Fs',    'allownumeric');
-
-    //% Checks if Y is a valid numeric data input. Cast to double since filtfilt
-    //% does not accept single inputs. 
-    //isInputSingle = signal.internal.sigcheckfloattype(y,'single','demod','Y');
-    y = double(y);
-    x2=[];
-
-    if Fc >= Fs/2,
-        error(message('signal:demod:InvalidRange'));
-    end
-
-    if nargin<4,
-        method = 'am';
-    end
-
-    [r,c]=size(y);
-    if r*c == 0,
-        x = []; return
-    end
-    if (r==1),   //% convert row vector to column
-        y = y(:);  len = c;
-    else
-        len = r;
-    end
-
-    if strcmpi(method,'fm'),
-        if nargin < 5, P1 = 1; end
-        //P1 = signal.internal.sigcasttofloat(P1,'double','demod','OPT',        'allownumeric');
-        t = (0:1/Fs:((len-1)/Fs))';
-        t = t(:,ones(1,size(y,2)));
-        yq = hilbert(y).*exp(-%i*2*%pi*Fc*t);
-        x = (1/P1)*[zeros(1,size(yq,2)); diff(unwrap(angle(yq)))];
-        x2=[];
-    elseif strcmpi(method,'pm'),
-        if nargin < 5, P1 = 1; end
-        //P1 = signal.internal.sigcasttofloat(P1,'double','demod','OPT',        'allownumeric');
-        t = (0:1/Fs:((len-1)/Fs))';
-        t = t(:,ones(1,size(y,2)));
-        yq = hilbert(y).*exp(-%i*2*%pi*Fc*t);
-        x = (1/P1)*angle(yq);
-    elseif strcmpi(method,'pwm'),
-        //% precondition input by thresholding:
-        y = y>.5;
-        t = (0:1/Fs:((len-1)/Fs))';
-        len = ceil( len * Fc / Fs);   //% length of message signal
-        x = zeros(len,size(y,2));
-        if nargin < 5
-            P1 = 'left';
-        end
-        if strcmpi('centered',P1)
-            for i = 1:len,
-                t_temp = t-(i-1)/Fc;
-                ind =  (t_temp >= -1/2/Fc) & (t_temp < 1/2/Fc) ;
-                for j1 = 1:size(y,2)   //% for each column ...
-                    x(i,j1) = sum(y(ind,j1))*Fc/Fs;
-                end
-            end
-            x(1,:) = x(1,:)*2;
-        elseif strcmpi('left',P1)
-            for i = 1:len,
-                t_temp = t-(i-1)/Fc;
-                ind =  (t_temp >= 0) & (t_temp < 1/Fc) ;
-                for j2 = 1:size(y,2)   //% for each column ...
-                    x(i,j2) = sum(y(ind,j2))*Fc/Fs;
-                end
-            end
-        else
-            error(message('signal:demod:SignalErr'))
-        end
-        //%    w=diff([1; find(diff(y))]);   //% <-- a MUCH faster way, but not robust
-        //%    x=w(1:2:length(w))/Fs;
-    elseif strcmpi(method,'ptm') | strcmpi(method,'ppm'),
-        //% precondition input by thresholding:
-        y = y>.5;
-        t = (0:1/Fs:((len-1)/Fs))'*Fc;
-        len = ceil( len * Fc / Fs);   //% length of message signal
-        x = zeros(len,size(y,2));
-        for i = 1:len
-            t_temp = t-(i-1);
-            ind = find( (t_temp >= 0) & (t_temp<1) );
-            for j3 = 1:size(y,2)    //% for each column ...
-                ind2 = y(ind,j3)==1;
-                x(i,j3) = t_temp(min(ind(ind2)));
-            end
-        end
-    elseif strcmpi(method,'qam'),
-        t = (0:1/Fs:((len-1)/Fs))';
-        t = t(:,ones(1,size(y,2)));
-        x = 2*y.*cos(2*%pi*Fc*t);
-        x2 = 2*y.*sin(2*%pi*Fc*t);
-        [b,a]=butter(5,Fc*2/Fs);
-        for i = 1:size(y,2),
-            x(:,i) = filtfilt(b,a,x(:,i));
-            x2(:,i) = filtfilt(b,a,x2(:,i));
-        end
-        if (r==1),   //% convert x2 from a column to a row if necessary
-            x2 = x2.';
-        end
-
-        if isInputSingle
-            x2 = single(x2);
-        end
-    end
-    if (r==1),   //% convert x from a column to a row
-        x = x.';
-    end
-
-    //x = single(x);
-endfunction
 
 function [enveloppe,t] = Enveloppe(xx, Fs,fb, fh)
     [wft,wfm,fr] = wfir('bp',256,[fb/Fs fh/Fs ],'hm',[-1 -1]);
@@ -1611,40 +1371,8 @@ endfunction
 //fs = 100; samples/sec
 
 
-function freqMax = afficheDemod(x, Fs, v)
-    [wft,wfm,fr] = wfir('bp',254,[1200/Fs 6000/Fs ],'hn',[-1 -1]);
-    [x1,y] = demod(x, v * 19.49, Fs,'am');
-    [wft1,wfm,fr] = wfir('bp',254,[30/Fs 12000/Fs ],'re',[-1 -1]);
-    x1 = filter(wft1,1,x1);
-    [M51,tt5,f5]=animDensite(filter(wft1,1,x1), Fs, 256*16 ,32*16 , 1, -0,1);
-    figure();plot(f5,sum(M51(:,1:$-1)/max(sum(M51(:,1:$-1),'r')),'r'),'b');
-    [x2,y2] = demod(x1, 43, Fs,'pm');
-    [wft2,wfm,fr] = wfir('bp',254,[30/Fs 1200/Fs ],'re',[-1 -1]);
-    x2 = filter(wft2,1,x2);
-    [M51,tt5,f5]=animDensite(x2,44100, 256*16*2 ,32*16*2 , 0, -0,1);
-    plot(f5,sum(M51(:,1:$-1)/max(sum(M51(:,1:$-1),'r')),'r'),'r');
-    [m,k]=max(sum(M51(:,1:$-1),'r'));
-    freqMax = f5(k);
-endfunction
 
 
-function freqMax = afficheDemod2(x, Fs, v)
-    [wft,wfm,fr] = wfir('bp',254,[((v-50)*19.49)/Fs ((v+50)*19.49)/Fs ],'hn',[-1 -1]);
-    [x2,y2] = demod(filter(wft,1,x), 100, Fs,'pm');
-    [wft2,wfm,fr] = wfir('bp',254,[30/Fs 1200/Fs ],'re',[-1 -1]);
-    x2 = filter(wft2,1,x2);
-    [M51,tt5,f5]=animDensite3(x2,44100, 256*16*2 ,32*16*2 , 0, -0,1);
-    plot(f5,sum(M51(:,1:$-1)/max(sum(M51(:,1:$-1),'r')),'r'),'r');
-
-    [x1,y] = demod(x2, v * 19.49, Fs,'am');
-    [wft1,wfm,fr] = wfir('bp',254,[30/Fs 200/Fs ],'re',[-1 -1]);
-    x1 = filter(wft1,1,x1);
-    [M51,tt5,f5]=animDensite3(filter(wft1,1,x1), Fs, 256*16 ,32*16 , 0, -0,1);
-    plot(f5,sum(M51(:,1:$-1)/max(sum(M51(:,1:$-1),'r')),'r'),'b');
-    legend('Phase Demo','Amp Demo');
-    [m,k]=max(sum(M51(:,1:$-1),'r'));
-    freqMax = f5(k);
-endfunction
 
 
 //////////////////////////////////////////////////////////////////////////////////////////
