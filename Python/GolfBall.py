@@ -1,10 +1,15 @@
 import numpy as np
 from scipy.integrate import odeint
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib.patches import Circle, FancyArrowPatch
-from mpl_toolkits.mplot3d import Axes3D
-from mpl_toolkits.mplot3d import proj3d
+
+try:  # matplotlib optionnel : le module reste importable en headless (pipe de validation, tests)
+    import matplotlib.pyplot as plt
+    from matplotlib.animation import FuncAnimation
+    from matplotlib.patches import Circle, FancyArrowPatch
+    from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits.mplot3d import proj3d
+    HAS_MPL = True
+except ImportError:
+    HAS_MPL = False
 
 # =============================================
 # PARAMÈTRES PHYSIQUES (basés sur votre modèle Scilab)
@@ -14,11 +19,10 @@ from mpl_toolkits.mplot3d import proj3d
 m = 0.04545  # Masse (kg)
 diam = 0.043  # Diamètre (m)
 A = np.pi * (diam / 2) ** 2  # Section transversale (m²)
-I = (2 / 5) * m * (diam / 2) ** 2  # Moment d'inertie (kg·m²)
 
 # Propriétés de l'air
 rho_air = 1.292 * 273.15 / (20 + 273.15)  # Densité (kg/m³) à 20°C — même formule que Golfball.sci
-mu = 1.5e-5  # Viscosité dynamique (m²/s)
+mu = 1.5e-5  # Viscosité CINEMATIQUE de l'air (m²/s) à 20°C (pas dynamique)
 g = 9.81  # Accélération gravitationnelle (m/s²)
 
 # Coefficients aérodynamiques
@@ -56,7 +60,7 @@ theta_loft = np.radians(loft_deg + shaf_lean_imp_deg)
 # Vitesse de la balle après impact (modèle de Penner)
 Ke = (1 + e_coeff) / (1 + m / club_mass)
 Kp = 1 / (1 + m / club_mass + 5 / 2)
-Km = 1 - 0.3556 * miss  # miss en cm (à convertir en m si nécessaire)
+Km = 1 - 0.3556 * miss  # miss en cm (cohérent avec le facteur 1-0.3556*miss de Golfball.sci)
 
 V0_ball_bfnms = v_club * np.cos(theta_loft) * Ke
 V0_ball_bfpms = -v_club * np.sin(theta_loft) * Kp
@@ -160,7 +164,8 @@ def handle_bounce(y, t):
 
     # Frottement
     mu_friction = 0.40
-    mu_friction_critic = 2 * (vix_prime + (diam / 2) * wz) / (7 * (1 + eball) * abs(viy_prime))
+    viyp_abs = max(abs(viy_prime), 1e-6)  # garde anti-division par zero (comme Golfball.sci)
+    mu_friction_critic = 2 * (vix_prime + (diam / 2) * wz) / (7 * (1 + eball) * viyp_abs)
 
     if mu_friction < mu_friction_critic:
         # Glissement
@@ -232,11 +237,11 @@ def handle_rolling(y, t):
 # =============================================
 
 def simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3):
-    # Conditions initiales
-    y0 = [x0, y0, z0, vx0, vy0, vz0, spin_x, spin_y, spin_z, C_l]  # C_l = Cl1 en derniere position (mis a 0 apres rebond)
+    # Conditions initiales (y_init pour ne pas masquer le global y0 = position initiale)
+    y_init = [x0, y0, z0, vx0, vy0, vz0, spin_x, spin_y, spin_z, C_l]  # C_l = Cl1 en derniere position (mis a 0 apres rebond)
     t = np.arange(0, t_max, dt)
-    y = np.zeros((len(t), len(y0)))
-    y[0] = y0
+    y = np.zeros((len(t), len(y_init)))
+    y[0] = y_init
 
     bounce_count = 0
     is_rolling = False
@@ -245,6 +250,10 @@ def simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3):
         # Si la balle est en roulement
         if is_rolling:
             y[i] = handle_rolling(y[i-1], t[i-1])
+            # arrêt si vitesse horizontale < 3 cm/s (seuil events2 de Golfball.sci)
+            if np.sqrt(y[i, 3] ** 2 + y[i, 5] ** 2) < 0.03:
+                y[i:, :] = y[i]
+                break
             continue
 
         # Si la balle touche le sol (y <= 0.01)
@@ -274,138 +283,211 @@ def simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3):
 
     return t, y, bounce_count
 
-# =============================================
-# EXÉCUTION DE LA SIMULATION
-# =============================================
-
-t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3)
-x, y_pos, z, vx, vy, vz, wx, wy, wz, cl1 = y.T
 
 # =============================================
-# ANIMATION 3D AVEC MATPLOTLIB
+# BASE DE CLUBS = GetSac() de Golfball.sci
 # =============================================
 
-fig = plt.figure(figsize=(12, 8))
-ax = fig.add_subplot(111, projection='3d')
+SAC = {
+    'Type':           ['D','W5','H3','5','6','7','8','9','PW','AW','SW','LW','PU'],
+    'Loft':           [11,18,18,23,26,30,34.5,39,44,52,54,60,3],
+    'Poids':          [0.300,0.250,0.250,0.200,0.200,0.200,0.200,0.200,0.200,0.200,0.200,0.200,0.300],
+    'ecoeff':         [0.83,0.78,0.76,0.87,0.84,0.68,0.70,0.60,0.78,0.68,0.68,0.40,0.68],
+    'coeffSpin':      [180,280.6435,250.0,300.0,240,400,300.7425,400.99,501.2375,441.089,452.51722,500,501.2375],
+    'coeffSpinLift':  [500,500,500,420,420,580,420,308,308,308,308,308,308],
+    'Cl1':            [0.64,0.65,0.54,0.54,0.83,0.42,0.53,0.53,0.52,0.52,0.51,0.51,0.0],
+    'Cm':             [4.3e-2,2.8e-2,2.6e-2,1.8e-2,1.6e-2,1.1e-2,1.1e-2,0.9e-2,0.62e-2,0.5e-2,0.45e-2,0.4e-2,0.0],
+}
 
-# Limites des axes
-ax.set_xlim(0, max(x) * 1.1)
-ax.set_ylim(0, max(y_pos) * 1.1)
-ax.set_zlim(-max(abs(z)) * 1.1, max(abs(z)) * 1.1)
-ax.set_xlabel('Distance (m)')
-ax.set_ylabel('Hauteur (m)')
-ax.set_zlabel('Dév. latérale (m)')
-ax.set_title('Simulation du vol d\'une balle de golf (3D)')
+def _club_idx(TypeClub):
+    return SAC['Type'].index(TypeClub)
 
-# Dessiner le sol
-xx, zz = np.meshgrid(np.linspace(0, max(x) * 1.1, 10), np.linspace(-max(abs(z)) * 1.1, max(abs(z)) * 1.1, 10))
-yy = np.zeros_like(xx)
-ax.plot_surface(xx, yy, zz, color='green', alpha=0.3)
 
-# Initialiser la balle et les forces
-ball = ax.plot([], [], [], 'o', markersize=8, color='white', markeredgecolor='black')[0]
-velocity_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='blue', mutation_scale=20)
-ax.add_patch(velocity_arrow)
-drag_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='red', mutation_scale=20)
-ax.add_patch(drag_arrow)
-magnus_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='green', mutation_scale=20)
-ax.add_patch(magnus_arrow)
-gravity_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='orange', mutation_scale=20)
-ax.add_patch(gravity_arrow)
-spin_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='purple', mutation_scale=20)
-ax.add_patch(spin_arrow)
+def LaunchAngle(v0Ballkmh, v0Clubkmh, TypeClub, SpinLR):
+    """Inverse (portage de LaunchAngle dans Golfball.sci) : retrouve thetaLoft, ShafLeanImp,
+    launchAngle, SpinZ, gamaFacePath à partir des vitesses mesurées et du spin latéral."""
+    i = _club_idx(TypeClub)
+    mm = 0.04545
+    v0Ballms = v0Ballkmh / 3.6
+    V0Clubms = v0Clubkmh / 3.6
+    SmashFactor = v0Ballms / V0Clubms
+    miss = 0
+    Km = 1 - 0.3556 * miss  # miss en cm
+    Ke = (1 + SAC['ecoeff'][i]) / (1 + mm / SAC['Poids'][i])
+    Kp = 1 / (1 + mm / SAC['Poids'][i] + 5 / 2)
+    # garde du domaine de asin : min(1, abs(...)) comme dans Golfball.sci
+    thetaLoft = np.arcsin(min(1.0, np.sqrt(abs((SmashFactor ** 2 - Ke ** 2) / (Kp ** 2 - Ke ** 2)))))
+    V0Ballbfnms = V0Clubms * np.cos(thetaLoft) * Ke
+    V0Ballbfpms = -V0Clubms * np.sin(thetaLoft) * Kp
+    launchAngle = thetaLoft + np.arctan2(V0Ballbfpms, V0Ballbfnms)
+    SpinZ = v0Ballms * np.cos(launchAngle) * np.sin(thetaLoft) * SAC['coeffSpin'][i]
+    thetaLoft_deg = np.degrees(thetaLoft)
+    launchAngle_deg = np.degrees(launchAngle)
+    ShafLeanImp = thetaLoft_deg - SAC['Loft'][i]
+    denom = v0Ballms * np.sin(launchAngle) * SAC['coeffSpinLift'][i]
+    gamaFacePath = np.degrees(np.arcsin(min(1.0, abs(SpinLR / denom)))) if abs(denom) > 1e-12 else 0.0
+    return thetaLoft_deg, ShafLeanImp, launchAngle_deg, SpinZ, gamaFacePath
 
-# Légende
-ax.legend(
-    [ball, velocity_arrow, drag_arrow, magnus_arrow, gravity_arrow, spin_arrow],
-    ['Balle', 'Vitesse $\\mathbf{v}$', 'Traînée $\\mathbf{F}_D$', 'Portance $\\mathbf{F}_M$', 'Gravité $\\mathbf{F}_g$', 'Spin $\\mathbf{\\omega}$'],
-    loc='upper right'
-)
 
-# Trajectoire
-trajectory, = ax.plot([], [], [], 'b-', alpha=0.5, linewidth=1)
+def BallGolf(V0Ballkmh, Psi, miss, e, m_, M, coeffSpin=180.0):
+    """Inverse (portage de BallGolf dans Golfball.sci) : retrouve V0Club, loft dynamique et SpinZ
+    à partir de V0Ball et de l'angle de décollage Psi (degrés). miss en cm.
+    (Dans le .sci, SpinZ était retourné non calculé -> bug; ici il est calculé.)"""
+    D = (1 + m_ / M) / ((1 + m_ / M + 5 / 2) * (1 + e))
+    Psi_rd = np.radians(Psi)
+    V0Ballms = V0Ballkmh / 3.6
+    a = np.tan(Psi_rd) * D
+    if abs(a) < 1e-12:
+        a = 1e-12  # garde anti-division par zero si Psi = 0 (comme Golfball.sci)
+    b = D - 1
+    c = np.tan(Psi_rd)
+    A2 = (-b - np.sqrt(b * b - 4 * a * c)) / (2 * a)  # racine A2 comme dans Golfball.sci
+    dynamicLoft_rd = np.arctan(A2)
+    V0Clubms = np.sqrt(abs(V0Ballms ** 2 / ((1 - 0.3556 * miss) * (
+        (np.cos(dynamicLoft_rd) * (1 + e) / (1 + m_ / M)) ** 2
+        + (-np.sin(dynamicLoft_rd) / (1 + m_ / M + 5 / 2)) ** 2))))
+    SpinZ = V0Ballms * np.cos(dynamicLoft_rd) * np.sin(dynamicLoft_rd) * coeffSpin / 9.54929659643
+    return V0Clubms * 3.6, np.degrees(dynamicLoft_rd), SpinZ
 
-# Texte pour le temps et les rebonds
-time_text = ax.text(0, 0, 0, '', fontsize=10, color='black')
-bounce_text = ax.text(0, 0, 0, '', fontsize=10, color='black')
 
-def update(frame):
-    # Mettre à jour la position de la balle
-    ball.set_data([x[frame]], [y_pos[frame]])
-    ball.set_3d_properties([z[frame]])
+if __name__ == '__main__':
+    if not HAS_MPL:
+        # mode headless : résultats texte uniquement (pas d'animation)
+        t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3)
+        print(f'Rebonds: {bounce_count}  Portee: {y[-1, 0]:.1f} m  Apex: {y[:, 2].max():.1f} m  Tfin: {t[-1]:.1f} s')
+        raise SystemExit(0)
+    # =============================================
+    # EXÉCUTION DE LA SIMULATION
+    # =============================================
 
-    # Mettre à jour la trajectoire
-    trajectory.set_data(x[:frame+1], y_pos[:frame+1])
-    trajectory.set_3d_properties(z[:frame+1])
+    t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3)
+    x, y_pos, z, vx, vy, vz, wx, wy, wz, cl1 = y.T
 
-    # Mettre à jour les flèches des forces
-    scale = 0.5  # Échelle pour les flèches
+    # =============================================
+    # ANIMATION 3D AVEC MATPLOTLIB
+    # =============================================
 
-    # Vitesse
-    v_norm = np.sqrt(vx[frame] ** 2 + vy[frame] ** 2 + vz[frame] ** 2)
-    if v_norm > 0:
-        velocity_arrow.set_data(
-            [x[frame], x[frame] + vx[frame] * scale / v_norm],
-            [y_pos[frame], y_pos[frame] + vy[frame] * scale / v_norm]
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    # Limites des axes
+    ax.set_xlim(0, max(x) * 1.1)
+    ax.set_ylim(0, max(y_pos) * 1.1)
+    ax.set_zlim(-max(abs(z)) * 1.1, max(abs(z)) * 1.1)
+    ax.set_xlabel('Distance (m)')
+    ax.set_ylabel('Hauteur (m)')
+    ax.set_zlabel('Dév. latérale (m)')
+    ax.set_title('Simulation du vol d\'une balle de golf (3D)')
+
+    # Dessiner le sol
+    xx, zz = np.meshgrid(np.linspace(0, max(x) * 1.1, 10), np.linspace(-max(abs(z)) * 1.1, max(abs(z)) * 1.1, 10))
+    yy = np.zeros_like(xx)
+    ax.plot_surface(xx, yy, zz, color='green', alpha=0.3)
+
+    # Initialiser la balle et les forces
+    ball = ax.plot([], [], [], 'o', markersize=8, color='white', markeredgecolor='black')[0]
+    velocity_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='blue', mutation_scale=20)
+    ax.add_patch(velocity_arrow)
+    drag_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='red', mutation_scale=20)
+    ax.add_patch(drag_arrow)
+    magnus_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='green', mutation_scale=20)
+    ax.add_patch(magnus_arrow)
+    gravity_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='orange', mutation_scale=20)
+    ax.add_patch(gravity_arrow)
+    spin_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='purple', mutation_scale=20)
+    ax.add_patch(spin_arrow)
+
+    # Légende
+    ax.legend(
+        [ball, velocity_arrow, drag_arrow, magnus_arrow, gravity_arrow, spin_arrow],
+        ['Balle', 'Vitesse $\\mathbf{v}$', 'Traînée $\\mathbf{F}_D$', 'Portance $\\mathbf{F}_M$', 'Gravité $\\mathbf{F}_g$', 'Spin $\\mathbf{\\omega}$'],
+        loc='upper right'
+    )
+
+    # Trajectoire
+    trajectory, = ax.plot([], [], [], 'b-', alpha=0.5, linewidth=1)
+
+    # Texte pour le temps et les rebonds
+    time_text = ax.text(0, 0, 0, '', fontsize=10, color='black')
+    bounce_text = ax.text(0, 0, 0, '', fontsize=10, color='black')
+
+    def update(frame):
+        # Mettre à jour la position de la balle
+        ball.set_data([x[frame]], [y_pos[frame]])
+        ball.set_3d_properties([z[frame]])
+
+        # Mettre à jour la trajectoire
+        trajectory.set_data(x[:frame+1], y_pos[:frame+1])
+        trajectory.set_3d_properties(z[:frame+1])
+
+        # Mettre à jour les flèches des forces
+        scale = 0.5  # Échelle pour les flèches
+
+        # Vitesse
+        v_norm = np.sqrt(vx[frame] ** 2 + vy[frame] ** 2 + vz[frame] ** 2)
+        if v_norm > 0:
+            velocity_arrow.set_data(
+                [x[frame], x[frame] + vx[frame] * scale / v_norm],
+                [y_pos[frame], y_pos[frame] + vy[frame] * scale / v_norm]
+            )
+            velocity_arrow.set_3d_properties([z[frame], z[frame] + vz[frame] * scale / v_norm])
+
+        # Traînée (opposée à la vitesse)
+        F_D_norm = 0.5 * rho_air * C_d0 * A * v_norm
+        drag_arrow.set_data(
+            [x[frame], x[frame] - vx[frame] * F_D_norm * scale / m],
+            [y_pos[frame], y_pos[frame] - vy[frame] * F_D_norm * scale / m]
         )
-        velocity_arrow.set_3d_properties([z[frame], z[frame] + vz[frame] * scale / v_norm])
+        drag_arrow.set_3d_properties([z[frame], z[frame] - vz[frame] * F_D_norm * scale / m])
 
-    # Traînée (opposée à la vitesse)
-    F_D_norm = 0.5 * rho_air * C_d0 * A * v_norm
-    drag_arrow.set_data(
-        [x[frame], x[frame] - vx[frame] * F_D_norm * scale / m],
-        [y_pos[frame], y_pos[frame] - vy[frame] * F_D_norm * scale / m]
-    )
-    drag_arrow.set_3d_properties([z[frame], z[frame] - vz[frame] * F_D_norm * scale / m])
+        # Portance (Magnus)
+        spin_norm = np.sqrt(wx[frame] ** 2 + wy[frame] ** 2 + wz[frame] ** 2)
+        if v_norm > 0 and spin_norm > 0:
+            F_M_norm = 0.5 * rho_air * cl1[frame] * A * v_norm * (diam / 2) ** 2 * (spin_norm / v_norm) ** 0.4
+            F_Mx = F_M_norm * (wy[frame] * vz[frame] - wz[frame] * vy[frame])
+            F_My = F_M_norm * (wz[frame] * vx[frame] - wx[frame] * vz[frame])
+            F_Mz = F_M_norm * (wx[frame] * vy[frame] - wy[frame] * vx[frame])
+            magnus_arrow.set_data(
+                [x[frame], x[frame] + F_Mx * scale / m],
+                [y_pos[frame], y_pos[frame] + F_My * scale / m]
+            )
+            magnus_arrow.set_3d_properties([z[frame], z[frame] + F_Mz * scale / m])
 
-    # Portance (Magnus)
-    spin_norm = np.sqrt(wx[frame] ** 2 + wy[frame] ** 2 + wz[frame] ** 2)
-    if v_norm > 0 and spin_norm > 0:
-        F_M_norm = 0.5 * rho_air * cl1[frame] * A * v_norm * (diam / 2) ** 2 * (spin_norm / v_norm) ** 0.4
-        F_Mx = F_M_norm * (wy[frame] * vz[frame] - wz[frame] * vy[frame])
-        F_My = F_M_norm * (wz[frame] * vx[frame] - wx[frame] * vz[frame])
-        F_Mz = F_M_norm * (wx[frame] * vy[frame] - wy[frame] * vx[frame])
-        magnus_arrow.set_data(
-            [x[frame], x[frame] + F_Mx * scale / m],
-            [y_pos[frame], y_pos[frame] + F_My * scale / m]
+        # Gravité
+        gravity_arrow.set_data(
+            [x[frame], x[frame]],
+            [y_pos[frame], y_pos[frame] - m * g * scale / m]
         )
-        magnus_arrow.set_3d_properties([z[frame], z[frame] + F_Mz * scale / m])
+        gravity_arrow.set_3d_properties([z[frame], z[frame]])
 
-    # Gravité
-    gravity_arrow.set_data(
-        [x[frame], x[frame]],
-        [y_pos[frame], y_pos[frame] - m * g * scale / m]
+        # Spin
+        spin_arrow.set_data(
+            [x[frame], x[frame] - 0.2],
+            [y_pos[frame], y_pos[frame] + 0.4]
+        )
+        spin_arrow.set_3d_properties([z[frame], z[frame]])
+
+        # Mettre à jour le temps et les rebonds
+        time_text.set_text(f'Temps: {t[frame]:.2f} s')
+        time_text.set_position((ax.get_xlim()[1] * 0.7, ax.get_ylim()[1] * 0.9, ax.get_zlim()[1] * 0.9))
+        bounce_text.set_text(f'Rebonds: {bounce_count}')
+        bounce_text.set_position((ax.get_xlim()[1] * 0.7, ax.get_ylim()[1] * 0.85, ax.get_zlim()[1] * 0.9))
+
+        return ball, velocity_arrow, drag_arrow, magnus_arrow, gravity_arrow, spin_arrow, trajectory, time_text, bounce_text
+
+    # Créer l'animation
+    ani = FuncAnimation(
+        fig,
+        update,
+        frames=len(t),
+        interval=50,  # Délai entre les frames (ms)
+        blit=False,
+        repeat=True
     )
-    gravity_arrow.set_3d_properties([z[frame], z[frame]])
 
-    # Spin
-    spin_arrow.set_data(
-        [x[frame], x[frame] - 0.2],
-        [y_pos[frame], y_pos[frame] + 0.4]
-    )
-    spin_arrow.set_3d_properties([z[frame], z[frame]])
+    # Sauvegarder l'animation (nécessite ffmpeg ou imagemagick)
+    ani.save('golf_ball_flight_3d.mp4', writer='ffmpeg', fps=30, dpi=300)
 
-    # Mettre à jour le temps et les rebonds
-    time_text.set_text(f'Temps: {t[frame]:.2f} s')
-    time_text.set_position((ax.get_xlim()[1] * 0.7, ax.get_ylim()[1] * 0.9, ax.get_zlim()[1] * 0.9))
-    bounce_text.set_text(f'Rebonds: {bounce_count}')
-    bounce_text.set_position((ax.get_xlim()[1] * 0.7, ax.get_ylim()[1] * 0.85, ax.get_zlim()[1] * 0.9))
-
-    return ball, velocity_arrow, drag_arrow, magnus_arrow, gravity_arrow, spin_arrow, trajectory, time_text, bounce_text
-
-# Créer l'animation
-ani = FuncAnimation(
-    fig,
-    update,
-    frames=len(t),
-    interval=50,  # Délai entre les frames (ms)
-    blit=False,
-    repeat=True
-)
-
-# Sauvegarder l'animation (nécessite ffmpeg ou imagemagick)
-ani.save('golf_ball_flight_3d.mp4', writer='ffmpeg', fps=30, dpi=300)
-
-# Afficher l'animation
-plt.tight_layout()
-plt.show()
+    # Afficher l'animation
+    plt.tight_layout()
+    plt.show()
