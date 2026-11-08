@@ -94,7 +94,13 @@ def gen_capture(name, v0_kmh, launch_deg, alpha_path_deg, spin_tot_rpm, side_rpm
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1 and sys.argv[1] == '137':
+    if len(sys.argv) > 1 and sys.argv[1] == 'slice':
+        # GROS SLICE droite : spin total 9418 rpm dont side 7102 (back 6185, β≈48,9°),
+        # courbure α(t) ≈ -8° sur 300 ms après impact. Fichier nommé comme un vrai coup.
+        gen_capture("2025-11-08-F7-131m-162kmh-9418trm-7102trm-cs124.csv",
+                    162.0, 16.0, 3.0, 9418.0, 7102.0, 124.0,
+                    k_courbe=np.radians(-8.0) / (0.30**2) / 2)
+    elif len(sys.argv) > 1 and sys.argv[1] == '137':
         # config du coup réel F7-137m-166kmh-4990trm-1312trm-cs118 (pour comparaison spectro)
         _, _, _, carry137 = simu_vol(166.0, 16.0, 3.0, 4990.0, 1312.0)
         gen_capture(f"2025-11-08-F7-{int(round(carry137))}m-166kmh-4990trm-1312trm-cs118.csv",
