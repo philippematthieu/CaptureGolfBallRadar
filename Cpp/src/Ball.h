@@ -70,6 +70,7 @@ public:
 	double getTempsTotal();
 	std::vector< std::vector<double> >  getMatriceFlight();
 	double getMaxHeight();
+	void rescaleSpin(double k); // met à l'echelle wy/wz (paramEqn ET equation de vol) — pour tests Magnus
 	void runSimu();
 
 	virtual ~Ball();

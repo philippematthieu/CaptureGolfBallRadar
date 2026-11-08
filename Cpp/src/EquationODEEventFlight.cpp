@@ -25,7 +25,7 @@ std::vector<double>  EquationODEEventFlight::getEvaluation(double s,std::vector<
 	qRes[1] = 0.0;
 	qRes[2] = 0.0;
 	qRes[3] = 0.0;
-	qRes[4] = q[4]; // je cherche si Z passe sous zero
+	qRes[4] = q[4]; // je cherche si Z (hauteur) passe sous zero. Terrain plat ici : pour un vrai terrain, remplacer par q[4] - AltiSol(q[0], q[2]) (correction Golfball.sci commit 73ef2d8 : event = y - AltiSol(x,z))
 	qRes[5] = 0.0;
 	return qRes;
 }

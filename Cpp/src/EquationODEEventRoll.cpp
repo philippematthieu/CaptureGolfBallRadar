@@ -21,7 +21,7 @@ EquationODEEventRoll::~EquationODEEventRoll() {
 
 std::vector<double>  EquationODEEventRoll::getEvaluation(double s, std::vector<double>  q)  {
 		qRes[0] = 0.0;
-		qRes[1] = q[1]; // je cherche si VX passe sous 0.01ms;
+		qRes[1] = q[1] - 0.03; // seuil d'arret roulement 3 cm/s (porte depuis Golfball.sci, commit 73ef2d8 ; avant : zero-crossing sur vx=0)
 		qRes[2] = 0.0;
 		qRes[3] = 0.0;
 		qRes[4] = 0.0;

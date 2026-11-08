@@ -37,12 +37,13 @@ std::vector<double>  EquationODERoll::getEvaluation(double s, std::vector<double
 	double getG			= getParamEq(8);
 	std::vector<double> dQ(q);
 
+	double normeVitesse = sqrt(vx*vx+vy*vy+vz*vz) + 1.0e-8; // garde anti-division par zero (porte depuis Golfball.sci/Python, commit 73ef2d8)
 	dQ[0] = vx;																		//
-	dQ[1] = -(5.0/7.0)*getRhoGreen*getG * vx/sqrt(vx*vx+vy*vy+vz*vz);			// ax longueur
+	dQ[1] = -(5.0/7.0)*getRhoGreen*getG * vx/normeVitesse;							// ax longueur
 	dQ[2] = vy;																		//
-	dQ[3] = -(5.0/7.0)*getRhoGreen*getG * vy/sqrt(vx*vx+vy*vy+vz*vz); 			// ay largeur
-	dQ[4] = 0.0 * vz/sqrt(vx*vx+vy*vy+vz*vz);									//
-	dQ[5] = 0.0 * vz/sqrt(vx*vx+vy*vy+vz*vz); 									// acceleration hauteur nulle
+	dQ[3] = -(5.0/7.0)*getRhoGreen*getG * vy/normeVitesse; 							// ay largeur
+	dQ[4] = 0.0 * vz/normeVitesse;												//
+	dQ[5] = 0.0 * vz/normeVitesse; 													// acceleration hauteur nulle
 
 	return dQ;
 } // fin  getEvaluation()

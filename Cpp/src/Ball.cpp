@@ -37,6 +37,8 @@ Ball::Ball(string pMarque, int pNbAlveoles, int pNbPieces, Club pGolfClub, doubl
 	//std::vector<double> matriceFlight ; // la dimension est faite par le .clone() plus loin
 	area = M_PI*rayon*rayon;
 	indexChute = 0;
+	maxHeight = 0.0;   // BUG corrige : maxHeight/tempsTotal n'etaient pas initialises (valeurs indeterminees)
+	tempsTotal = 0.0;
 	Club clubToTest = pGolfClub;
 
 	double v0Ballbfnms =  clubToTest.getClubV0ms() * cos(clubToTest.getDynamiqueLoftRadian())*(1.0 + clubToTest.getEcoeff())/(1+masse/clubToTest.getPoids()) ;// Vitesse longitudinale dans le referentiel de decollage apres impact (ref: The physics of golf: The optimum loft of a driverA. Raymond Penner)
@@ -238,6 +240,16 @@ double Ball::getMaxHeight()
 	return maxHeight;
 }
 
+void Ball::rescaleSpin(double k) {
+	// met à l'echelle le spin dans paramEqn ET dans l'equation de vol (pour tests : k=0 = pas de spin)
+	paramEqn[1] *= k;
+	paramEqn[2] *= k;
+	spinYOrgrpm *= k;
+	spinZOrgrpm *= k;
+	eqnVolBalle->setParamEq(paramEqn[1], 1);
+	eqnVolBalle->setParamEq(paramEqn[2], 2);
+}
+
 /**
  * Debut de runSimu()
  * author Matthieu PHILIPPE
@@ -275,7 +287,7 @@ void Ball::runSimu() {
 		else {
 			eBall 	= 0.120;
 		}
-		muFrictionCritic = 2.0 * (vixprime + getRayon() * getSpinY()) / (7.0*(1+eBall) * abs(vizprime));
+		muFrictionCritic = 2.0 * (abs(vixprime) + getRayon() * abs(getSpinY())) / (7.0*(1+eBall) * abs(vizprime)); // abs() : mu_critic doit etre positif (doc Penner : |vix'| + r|wi|)
 
 		if (muFriction < muFrictionCritic) {
 			vrxprime 	= vixprime - muFriction * abs(vizprime) *(1.0 + eBall);
@@ -312,6 +324,8 @@ void Ball::runSimu() {
 		if (i == 0) {
 			indexChute = matrice.size();
 			verticalLand = impactAngle;
+			// CORRECTION portee depuis Golfball.sci (commit 73ef2d8) : la force de Magnus est COUPEE apres le 1er rebond (Cl1 = 0)
+			(solveFlight.getEquationODE())->setParamEq(0.0, 6);
 		}
 	} // fin de la boucle for 3 rebonds
 
