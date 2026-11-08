@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Génère une captation radar MODELE idéale (2 canaux) dans sci/ pour valider β et α.
+Génère des captations radar MODELE (2 canaux stéréo) dans sci/, avec SWING COMPLET :
+- avant t0 : vitesse du club V_club(t) = cs*(t/t0)^2.5 (accélération progressive) -> montée Doppler
+- à t0 : impact (saut de fréquence club -> balle)
+- après t0 : balle en vol, V(t) décroît (traînée), micro-Doppler du patch (modulation de phase),
+  et f_Δ(t) module par la courbure α(t) = α0 + 0.5*k*(t-t0)² (effet Magnus du side spin)
+Fs = 44100, CSV 2 lignes ';' (comme les vraies captations).
 
-Config par défaut : fer 7, V0 = 151 km/h, launch = 16.5°, spin total = 4000 rpm,
-side spin = 700 rpm (slice droite) -> backspin = 3938 rpm, β = 10.1°.
+Deux configs générées :
+  - défaut : F7, 151 km/h, launch 16.5°, spin 4000 rpm, side 700 (slice droite, β=10,1°)
+  - "137"   : paramètres du coup réel 2019-02-24-F7-137m-166kmh-4990trm-1312trm-cs118
 
-Signal : porteuse Doppler f_D(t) = KV*V(t)*cos(alpha_radar) (V(t) décroît par traînée,
-R1/R2 à ±2°), + modulation de phase du patch exp(-i*(2r/λ)*sin(ωt)) avec ω = spin total,
-+ pic club à t0, + bruit ~28 dB. Fs = 44100, CSV 2 lignes ';' (comme les vraies captations).
-
-Usage : python3 gen_capture_modele.py
-Sortie : sci/2025-11-08-F7-<carry>m-151kmh-4000trm-700trm-cs115.csv
+Usage : python3 gen_capture_modele.py [137]
 """
 import os, sys
 import numpy as np
@@ -25,68 +26,81 @@ sys.path.insert(0, HERE)
 import GolfBall as G
 from pipe_validation import FS, KV
 
-# ---------- config ----------
-V0_kmh = 151.0
-LAUNCH_DEG = 16.5
-SPIN_TOT_RPM = 4000.0
-SIDE_RPM = 700.0            # slice droite
-CS_KMH = 115.0              # vitesse club (cs)
-ALPHA_PATH_DEG = 3.0        # départ à droite
-DUR = 0.35                  # s (>= 300 ms min pour la courbure, cf. doc §36)
-T0 = 0.10                   # impact à 100 ms
-ALPHA_RADAR_DEG = (-2.0, 2.0)   # angles de visée R1 / R2
+FS_ = FS
+LAM = 299792458 / 10.525e9
 
-# ---------- 1. simu de vol (pour le carry et V(t)) ----------
-m, diam, rho, mu, Cd0, g = G.m, G.diam, G.rho_air, G.mu, G.C_d0, G.g
-Cl1 = 0.54  # fer 7 (SAC)
-V0 = V0_kmh / 3.6
-launch = np.radians(LAUNCH_DEG)
-alpha_path = np.radians(ALPHA_PATH_DEG)
-back_rpm = np.sqrt(SPIN_TOT_RPM**2 - SIDE_RPM**2)
-beta_deg = np.degrees(np.arctan2(SIDE_RPM, back_rpm))
-w_tot = SPIN_TOT_RPM * 2 * np.pi / 60
-w_side = SIDE_RPM * 2 * np.pi / 60
-w_back = back_rpm * 2 * np.pi / 60
-vx0 = V0 * np.cos(launch) * np.cos(alpha_path)
-vy0 = V0 * np.sin(launch)
-vz0 = -V0 * np.cos(launch) * np.sin(alpha_path)
-y0 = [0, 0.1, 0, vx0, vy0, vz0, 0, w_side, w_back, Cl1]
-t = np.arange(0, 6.0, 0.005)
-y = np.zeros((len(t), len(y0)))
-y[0] = y0
-i_land = len(t) - 1
-for i in range(1, len(t)):
-    y[i] = odeint(G.flight_ode, y[i-1], [t[i-1], t[i]], args=(m, diam, rho, mu, Cd0, Cl1, g))[-1]
-    if y[i, 1] <= 0.01 and y[i-1, 1] > 0.01:
-        i_land = i
-        break
-carry = y[i_land, 0]
-Vnorm = np.linalg.norm(y[:i_land, 3:6], axis=1)
-alpha_traj = np.degrees(np.arctan2(y[:i_land, 5], y[:i_land, 3]))
-print(f"SIMU: carry={carry:.1f} m, beta={beta_deg:.2f} deg, alpha0={alpha_traj[0]:+.2f} deg, "
-      f"dAlpha={alpha_traj[-1]-alpha_traj[0]:+.2f} deg, t_vol={t[i_land]:.2f}s")
 
-# ---------- 2. signal radar 2 canaux ----------
-N = int(DUR * FS)
-tt = np.arange(N) / FS
-rng = np.random.default_rng(42)
-r = diam / 2
-lam = 299792458 / 10.525e9
+def simu_vol(V0_kmh, launch_deg, alpha_path_deg, spin_tot_rpm, side_rpm):
+    """Simu de vol (sans rebond) -> t, V(t) [m/s], alpha(t) [rad], carry, i_land."""
+    m, diam, rho, mu, Cd0, g = G.m, G.diam, G.rho_air, G.mu, G.C_d0, G.g
+    Cl1 = 0.54  # fer 7 (SAC)
+    V0 = V0_kmh / 3.6
+    launch = np.radians(launch_deg)
+    ap = np.radians(alpha_path_deg)
+    back = np.sqrt(spin_tot_rpm**2 - side_rpm**2)
+    y0 = [0, 0.1, 0, V0*np.cos(launch)*np.cos(ap), V0*np.sin(launch), -V0*np.cos(launch)*np.sin(ap),
+          0, side_rpm*2*np.pi/60, back*2*np.pi/60, Cl1]
+    t = np.arange(0, 6.0, 0.005)
+    y = np.zeros((len(t), len(y0)))
+    y[0] = y0
+    i_land = len(t) - 1
+    for i in range(1, len(t)):
+        y[i] = odeint(G.flight_ode, y[i-1], [t[i-1], t[i]], args=(m, diam, rho, mu, Cd0, Cl1, g))[-1]
+        if y[i, 1] <= 0.01 and y[i-1, 1] > 0.01:
+            i_land = i
+            break
+    V = np.linalg.norm(y[:i_land, 3:6], axis=1)
+    alpha = np.arctan2(y[:i_land, 5], y[:i_land, 3])
+    return t[:i_land], V, alpha, y[i_land, 0]
 
-V_kmh = np.interp(tt, t[:i_land], Vnorm * 3.6, left=V0_kmh, right=Vnorm[i_land-1] * 3.6)
-rows = []
-for c, a_rad in enumerate(ALPHA_RADAR_DEG):
-    fD = KV * V_kmh * np.cos(np.radians(a_rad))
-    fD = np.where(tt < T0, KV * CS_KMH, fD)          # avant impact : le club
-    phase = 2 * np.pi * np.cumsum(fD) / FS
-    phase += (2 * r / lam) * np.sin(w_tot * 2 * np.pi * tt)   # micro-Doppler du patch
-    rows.append(0.5 * np.cos(phase) + 0.02 * rng.standard_normal(N))
 
-name = f"2025-11-08-F7-{int(round(carry))}m-151kmh-4000trm-700trm-cs115.csv"
-out = os.path.join(SCI, name)
-with open(out, 'w') as f:
-    for row in rows:
-        f.write(';'.join(f'{v:.9f}' for v in row) + '\n')
-print('OK ->', out)
-print(f"config: F7, V0=151 km/h, launch=16.5°, spin_tot=4000 rpm (back={back_rpm:.0f}, side=700, "
-      f"beta={beta_deg:.1f}°), carry={carry:.0f} m, duree={DUR*1000:.0f} ms, t0={T0*1000:.0f} ms")
+def gen_capture(name, v0_kmh, launch_deg, alpha_path_deg, spin_tot_rpm, side_rpm, cs_kmh,
+                dur=0.45, t0=0.12, alpha_radar_deg=(-2.0, 2.0), k_courbe=0.0, seed=42):
+    """Génère le CSV stéréo du swing complet. k_courbe : courbure α(t)=α0+0.5*k*(t-t0)² après impact (rad/s²)."""
+    t_vol, V_vol, alpha_vol, carry = simu_vol(v0_kmh, launch_deg, alpha_path_deg, spin_tot_rpm, side_rpm)
+    back = np.sqrt(spin_tot_rpm**2 - side_rpm**2)
+    beta = np.degrees(np.arctan2(side_rpm, back))
+    w_tot = spin_tot_rpm * 2 * np.pi / 60
+    r = G.diam / 2
+
+    N = int(dur * FS_)
+    tt = np.arange(N) / FS_
+    rng = np.random.default_rng(seed)
+    # vitesse "objet" vue par le radar : club avant t0 (accélération), balle après
+    V_obj = np.where(tt < t0, cs_kmh/3.6 * (np.clip(tt, 0, t0)/t0)**2.5, 0.0)
+    V_obj[tt >= t0] = np.interp(tt[tt >= t0] - t0, t_vol, V_vol, left=V_vol[0], right=V_vol[-1])
+    V_kmh = V_obj * 3.6
+    # direction horizontale α(t) : constante = alpha_path avant impact, puis courbure après
+    alpha_t = np.where(tt < t0, np.radians(alpha_path_deg), 0.0)
+    alpha_t[tt >= t0] = np.radians(alpha_path_deg) + np.interp(tt[tt >= t0] - t0, t_vol, alpha_vol) \
+        + 0.5 * k_courbe * (tt[tt >= t0] - t0)**2
+
+    rows = []
+    for a_rad in alpha_radar_deg:
+        fD = KV * V_kmh * np.cos(np.radians(a_rad) + alpha_t)   # f_D par canal, modulée par α(t)
+        phase = 2 * np.pi * np.cumsum(fD) / FS_
+        phase += (2 * r / LAM) * np.sin(w_tot * 2 * np.pi * tt)  # micro-Doppler patch (spin total)
+        rows.append(0.5 * np.cos(phase) + 0.02 * rng.standard_normal(N))
+
+    out = os.path.join(SCI, name)
+    with open(out, 'w') as f:
+        for row in rows:
+            f.write(';'.join(f'{v:.9f}' for v in row) + '\n')
+    print(f"OK -> {out}")
+    print(f"   config: V0={v0_kmh} km/h, launch={launch_deg}°, spin_tot={spin_tot_rpm} rpm "
+          f"(back={back:.0f}, side={side_rpm}, β={beta:.1f}°), cs={cs_kmh}, carry={carry:.0f} m, "
+          f"dur={dur*1000:.0f} ms, t0={t0*1000:.0f} ms, k_courbe={k_courbe}")
+    return carry, beta
+
+
+if __name__ == '__main__':
+    if len(sys.argv) > 1 and sys.argv[1] == '137':
+        # config du coup réel F7-137m-166kmh-4990trm-1312trm-cs118 (pour comparaison spectro)
+        _, _, _, carry137 = simu_vol(166.0, 16.0, 3.0, 4990.0, 1312.0)
+        gen_capture(f"2025-11-08-F7-{int(round(carry137))}m-166kmh-4990trm-1312trm-cs118.csv",
+                    166.0, 16.0, 3.0, 4990.0, 1312.0, 118.0,
+                    k_courbe=np.radians(-6.0) / (0.25**2) / 2)   # Δα≈-6° sur 250 ms (comme la simu)
+    else:
+        # config idéale par défaut (slice droite)
+        gen_capture("2025-11-08-F7-102m-151kmh-4000trm-700trm-cs115.csv", 151.0, 16.5, 3.0,
+                    4000.0, 700.0, 115.0, k_courbe=np.radians(-6.0) / (0.25**2) / 2)
