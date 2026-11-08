@@ -322,7 +322,7 @@ function [M1, tt, f] = animDensite2(s2,Fs,nbEchantillon,pas,anim,seuil1,normaliz
         [s2_densite,F]=frpowerspec(s2CentreBW++0.000000000001*%i);
         s2_densite = dbv(real(s2_densite));
         a = find(s2_densite < seuil1); // seuillage en dB (avant : find() sur les indices, inopérant)
-        s2_densite(a) = -1000;
+        s2_densite(a) = 0; // seuillage a 0 (avant : -1000, qui ecrasait le pic au carre apres normalize si max<1000)
         if (normalize == 0) then
             s2_densite = s2_densite;
         else
@@ -335,7 +335,7 @@ function [M1, tt, f] = animDensite2(s2,Fs,nbEchantillon,pas,anim,seuil1,normaliz
         tt = [tt;t(ii)];
         M1 = [M1; s2_densite'];
     end;//Fin For
-    M1 = M1(:,$/2:$-1);
+    M1 = M1(:,1:$/2); // moitie basse, meme mapping que f (avant : $/2:$-1 = moitie haute, f5(l) donnait la mauvaise frequence)
     f= f(1:$/2);
     if (anim > 0) then 
         //subplot(2,1,2);
@@ -364,7 +364,7 @@ function [M1, tt, f] = animDensite3(s2,Fs,nbEchantillon,pas,anim,seuil1,normaliz
         [s2_densite,F]=frpowerspec(s2CentreBW+0.000000000001*%i);
         s2_densite = (real(s2_densite));
         a = find(dbv(s2_densite) < seuil1); // seuillage en dB (avant : find() sur les indices, inopérant)
-        s2_densite(a) = -1000;
+        s2_densite(a) = 0; // seuillage a 0 (avant : -1000, qui ecrasait le pic au carre apres normalize si max<1000)
         if (normalize == 0) then
             s2_densite = s2_densite;
         else
@@ -1196,8 +1196,9 @@ endfunction
 function [enveloppe,t] = Enveloppe(xx, Fs,fb, fh)
     [wft,wfm,fr] = wfir('bp',256,[fb/Fs fh/Fs ],'hm',[-1 -1]);
     t = (0:size(xx,2)-1)/Fs;
-    I=filter(wft,1,2*%pi*cos(t*Fs).*xx);
-    Q=filter(wft,1,2*%pi*sin(t*Fs).*xx);
+    fc = (fb+fh)/2; // porteuse au centre de la bande (avant : cos(t*Fs)=cos(n), demodulation a Fs/2pi ~ 7 kHz, hors bande)
+    I=filter(wft,1,cos(2*%pi*fc*t).*xx);
+    Q=filter(wft,1,sin(2*%pi*fc*t).*xx);
     enveloppe = (sqrt(I.^2+Q.^2));
 endfunction
 
@@ -1460,8 +1461,8 @@ function s_modb = smod_B(t,v,rpm)
 endfunction
 
 function rpm = deltaF(df)
-    r = 0.043/2;
-    rpm = df*60/(2*%pi*r*19.49);
+    r = 0.04267/2;
+    rpm = df*60/(2*%pi*r*19.49*3.6); // 3.6: km/h -> m/s, r harmonise avec Freq2RpmSpin (avant : facteur 3.6 manquant, deltaF incoherent avec Freq2RpmSpin)
 endfunction
 
 
