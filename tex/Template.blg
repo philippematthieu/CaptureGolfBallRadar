@@ -1,0 +1,50 @@
+This is BibTeX, Version 0.99e (TeX Live 2026)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: Template.aux
+The style file: alpha.bst
+Database file #1: biblioBibTex.bib
+Warning--I didn't find a database entry for "smits1994aerodynamic"
+Warning--empty journal in AL98
+Warning--can't use both author and editor fields in GPA05
+You've used 13 entries,
+            2543 wiz_defined-function locations,
+            647 strings with 6122 characters,
+and the built_in function-call counts, 4788 in all, are:
+= -- 470
+> -- 193
+< -- 11
++ -- 66
+- -- 59
+* -- 325
+:= -- 793
+add.period$ -- 39
+call.type$ -- 13
+change.case$ -- 74
+chr.to.int$ -- 12
+cite$ -- 15
+duplicate$ -- 201
+empty$ -- 356
+format.name$ -- 78
+if$ -- 980
+int.to.chr$ -- 2
+int.to.str$ -- 0
+missing$ -- 12
+newline$ -- 69
+num.names$ -- 41
+pop$ -- 69
+preamble$ -- 1
+purify$ -- 88
+quote$ -- 0
+skip$ -- 169
+stack$ -- 0
+substring$ -- 274
+swap$ -- 32
+text.length$ -- 11
+text.prefix$ -- 7
+top$ -- 0
+type$ -- 100
+warning$ -- 2
+while$ -- 43
+width$ -- 17
+write$ -- 166
+(There were 3 warnings)

@@ -1,0 +1,2804 @@
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.5.14)  8 NOV 2026 18:23
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**Template.tex
+(./Template.tex
+LaTeX2e <2025-11-01>
+L3 programming layer <2026-03-20>
+(/usr/local/texlive/2026/texmf-dist/tex/latex/base/report.cls
+Document Class: report 2025/01/22 v1.4n Standard LaTeX document class
+(/usr/local/texlive/2026/texmf-dist/tex/latex/base/size10.clo
+File: size10.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
+)
+\c@part=\count275
+\c@chapter=\count276
+\c@section=\count277
+\c@subsection=\count278
+\c@subsubsection=\count279
+\c@paragraph=\count280
+\c@subparagraph=\count281
+\c@figure=\count282
+\c@table=\count283
+\abovecaptionskip=\skip49
+\belowcaptionskip=\skip50
+\bibindent=\dimen150
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/base/inputenc.sty
+Package: inputenc 2024/02/08 v1.3d Input encoding file
+\inpenc@prehook=\toks17
+\inpenc@posthook=\toks18
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/babel/babel.sty
+Package: babel 2026/05/03 v26.7 The multilingual framework for LuaLaTeX, pdfLaT
+eX and XeLaTeX
+\babel@savecnt=\count284
+LaTeX Encoding Info:    Redeclaring text command \ij (encoding OT1) on input li
+ne 2080.
+LaTeX Encoding Info:    Redeclaring text command \IJ (encoding OT1) on input li
+ne 2082.
+LaTeX Encoding Info:    Redeclaring text command \ij (encoding T1) on input lin
+e 2084.
+LaTeX Encoding Info:    Redeclaring text command \IJ (encoding T1) on input lin
+e 2085.
+LaTeX Encoding Info:    Ignoring declaration for text command \ij (encoding ?) 
+on input line 2086.
+LaTeX Encoding Info:    Ignoring declaration for text command \IJ (encoding ?) 
+on input line 2088.
+LaTeX Encoding Info:    Ignoring declaration for text command \SS (encoding ?) 
+on input line 2113.
+\U@D=\dimen151
+\l@unhyphenated=\language91
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/babel/txtbabel.def)
+\bbl@readstream=\read2
+\bbl@dirlevel=\count285
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/babel/locale/en/babel-english.t
+ex)
+Package babel Info: Importing font and identification data for english
+(babel)             from babel-en.ini. Reported on input line 4348.
+ (/usr/local/texlive/2026/texmf-dist/tex/generic/babel-english/english.ldf
+Language: english 2017/06/06 v3.3r English support from the babel system
+Package babel Info: Hyphen rules for 'canadian' set to \l@english
+(babel)             (\language0). Reported on input line 102.
+Package babel Info: Hyphen rules for 'australian' set to \l@ukenglish
+(babel)             (\language22). Reported on input line 105.
+Package babel Info: Hyphen rules for 'newzealand' set to \l@ukenglish
+(babel)             (\language22). Reported on input line 108.
+)) (/usr/local/texlive/2026/texmf-dist/tex/latex/base/fontenc.sty
+Package: fontenc 2025/07/18 v2.1d Standard LaTeX package
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/amsmath/amsmath.sty
+Package: amsmath 2025/07/09 v2.17z AMS math features
+\@mathmargin=\skip51
+
+For additional information on amsmath, use the `?' option.
+(/usr/local/texlive/2026/texmf-dist/tex/latex/amsmath/amstext.sty
+Package: amstext 2024/11/17 v2.01 AMS text
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/amsmath/amsgen.sty
+File: amsgen.sty 1999/11/30 v2.0 generic functions
+\@emptytoks=\toks19
+\ex@=\dimen152
+))
+(/usr/local/texlive/2026/texmf-dist/tex/latex/amsmath/amsbsy.sty
+Package: amsbsy 1999/11/29 v1.2d Bold Symbols
+\pmbraise@=\dimen153
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/amsmath/amsopn.sty
+Package: amsopn 2022/04/08 v2.04 operator names
+)
+\inf@bad=\count286
+LaTeX Info: Redefining \frac on input line 233.
+\uproot@=\count287
+\leftroot@=\count288
+LaTeX Info: Redefining \overline on input line 398.
+LaTeX Info: Redefining \colon on input line 409.
+\classnum@=\count289
+\DOTSCASE@=\count290
+LaTeX Info: Redefining \ldots on input line 495.
+LaTeX Info: Redefining \dots on input line 498.
+LaTeX Info: Redefining \cdots on input line 619.
+\Mathstrutbox@=\box53
+\strutbox@=\box54
+LaTeX Info: Redefining \big on input line 721.
+LaTeX Info: Redefining \Big on input line 722.
+LaTeX Info: Redefining \bigg on input line 723.
+LaTeX Info: Redefining \Bigg on input line 724.
+\big@size=\dimen154
+LaTeX Font Info:    Redeclaring font encoding OML on input line 742.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 743.
+\macc@depth=\count291
+LaTeX Info: Redefining \bmod on input line 904.
+LaTeX Info: Redefining \pmod on input line 909.
+LaTeX Info: Redefining \smash on input line 939.
+LaTeX Info: Redefining \relbar on input line 969.
+LaTeX Info: Redefining \Relbar on input line 970.
+\c@MaxMatrixCols=\count292
+\dotsspace@=\muskip17
+\c@parentequation=\count293
+\dspbrk@lvl=\count294
+\tag@help=\toks20
+\row@=\count295
+\column@=\count296
+\maxfields@=\count297
+\andhelp@=\toks21
+\eqnshift@=\dimen155
+\alignsep@=\dimen156
+\tagshift@=\dimen157
+\tagwidth@=\dimen158
+\totwidth@=\dimen159
+\lineht@=\dimen160
+\@envbody=\toks22
+\multlinegap=\skip52
+\multlinetaggap=\skip53
+\mathdisplay@stack=\toks23
+LaTeX Info: Redefining \[ on input line 2950.
+LaTeX Info: Redefining \] on input line 2951.
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/amsfonts/amsfonts.sty
+Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
+\symAMSa=\mathgroup4
+\symAMSb=\mathgroup5
+LaTeX Font Info:    Redeclaring math symbol \hbar on input line 98.
+LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
+(Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/amsfonts/amssymb.sty
+Package: amssymb 2013/01/14 v3.01 AMS font symbols
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/base/makeidx.sty
+Package: makeidx 2021/10/04 v1.0m Standard LaTeX package
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2024/12/31 v1.2e Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2022/05/29 v1.15 key=value parser (DPC)
+\KV@toks@=\toks24
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2024/08/06 v1.4g Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2023/12/02 v1.11 sin cos tan (DPC)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 106.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2025/09/29 v1.2d Graphics/color driver for pdftex
+))
+\Gin@req@height=\dimen161
+\Gin@req@width=\dimen162
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/lm/lmodern.sty
+Package: lmodern 2015/05/01 v1.6.1 Latin Modern Fonts
+LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
+(Font)                  OT1/cmr/m/n --> OT1/lmr/m/n on input line 22.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `normal'
+(Font)                  OML/cmm/m/it --> OML/lmm/m/it on input line 23.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `normal'
+(Font)                  OMS/cmsy/m/n --> OMS/lmsy/m/n on input line 24.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `normal'
+(Font)                  OMX/cmex/m/n --> OMX/lmex/m/n on input line 25.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
+(Font)                  OT1/cmr/bx/n --> OT1/lmr/bx/n on input line 26.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `bold'
+(Font)                  OML/cmm/b/it --> OML/lmm/b/it on input line 27.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `bold'
+(Font)                  OMS/cmsy/b/n --> OMS/lmsy/b/n on input line 28.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `bold'
+(Font)                  OMX/cmex/m/n --> OMX/lmex/m/n on input line 29.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
+(Font)                  OT1/cmr/bx/n --> OT1/lmr/bx/n on input line 31.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
+(Font)                  OT1/cmss/m/n --> OT1/lmss/m/n on input line 32.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
+(Font)                  OT1/cmr/m/it --> OT1/lmr/m/it on input line 33.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
+(Font)                  OT1/cmtt/m/n --> OT1/lmtt/m/n on input line 34.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
+(Font)                  OT1/cmr/bx/n --> OT1/lmr/bx/n on input line 35.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
+(Font)                  OT1/cmss/bx/n --> OT1/lmss/bx/n on input line 36.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
+(Font)                  OT1/cmr/bx/it --> OT1/lmr/bx/it on input line 37.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
+(Font)                  OT1/cmtt/m/n --> OT1/lmtt/m/n on input line 38.
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/kpfonts.sty
+Package: kpfonts  2024/10/27 v3.36
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/iftex/iftex.sty
+Package: iftex 2024/12/12 v1.0g TeX engine tests
+)
+\c@mv@rm=\count298
+\c@mv@boldrm=\count299
+\c@mv@sf=\count300
+\c@mv@boldsf=\count301
+LaTeX Font Info:    Redeclaring symbol font `operators' on input line 377.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `normal'
+(Font)                  OT1/lmr/m/n --> OT1/jkp/m/n on input line 377.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
+(Font)                  OT1/lmr/bx/n --> OT1/jkp/m/n on input line 377.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `rm'
+(Font)                  OT1/cmr/m/n --> OT1/jkp/m/n on input line 377.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `boldrm'
+(Font)                  OT1/cmr/m/n --> OT1/jkp/m/n on input line 377.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `sf'
+(Font)                  OT1/cmr/m/n --> OT1/jkp/m/n on input line 377.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `boldsf'
+(Font)                  OT1/cmr/m/n --> OT1/jkp/m/n on input line 377.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `bold'
+(Font)                  OT1/jkp/m/n --> OT1/jkp/b/n on input line 378.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `rm'
+(Font)                  OT1/jkp/m/n --> OT1/jkp/m/n on input line 380.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `boldrm'
+(Font)                  OT1/jkp/m/n --> OT1/jkp/b/n on input line 381.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `sf'
+(Font)                  OT1/jkp/m/n --> OT1/jkpss/m/n on input line 382.
+LaTeX Font Info:    Overwriting symbol font `operators' in version `boldsf'
+(Font)                  OT1/jkp/m/n --> OT1/jkpss/b/n on input line 383.
+LaTeX Font Info:    Redeclaring math alphabet \mathrm on input line 387.
+LaTeX Font Info:    Overwriting math alphabet `\mathrm' in version `bold'
+(Font)                  OT1/jkp/m/n --> OT1/jkp/b/n on input line 388.
+LaTeX Font Info:    Overwriting math alphabet `\mathrm' in version `rm'
+(Font)                  OT1/jkp/m/n --> OT1/jkp/m/n on input line 389.
+LaTeX Font Info:    Overwriting math alphabet `\mathrm' in version `boldrm'
+(Font)                  OT1/jkp/m/n --> OT1/jkp/b/n on input line 390.
+LaTeX Font Info:    Overwriting math alphabet `\mathrm' in version `sf'
+(Font)                  OT1/jkp/m/n --> OT1/jkp/m/n on input line 391.
+LaTeX Font Info:    Overwriting math alphabet `\mathrm' in version `boldsf'
+(Font)                  OT1/jkp/m/n --> OT1/jkp/b/n on input line 392.
+LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 401.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `normal'
+(Font)                  OT1/lmr/bx/n --> OT1/jkp/b/n on input line 401.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
+(Font)                  OT1/lmr/bx/n --> OT1/jkp/b/n on input line 401.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `rm'
+(Font)                  OT1/cmr/bx/n --> OT1/jkp/b/n on input line 401.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `boldrm'
+(Font)                  OT1/cmr/bx/n --> OT1/jkp/b/n on input line 401.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `sf'
+(Font)                  OT1/cmr/bx/n --> OT1/jkp/b/n on input line 401.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `boldsf'
+(Font)                  OT1/cmr/bx/n --> OT1/jkp/b/n on input line 401.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `bold'
+(Font)                  OT1/jkp/b/n --> OT1/jkp/b/n on input line 402.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `rm'
+(Font)                  OT1/jkp/b/n --> OT1/jkp/b/n on input line 404.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `boldrm'
+(Font)                  OT1/jkp/b/n --> OT1/jkp/b/n on input line 405.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `sf'
+(Font)                  OT1/jkp/b/n --> OT1/jkpss/b/n on input line 406.
+LaTeX Font Info:    Overwriting math alphabet `\mathbf' in version `boldsf'
+(Font)                  OT1/jkp/b/n --> OT1/jkpss/b/n on input line 407.
+LaTeX Font Info:    Redeclaring math alphabet \mathit on input line 413.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `normal'
+(Font)                  OT1/lmr/m/it --> OT1/jkp/m/it on input line 413.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
+(Font)                  OT1/lmr/bx/it --> OT1/jkp/m/it on input line 413.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `rm'
+(Font)                  OT1/cmr/m/it --> OT1/jkp/m/it on input line 413.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `boldrm'
+(Font)                  OT1/cmr/m/it --> OT1/jkp/m/it on input line 413.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `sf'
+(Font)                  OT1/cmr/m/it --> OT1/jkp/m/it on input line 413.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `boldsf'
+(Font)                  OT1/cmr/m/it --> OT1/jkp/m/it on input line 413.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `bold'
+(Font)                  OT1/jkp/m/it --> OT1/jkp/b/it on input line 414.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `rm'
+(Font)                  OT1/jkp/m/it --> OT1/jkp/m/it on input line 416.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `boldrm'
+(Font)                  OT1/jkp/m/it --> OT1/jkp/b/it on input line 417.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `sf'
+(Font)                  OT1/jkp/m/it --> OT1/jkpss/m/it on input line 418.
+LaTeX Font Info:    Overwriting math alphabet `\mathit' in version `boldsf'
+(Font)                  OT1/jkp/m/it --> OT1/jkpss/b/it on input line 419.
+LaTeX Font Info:    Redeclaring math alphabet \mathsf on input line 424.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `normal'
+(Font)                  OT1/lmss/m/n --> OT1/jkpss/m/n on input line 424.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
+(Font)                  OT1/lmss/bx/n --> OT1/jkpss/m/n on input line 424.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `rm'
+(Font)                  OT1/cmss/m/n --> OT1/jkpss/m/n on input line 424.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `boldrm'
+(Font)                  OT1/cmss/m/n --> OT1/jkpss/m/n on input line 424.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `sf'
+(Font)                  OT1/cmss/m/n --> OT1/jkpss/m/n on input line 424.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `boldsf'
+(Font)                  OT1/cmss/m/n --> OT1/jkpss/m/n on input line 424.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `bold'
+(Font)                  OT1/jkpss/m/n --> OT1/jkpss/b/n on input line 425.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `rm'
+(Font)                  OT1/jkpss/m/n --> OT1/jkpss/m/n on input line 426.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `boldrm'
+(Font)                  OT1/jkpss/m/n --> OT1/jkpss/b/n on input line 427.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `sf'
+(Font)                  OT1/jkpss/m/n --> OT1/jkpss/m/n on input line 428.
+LaTeX Font Info:    Overwriting math alphabet `\mathsf' in version `boldsf'
+(Font)                  OT1/jkpss/m/n --> OT1/jkpss/b/n on input line 429.
+LaTeX Font Info:    Redeclaring math alphabet \mathtt on input line 433.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `normal'
+(Font)                  OT1/lmtt/m/n --> OT1/jkptt/m/n on input line 433.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
+(Font)                  OT1/lmtt/m/n --> OT1/jkptt/m/n on input line 433.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `rm'
+(Font)                  OT1/cmtt/m/n --> OT1/jkptt/m/n on input line 433.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `boldrm'
+(Font)                  OT1/cmtt/m/n --> OT1/jkptt/m/n on input line 433.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `sf'
+(Font)                  OT1/cmtt/m/n --> OT1/jkptt/m/n on input line 433.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `boldsf'
+(Font)                  OT1/cmtt/m/n --> OT1/jkptt/m/n on input line 433.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `bold'
+(Font)                  OT1/jkptt/m/n --> OT1/jkptt/b/n on input line 434.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `rm'
+(Font)                  OT1/jkptt/m/n --> OT1/jkptt/m/n on input line 435.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `boldrm'
+(Font)                  OT1/jkptt/m/n --> OT1/jkptt/b/n on input line 436.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `sf'
+(Font)                  OT1/jkptt/m/n --> OT1/jkptt/m/n on input line 437.
+LaTeX Font Info:    Overwriting math alphabet `\mathtt' in version `boldsf'
+(Font)                  OT1/jkptt/m/n --> OT1/jkptt/b/n on input line 438.
+LaTeX Font Info:    Redeclaring symbol font `letters' on input line 446.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `normal'
+(Font)                  OML/lmm/m/it --> OML/jkp/m/it on input line 446.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `bold'
+(Font)                  OML/lmm/b/it --> OML/jkp/m/it on input line 446.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `rm'
+(Font)                  OML/cmm/m/it --> OML/jkp/m/it on input line 446.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `boldrm'
+(Font)                  OML/cmm/m/it --> OML/jkp/m/it on input line 446.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `sf'
+(Font)                  OML/cmm/m/it --> OML/jkp/m/it on input line 446.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `boldsf'
+(Font)                  OML/cmm/m/it --> OML/jkp/m/it on input line 446.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `bold'
+(Font)                  OML/jkp/m/it --> OML/jkp/bx/it on input line 447.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `rm'
+(Font)                  OML/jkp/m/it --> OML/jkp/m/it on input line 449.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `boldrm'
+(Font)                  OML/jkp/m/it --> OML/jkp/bx/it on input line 450.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `sf'
+(Font)                  OML/jkp/m/it --> OML/jkpss/m/it on input line 451.
+LaTeX Font Info:    Overwriting symbol font `letters' in version `boldsf'
+(Font)                  OML/jkp/m/it --> OML/jkpss/bx/it on input line 452.
+\symlettersA=\mathgroup6
+LaTeX Font Info:    Overwriting symbol font `lettersA' in version `bold'
+(Font)                  U/jkpmia/m/it --> U/jkpmia/bx/it on input line 462.
+LaTeX Font Info:    Overwriting symbol font `lettersA' in version `rm'
+(Font)                  U/jkpmia/m/it --> U/jkpmia/m/it on input line 464.
+LaTeX Font Info:    Overwriting symbol font `lettersA' in version `boldrm'
+(Font)                  U/jkpmia/m/it --> U/jkpmia/bx/it on input line 465.
+LaTeX Font Info:    Overwriting symbol font `lettersA' in version `sf'
+(Font)                  U/jkpmia/m/it --> U/jkpssmia/m/it on input line 466.
+LaTeX Font Info:    Overwriting symbol font `lettersA' in version `boldsf'
+(Font)                  U/jkpmia/m/it --> U/jkpssmia/bx/it on input line 467.
+LaTeX Font Info:    Redeclaring math alphabet \mathfrak on input line 470.
+LaTeX Font Info:    Redeclaring symbol font `symbols' on input line 479.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `normal'
+(Font)                  OMS/lmsy/m/n --> OMS/jkp/m/n on input line 479.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `bold'
+(Font)                  OMS/lmsy/b/n --> OMS/jkp/m/n on input line 479.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `rm'
+(Font)                  OMS/cmsy/m/n --> OMS/jkp/m/n on input line 479.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `boldrm'
+(Font)                  OMS/cmsy/m/n --> OMS/jkp/m/n on input line 479.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `sf'
+(Font)                  OMS/cmsy/m/n --> OMS/jkp/m/n on input line 479.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `boldsf'
+(Font)                  OMS/cmsy/m/n --> OMS/jkp/m/n on input line 479.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `bold'
+(Font)                  OMS/jkp/m/n --> OMS/jkp/bx/n on input line 480.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `rm'
+(Font)                  OMS/jkp/m/n --> OMS/jkp/m/n on input line 482.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `boldrm'
+(Font)                  OMS/jkp/m/n --> OMS/jkp/bx/n on input line 483.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `sf'
+(Font)                  OMS/jkp/m/n --> OMS/jkp/m/n on input line 484.
+LaTeX Font Info:    Overwriting symbol font `symbols' in version `boldsf'
+(Font)                  OMS/jkp/m/n --> OMS/jkp/bx/n on input line 485.
+LaTeX Font Info:    Redeclaring symbol font `AMSa' on input line 498.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `normal'
+(Font)                  U/msa/m/n --> U/jkpsya/m/n on input line 498.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `bold'
+(Font)                  U/msa/m/n --> U/jkpsya/m/n on input line 498.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `rm'
+(Font)                  U/msa/m/n --> U/jkpsya/m/n on input line 498.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `boldrm'
+(Font)                  U/msa/m/n --> U/jkpsya/m/n on input line 498.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `sf'
+(Font)                  U/msa/m/n --> U/jkpsya/m/n on input line 498.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `boldsf'
+(Font)                  U/msa/m/n --> U/jkpsya/m/n on input line 498.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `bold'
+(Font)                  U/jkpsya/m/n --> U/jkpsya/bx/n on input line 499.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `rm'
+(Font)                  U/jkpsya/m/n --> U/jkpsya/m/n on input line 500.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `boldrm'
+(Font)                  U/jkpsya/m/n --> U/jkpsya/bx/n on input line 501.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `sf'
+(Font)                  U/jkpsya/m/n --> U/jkpsya/m/n on input line 502.
+LaTeX Font Info:    Overwriting symbol font `AMSa' in version `boldsf'
+(Font)                  U/jkpsya/m/n --> U/jkpsya/bx/n on input line 503.
+LaTeX Font Info:    Redeclaring symbol font `AMSb' on input line 551.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `normal'
+(Font)                  U/msb/m/n --> U/jkpsyb/m/n on input line 551.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `bold'
+(Font)                  U/msb/m/n --> U/jkpsyb/m/n on input line 551.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `rm'
+(Font)                  U/msb/m/n --> U/jkpsyb/m/n on input line 551.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `boldrm'
+(Font)                  U/msb/m/n --> U/jkpsyb/m/n on input line 551.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `sf'
+(Font)                  U/msb/m/n --> U/jkpsyb/m/n on input line 551.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `boldsf'
+(Font)                  U/msb/m/n --> U/jkpsyb/m/n on input line 551.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `bold'
+(Font)                  U/jkpsyb/m/n --> U/jkpsyb/bx/n on input line 552.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `rm'
+(Font)                  U/jkpsyb/m/n --> U/jkpsyb/m/n on input line 553.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `boldrm'
+(Font)                  U/jkpsyb/m/n --> U/jkpsyb/bx/n on input line 554.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `sf'
+(Font)                  U/jkpsyb/m/n --> U/jkpsssyb/m/n on input line 555.
+LaTeX Font Info:    Overwriting symbol font `AMSb' in version `boldsf'
+(Font)                  U/jkpsyb/m/n --> U/jkpsssyb/bx/n on input line 556.
+\symsymbolsC=\mathgroup7
+LaTeX Font Info:    Overwriting symbol font `symbolsC' in version `bold'
+(Font)                  U/jkpsyc/m/n --> U/jkpsyc/bx/n on input line 572.
+LaTeX Font Info:    Overwriting symbol font `symbolsC' in version `rm'
+(Font)                  U/jkpsyc/m/n --> U/jkpsyc/m/n on input line 574.
+LaTeX Font Info:    Overwriting symbol font `symbolsC' in version `boldrm'
+(Font)                  U/jkpsyc/m/n --> U/jkpsyc/bx/n on input line 575.
+LaTeX Font Info:    Overwriting symbol font `symbolsC' in version `sf'
+(Font)                  U/jkpsyc/m/n --> U/jkpsyc/m/n on input line 576.
+LaTeX Font Info:    Overwriting symbol font `symbolsC' in version `boldsf'
+(Font)                  U/jkpsyc/m/n --> U/jkpsyc/bx/n on input line 577.
+LaTeX Font Info:    Overwriting math alphabet `\mathscr' in version `bold'
+(Font)                  U/jkpsyd/m/n --> U/jkpsyd/bx/n on input line 606.
+LaTeX Font Info:    Overwriting math alphabet `\mathscr' in version `rm'
+(Font)                  U/jkpsyd/m/n --> U/jkpsyd/m/n on input line 608.
+LaTeX Font Info:    Overwriting math alphabet `\mathscr' in version `boldrm'
+(Font)                  U/jkpsyd/m/n --> U/jkpsyd/bx/n on input line 609.
+LaTeX Font Info:    Overwriting math alphabet `\mathscr' in version `sf'
+(Font)                  U/jkpsyd/m/n --> U/jkpsyd/m/n on input line 610.
+LaTeX Font Info:    Overwriting math alphabet `\mathscr' in version `boldsf'
+(Font)                  U/jkpsyd/m/n --> U/jkpsyd/bx/n on input line 611.
+LaTeX Font Info:    Redeclaring symbol font `largesymbols' on input line 621.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `normal'
+(Font)                  OMX/lmex/m/n --> OMX/jkp/m/n on input line 621.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `bold'
+(Font)                  OMX/lmex/m/n --> OMX/jkp/m/n on input line 621.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `rm'
+(Font)                  OMX/cmex/m/n --> OMX/jkp/m/n on input line 621.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `boldrm'
+(Font)                  OMX/cmex/m/n --> OMX/jkp/m/n on input line 621.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `sf'
+(Font)                  OMX/cmex/m/n --> OMX/jkp/m/n on input line 621.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `boldsf'
+(Font)                  OMX/cmex/m/n --> OMX/jkp/m/n on input line 621.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `bold'
+(Font)                  OMX/jkp/m/n --> OMX/jkp/bx/n on input line 622.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `rm'
+(Font)                  OMX/jkp/m/n --> OMX/jkp/m/n on input line 624.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `boldrm'
+(Font)                  OMX/jkp/m/n --> OMX/jkp/bx/n on input line 625.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `sf'
+(Font)                  OMX/jkp/m/n --> OMX/jkpss/m/n on input line 626.
+LaTeX Font Info:    Overwriting symbol font `largesymbols' in version `boldsf'
+(Font)                  OMX/jkp/m/n --> OMX/jkpss/bx/n on input line 627.
+\symlargesymbolsA=\mathgroup8
+LaTeX Font Info:    Overwriting symbol font `largesymbolsA' in version `bold'
+(Font)                  U/jkpexa/m/n --> U/jkpexa/bx/n on input line 638.
+LaTeX Font Info:    Overwriting symbol font `largesymbolsA' in version `rm'
+(Font)                  U/jkpexa/m/n --> U/jkpexa/m/n on input line 640.
+LaTeX Font Info:    Overwriting symbol font `largesymbolsA' in version `boldrm'
+
+(Font)                  U/jkpexa/m/n --> U/jkpexa/bx/n on input line 641.
+LaTeX Font Info:    Overwriting symbol font `largesymbolsA' in version `sf'
+(Font)                  U/jkpexa/m/n --> U/jkpexa/m/n on input line 642.
+LaTeX Font Info:    Overwriting symbol font `largesymbolsA' in version `boldsf'
+
+(Font)                  U/jkpexa/m/n --> U/jkpexa/bx/n on input line 643.
+LaTeX Info: Redefining \not on input line 1603.
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/tools/multicol.sty
+Package: multicol 2025/10/21 v2.0b multicolumn formatting (FMi)
+\c@tracingmulticols=\count302
+\mult@box=\box55
+\multicol@leftmargin=\dimen163
+\c@unbalance=\count303
+\c@collectmore=\count304
+\doublecol@number=\count305
+\multicoltolerance=\count306
+\multicolpretolerance=\count307
+\full@width=\dimen164
+\page@free=\dimen165
+\premulticols=\dimen166
+\postmulticols=\dimen167
+\multicolsep=\skip54
+\multicolbaselineskip=\skip55
+\partial@page=\box56
+\last@line=\box57
+\mc@boxedresult=\box58
+\maxbalancingoverflow=\dimen168
+\mult@rightbox=\box59
+\mult@grightbox=\box60
+\mult@firstbox=\box61
+\mult@gfirstbox=\box62
+\@tempa=\box63
+\@tempa=\box64
+\@tempa=\box65
+\@tempa=\box66
+\@tempa=\box67
+\@tempa=\box68
+\@tempa=\box69
+\@tempa=\box70
+\@tempa=\box71
+\@tempa=\box72
+\@tempa=\box73
+\@tempa=\box74
+\@tempa=\box75
+\@tempa=\box76
+\@tempa=\box77
+\@tempa=\box78
+\@tempa=\box79
+\@tempa=\box80
+\@tempa=\box81
+\@tempa=\box82
+\@tempa=\box83
+\@tempa=\box84
+\@tempa=\box85
+\@tempa=\box86
+\@tempa=\box87
+\@tempa=\box88
+\@tempa=\box89
+\@tempa=\box90
+\@tempa=\box91
+\@tempa=\box92
+\@tempa=\box93
+\@tempa=\box94
+\@tempa=\box95
+\@tempa=\box96
+\@tempa=\box97
+\@tempa=\box98
+\c@minrows=\count308
+\c@columnbadness=\count309
+\c@finalcolumnbadness=\count310
+\last@try=\dimen169
+\multicolovershoot=\dimen170
+\multicolundershoot=\dimen171
+\mult@nat@firstbox=\box99
+\colbreak@box=\box100
+\mc@col@check@num=\count311
+\g__mc_curr_col_int=\count312
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/caption/caption.sty
+Package: caption 2023/08/05 v3.6o Customizing captions (AR)
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/caption/caption3.sty
+Package: caption3 2023/07/31 v2.4d caption3 kernel (AR)
+\caption@tempdima=\dimen172
+\captionmargin=\dimen173
+\caption@leftmargin=\dimen174
+\caption@rightmargin=\dimen175
+\caption@width=\dimen176
+\caption@indent=\dimen177
+\caption@parindent=\dimen178
+\caption@hangindent=\dimen179
+Package caption Info: Standard document class detected.
+)
+\c@caption@flags=\count313
+\c@continuedfloat=\count314
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/float/float.sty
+Package: float 2001/11/08 v1.3d Float enhancements (AL)
+\c@float@type=\count315
+\float@exts=\toks25
+\float@box=\box101
+\@float@everytoks=\toks26
+\@floatcapt=\box102
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/listings/listings.sty
+\lst@mode=\count316
+\lst@gtempboxa=\box103
+\lst@token=\toks27
+\lst@length=\count317
+\lst@currlwidth=\dimen180
+\lst@column=\count318
+\lst@pos=\count319
+\lst@lostspace=\dimen181
+\lst@width=\dimen182
+\lst@newlines=\count320
+\lst@lineno=\count321
+\lst@maxwidth=\dimen183
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstpatch.sty
+File: lstpatch.sty 2025/11/14 1.11b (Carsten Heinz)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstmisc.sty
+File: lstmisc.sty 2025/11/14 1.11b (Carsten Heinz)
+\c@lstnumber=\count322
+\lst@skipnumbers=\count323
+\lst@framebox=\box104
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/listings/listings.cfg
+File: listings.cfg 2025/11/14 1.11b listings configuration
+))
+Package: listings 2025/11/14 1.11b (Carsten Heinz)
+
+==> First Aid for listings.sty no longer applied!
+    Expected:
+        2024/09/23 1.10c (Carsten Heinz)
+    but found:
+        2025/11/14 1.11b (Carsten Heinz)
+    so I'm assuming it got fixed.
+(/usr/local/texlive/2026/texmf-dist/tex/latex/xcolor/xcolor.sty
+Package: xcolor 2024/09/29 v3.02 LaTeX color extensions (UK)
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/graphics-cfg/color.cfg
+File: color.cfg 2016/01/02 v1.6 sample color configuration
+)
+Package xcolor Info: Driver file: pdftex.def on input line 274.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/graphics/mathcolor.ltx)
+Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1349.
+Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1353.
+Package xcolor Info: Model `RGB' extended on input line 1365.
+Package xcolor Info: Model `HTML' substituted by `rgb' on input line 1367.
+Package xcolor Info: Model `Hsb' substituted by `hsb' on input line 1368.
+Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1369.
+Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1370.
+Package xcolor Info: Model `Gray' substituted by `gray' on input line 1371.
+Package xcolor Info: Model `wave' substituted by `hsb' on input line 1372.
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/base/ifthen.sty
+Package: ifthen 2024/03/16 v1.1e Standard LaTeX ifthen package (DPC)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/etoolbox/etoolbox.sty
+Package: etoolbox 2025/10/02 v2.5m e-TeX tools for LaTeX (JAW)
+\etb@tempcnta=\count324
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/lastpage/lastpage.sty
+Package: lastpage 2025/08/14 v2.1h lastpage: 2.09 or 2e? (HMM)
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/lastpage/lastpage2e.sty
+Package: lastpage2e 2025/08/14 v2.1h Decide which 2e lastpage version to use (H
+MM)
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/lastpage/lastpagemodern.sty
+Package: lastpagemodern 2025-08-14 v2.1h Refers to last page's name (HMM; JPG)
+\c@lastpagecount=\count325
+) 
+)) (/usr/local/texlive/2026/texmf-dist/tex/latex/fancyhdr/fancyhdr.sty
+Package: fancyhdr 2025/02/07 v5.2 Extensive control of page headers and footers
+
+\f@nch@headwidth=\skip56
+\f@nch@offset@elh=\skip57
+\f@nch@offset@erh=\skip58
+\f@nch@offset@olh=\skip59
+\f@nch@offset@orh=\skip60
+\f@nch@offset@elf=\skip61
+\f@nch@offset@erf=\skip62
+\f@nch@offset@olf=\skip63
+\f@nch@offset@orf=\skip64
+\f@nch@height=\skip65
+\f@nch@footalignment=\skip66
+\f@nch@widthL=\skip67
+\f@nch@widthC=\skip68
+\f@nch@widthR=\skip69
+\@temptokenb=\toks28
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/lipsum/lipsum.sty
+(/usr/local/texlive/2026/texmf-dist/tex/latex/l3packages/l3keys2e/l3keys2e.sty
+(/usr/local/texlive/2026/texmf-dist/tex/latex/l3kernel/expl3.sty
+Package: expl3 2026-03-20 L3 programming layer (loader) 
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+File: l3backend-pdftex.def 2026-02-18 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count326
+))
+Package: l3keys2e 2025-10-09 LaTeX2e option processing using LaTeX3 keys
+)
+Package: lipsum 2021-09-20 v2.7 150 paragraphs of Lorem Ipsum dummy text
+\g__lipsum_par_int=\count327
+\l__lipsum_a_int=\count328
+\l__lipsum_b_int=\count329
+(/usr/local/texlive/2026/texmf-dist/tex/latex/lipsum/lipsum.ltd.tex))
+(/usr/local/texlive/2026/texmf-dist/tex/latex/appendix/appendix.sty
+Package: appendix 2020/02/08 v1.2c extra appendix facilities
+\c@@pps=\count330
+\c@@ppsavesec=\count331
+\c@@ppsaveapp=\count332
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/geometry/geometry.sty
+Package: geometry 2026/03/07 v6.0 Page Geometry
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/iftex/ifvtex.sty
+Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
+)
+\Gm@cnth=\count333
+\Gm@cntv=\count334
+\c@Gm@tempcnt=\count335
+\Gm@bindingoffset=\dimen184
+\Gm@wd@mp=\dimen185
+\Gm@odd@mp=\dimen186
+\Gm@even@mp=\dimen187
+\Gm@layoutwidth=\dimen188
+\Gm@layoutheight=\dimen189
+\Gm@layouthoffset=\dimen190
+\Gm@layoutvoffset=\dimen191
+\Gm@dimlist=\toks29
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/parskip/parskip.sty
+Package: parskip 2021-03-14 v2.0h non-zero parskip adjustments
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kvoptions/kvoptions.sty
+Package: kvoptions 2022-06-15 v3.15 Key value format for package options (HO)
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/ltxcmds/ltxcmds.sty
+Package: ltxcmds 2023-12-04 v1.26 LaTeX kernel commands for general use (HO)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kvsetkeys/kvsetkeys.sty
+Package: kvsetkeys 2022-10-05 v1.19 Key value parser (HO)
+)))
+(/usr/local/texlive/2026/texmf-dist/tex/latex/tools/array.sty
+Package: array 2025/09/25 v2.6n Tabular extension package (FMi)
+\col@sep=\dimen192
+\ar@mcellbox=\box105
+\extrarowheight=\dimen193
+\NC@list=\toks30
+\extratabsurround=\skip70
+\backup@length=\skip71
+\ar@cellbox=\box106
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/tools/tabularx.sty
+Package: tabularx 2023/12/11 v2.12a `tabularx' package (DPC)
+\TX@col@width=\dimen194
+\TX@old@table=\dimen195
+\TX@old@col=\dimen196
+\TX@target=\dimen197
+\TX@delta=\dimen198
+\TX@cols=\count336
+\TX@ftn=\toks31
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/tabularray/tabularray.sty
+Package: tabularray 2025-11-27 v2025C Typeset tabulars and arrays with LaTeX3
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/ninecolors/ninecolors.sty
+Package: ninecolors 2022-02-13 v2022D Select colors with proper color contrast
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/l3packages/xparse/xparse.sty
+Package: xparse 2025-10-09 L3 Experimental document command parser
+))
+\g__tblr_nohyper_int=\count337
+\l__tblr_a_int=\count338
+\l__tblr_c_int=\count339
+\l__tblr_r_int=\count340
+\l__tblr_d_dim=\dimen199
+\l__tblr_h_dim=\dimen256
+\l__tblr_o_dim=\dimen257
+\l__tblr_p_dim=\dimen258
+\l__tblr_q_dim=\dimen259
+\l__tblr_r_dim=\dimen260
+\l__tblr_s_dim=\dimen261
+\l__tblr_t_dim=\dimen262
+\l__tblr_v_dim=\dimen263
+\l__tblr_w_dim=\dimen264
+\l__tblr_a_box=\box107
+\l__tblr_b_box=\box108
+\l__tblr_c_box=\box109
+\l__tblr_d_box=\box110
+\c@tblrcount=\count341
+\c@rownum=\count342
+\c@colnum=\count343
+\c@rowcount=\count344
+\c@colcount=\count345
+\abovesep=\dimen265
+\belowsep=\dimen266
+\leftsep=\dimen267
+\rightsep=\dimen268
+\gTblrLevelInt=\count346
+\g__tblr_data_row_key_count_int=\count347
+\g__tblr_data_column_key_count_int=\count348
+\g__tblr_data_cell_key_count_int=\count349
+\g__tblr_array_int=\count350
+\l__tblr_key_count_int=\count351
+\l__tblr_key_quotient_int=\count352
+\l__tblr_key_quotient_two_int=\count353
+\l__tblr_key_remainder_int=\count354
+\g__tblr_data_str_value_count_int=\count355
+\lTblrChildTotalInt=\count356
+\lTblrChildHtotalInt=\count357
+\lTblrChildVtotalInt=\count358
+\l__child_diff_h_int=\count359
+\l__child_diff_v_int=\count360
+\l__child_sign_h_int=\count361
+\l__child_sign_v_int=\count362
+\l__child_step_int=\count363
+\lTblrDefaultHruleWidthDim=\dimen269
+\lTblrDefaultVruleWidthDim=\dimen270
+\l__tblr_split_balance_int=\count364
+\l__tblr_strut_dp_dim=\dimen271
+\l__tblr_strut_ht_dim=\dimen272
+\g__tblr_cell_wd_dim=\dimen273
+\g__tblr_cell_ht_dim=\dimen274
+\g__tblr_cell_head_dim=\dimen275
+\g__tblr_cell_foot_dim=\dimen276
+\l__tblr_measured_cell_box=\box111
+\g__tblr_last_box=\box112
+\l__tblr_temp_box=\box113
+\l__tblr_column_target_dim=\dimen277
+\l__tblr_hfuzz_dim=\dimen278
+\l__tblr_caption_box=\box114
+\l__tblr_caption_left_box=\box115
+\lTblrRowHeadInt=\count365
+\lTblrRowFootInt=\count366
+\l__tblr_row_head_box=\box116
+\l__tblr_row_foot_box=\box117
+\l__tblr_row_head_foot_dim=\dimen279
+\lTblrTableWidthDim=\dimen280
+\l__tblr_table_firsthead_box=\box118
+\l__tblr_table_middlehead_box=\box119
+\l__tblr_table_lasthead_box=\box120
+\l__tblr_table_firstfoot_box=\box121
+\l__tblr_table_middlefoot_box=\box122
+\l__tblr_table_lastfoot_box=\box123
+\l__tblr_remain_height_dim=\dimen281
+\l__tblr_next_rows_dim=\dimen282
+\l__tblr_page_overfill_dim=\dimen283
+\l__tblr_long_from_int=\count367
+\l__tblr_long_to_int=\count368
+\l__tblr_curr_i_int=\count369
+\l__tblr_prev_i_int=\count370
+\lTblrTablePageInt=\count371
+\l__tblr_table_head_box=\box124
+\l__tblr_table_foot_box=\box125
+\l__tblr_table_head_foot_dim=\dimen284
+\l__tblr_table_head_body_foot_dim=\dimen285
+\l__tblr_table_box=\box126
+\lTblrRowFirstInt=\count372
+\lTblrRowLastInt=\count373
+\l__tblr_cover_box_a_dim=\dimen286
+\l__tblr_cover_box_b_dim=\dimen287
+\l__tblr_table_hlines_box=\box127
+\l__tblr_hline_box=\box128
+\l__tblr_row_box=\box129
+\l__tblr_col_o_wd_dim=\dimen288
+\l__tblr_col_b_wd_dim=\dimen289
+\l__tblr_hline_leftskip_dim=\dimen290
+\l__tblr_hline_rightskip_dim=\dimen291
+\l__tblr_row_ht_dim=\dimen292
+\l__tblr_row_dp_dim=\dimen293
+\l__tblr_row_abovesep_dim=\dimen294
+\l__tblr_row_belowsep_dim=\dimen295
+\l__tblr_row_vlines_box=\box130
+\l__tblr_vline_box=\box131
+\l__tblr_cell_box=\box132
+\l__tblr_row_upper_dim=\dimen296
+\l__tblr_row_lower_dim=\dimen297
+\l__tblr_row_vpace_dim=\dimen298
+\l__tblr_vline_aboveskip_dim=\dimen299
+\l__tblr_vline_belowskip_dim=\dimen300
+\lTblrCellRowSpanInt=\count374
+\lTblrCellColSpanInt=\count375
+\l__tblr_cell_wd_dim=\dimen301
+\l__tblr_cell_ht_dim=\dimen302
+\lTblrCellAboveBorderWidthDim=\dimen303
+\lTblrCellBelowBorderWidthDim=\dimen304
+\lTblrCellLeftBorderWidthDim=\dimen305
+\lTblrCellRightBorderWidthDim=\dimen306
+\l__tblr_diag_box=\box133
+\l__tblr_cell_inner_wd_dim=\dimen307
+\l__tblr_cell_inner_dp_dim=\dimen308
+\l__tblr_cell_hanchor_dim=\dimen309
+\l__tblr_last_cell_table_ht_dim=\dimen310
+\l__tblr_last_cell_table_dp_dim=\dimen311
+\l__tblr_last_vline_wd_dim=\dimen312
+\l__tblr_tikz_node_box=\box134
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/tocloft/tocloft.sty
+Package: tocloft 2017/08/31 v2.3i parameterised ToC, etc., typesetting
+Package tocloft Info: The document has chapter divisions on input line 51.
+\cftparskip=\skip72
+\cftbeforetoctitleskip=\skip73
+\cftaftertoctitleskip=\skip74
+\cftbeforepartskip=\skip75
+\cftpartnumwidth=\skip76
+\cftpartindent=\skip77
+\cftbeforechapskip=\skip78
+\cftchapindent=\skip79
+\cftchapnumwidth=\skip80
+\cftbeforesecskip=\skip81
+\cftsecindent=\skip82
+\cftsecnumwidth=\skip83
+\cftbeforesubsecskip=\skip84
+\cftsubsecindent=\skip85
+\cftsubsecnumwidth=\skip86
+\cftbeforesubsubsecskip=\skip87
+\cftsubsubsecindent=\skip88
+\cftsubsubsecnumwidth=\skip89
+\cftbeforeparaskip=\skip90
+\cftparaindent=\skip91
+\cftparanumwidth=\skip92
+\cftbeforesubparaskip=\skip93
+\cftsubparaindent=\skip94
+\cftsubparanumwidth=\skip95
+\cftbeforeloftitleskip=\skip96
+\cftafterloftitleskip=\skip97
+\cftbeforefigskip=\skip98
+\cftfigindent=\skip99
+\cftfignumwidth=\skip100
+\c@lofdepth=\count376
+\c@lotdepth=\count377
+\cftbeforelottitleskip=\skip101
+\cftafterlottitleskip=\skip102
+\cftbeforetabskip=\skip103
+\cfttabindent=\skip104
+\cfttabnumwidth=\skip105
+
+
+Package tocloft Warning: \@starttoc has already been redefined; tocloft bailing
+ out. on input line 1156.
+
+) (/usr/local/texlive/2026/texmf-dist/tex/latex/pgf/frontendlayer/tikz.sty
+(/usr/local/texlive/2026/texmf-dist/tex/latex/pgf/basiclayer/pgf.sty
+(/usr/local/texlive/2026/texmf-dist/tex/latex/pgf/utilities/pgfrcs.sty
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/utilities/pgfutil-common.te
+x
+\pgfutil@everybye=\toks32
+\pgfutil@tempdima=\dimen313
+\pgfutil@tempdimb=\dimen314
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/utilities/pgfutil-latex.def
+\pgfutil@abb=\box135
+) (/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/utilities/pgfrcs.code.tex
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/pgf.revision.tex)
+Package: pgfrcs 2025-08-29 v3.1.11a (3.1.11a)
+))
+Package: pgf 2025-08-29 v3.1.11a (3.1.11a)
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/pgf/basiclayer/pgfcore.sty
+(/usr/local/texlive/2026/texmf-dist/tex/latex/pgf/systemlayer/pgfsys.sty
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/systemlayer/pgfsys.code.tex
+Package: pgfsys 2025-08-29 v3.1.11a (3.1.11a)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex
+\pgfkeys@pathtoks=\toks33
+\pgfkeys@temptoks=\toks34
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/utilities/pgfkeyslibraryfil
+tered.code.tex
+\pgfkeys@tmptoks=\toks35
+))
+\pgf@x=\dimen315
+\pgf@y=\dimen316
+\pgf@xa=\dimen317
+\pgf@ya=\dimen318
+\pgf@xb=\dimen319
+\pgf@yb=\dimen320
+\pgf@xc=\dimen321
+\pgf@yc=\dimen322
+\pgf@xd=\dimen323
+\pgf@yd=\dimen324
+\w@pgf@writea=\write3
+\r@pgf@reada=\read3
+\c@pgf@counta=\count378
+\c@pgf@countb=\count379
+\c@pgf@countc=\count380
+\c@pgf@countd=\count381
+\t@pgf@toka=\toks36
+\t@pgf@tokb=\toks37
+\t@pgf@tokc=\toks38
+\pgf@sys@id@count=\count382
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/systemlayer/pgf.cfg
+File: pgf.cfg 2025-08-29 v3.1.11a (3.1.11a)
+)
+Driver file for pgf: pgfsys-pdftex.def
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/systemlayer/pgfsys-pdftex.d
+ef
+File: pgfsys-pdftex.def 2025-08-29 v3.1.11a (3.1.11a)
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/systemlayer/pgfsys-common-p
+df.def
+File: pgfsys-common-pdf.def 2025-08-29 v3.1.11a (3.1.11a)
+)))
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/systemlayer/pgfsyssoftpath.
+code.tex
+File: pgfsyssoftpath.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfsyssoftpath@smallbuffer@items=\count383
+\pgfsyssoftpath@bigbuffer@items=\count384
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/systemlayer/pgfsysprotocol.
+code.tex
+File: pgfsysprotocol.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+))
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcore.code.tex
+Package: pgfcore 2025-08-29 v3.1.11a (3.1.11a)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmath.code.tex
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathutil.code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathparser.code.tex
+\pgfmath@dimen=\dimen325
+\pgfmath@count=\count385
+\pgfmath@box=\box136
+\pgfmath@toks=\toks39
+\pgfmath@stack@operand=\toks40
+\pgfmath@stack@operation=\toks41
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.code.
+tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.basic
+.code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.trigo
+nometric.code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.rando
+m.code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.compa
+rison.code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.base.
+code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.round
+.code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.misc.
+code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.integ
+erarithmetics.code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathcalc.code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmathfloat.code.tex
+\c@pgfmathroundto@lastzeros=\count386
+)) (/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfint.code.tex)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepoints.co
+de.tex
+File: pgfcorepoints.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@picminx=\dimen326
+\pgf@picmaxx=\dimen327
+\pgf@picminy=\dimen328
+\pgf@picmaxy=\dimen329
+\pgf@pathminx=\dimen330
+\pgf@pathmaxx=\dimen331
+\pgf@pathminy=\dimen332
+\pgf@pathmaxy=\dimen333
+\pgf@xx=\dimen334
+\pgf@xy=\dimen335
+\pgf@yx=\dimen336
+\pgf@yy=\dimen337
+\pgf@zx=\dimen338
+\pgf@zy=\dimen339
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathconst
+ruct.code.tex
+File: pgfcorepathconstruct.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@path@lastx=\dimen340
+\pgf@path@lasty=\dimen341
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathusage
+.code.tex
+File: pgfcorepathusage.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@shorten@end@additional=\dimen342
+\pgf@shorten@start@additional=\dimen343
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcorescopes.co
+de.tex
+File: pgfcorescopes.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfpic=\box137
+\pgf@hbox=\box138
+\pgf@layerbox@main=\box139
+\pgf@picture@serial@count=\count387
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcoregraphicst
+ate.code.tex
+File: pgfcoregraphicstate.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgflinewidth=\dimen344
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcoretransform
+ations.code.tex
+File: pgfcoretransformations.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@pt@x=\dimen345
+\pgf@pt@y=\dimen346
+\pgf@pt@temp=\dimen347
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcorequick.cod
+e.tex
+File: pgfcorequick.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreobjects.c
+ode.tex
+File: pgfcoreobjects.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathproce
+ssing.code.tex
+File: pgfcorepathprocessing.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcorearrows.co
+de.tex
+File: pgfcorearrows.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfarrowsep=\dimen348
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreshade.cod
+e.tex
+File: pgfcoreshade.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@max=\dimen349
+\pgf@sys@shading@range@num=\count388
+\pgf@shadingcount=\count389
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreimage.cod
+e.tex
+File: pgfcoreimage.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreexternal.
+code.tex
+File: pgfcoreexternal.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfexternal@startupbox=\box140
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcorelayers.co
+de.tex
+File: pgfcorelayers.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcoretranspare
+ncy.code.tex
+File: pgfcoretransparency.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepatterns.
+code.tex
+File: pgfcorepatterns.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/basiclayer/pgfcorerdf.code.
+tex
+File: pgfcorerdf.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)))
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/modules/pgfmoduleshapes.cod
+e.tex
+File: pgfmoduleshapes.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfnodeparttextbox=\box141
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/modules/pgfmoduleplot.code.
+tex
+File: pgfmoduleplot.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/pgf/compatibility/pgfcomp-version
+-0-65.sty
+Package: pgfcomp-version-0-65 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@nodesepstart=\dimen350
+\pgf@nodesepend=\dimen351
+)
+(/usr/local/texlive/2026/texmf-dist/tex/latex/pgf/compatibility/pgfcomp-version
+-1-18.sty
+Package: pgfcomp-version-1-18 2025-08-29 v3.1.11a (3.1.11a)
+))
+(/usr/local/texlive/2026/texmf-dist/tex/latex/pgf/utilities/pgffor.sty
+(/usr/local/texlive/2026/texmf-dist/tex/latex/pgf/utilities/pgfkeys.sty
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex)
+) (/usr/local/texlive/2026/texmf-dist/tex/latex/pgf/math/pgfmath.sty
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/math/pgfmath.code.tex))
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/utilities/pgffor.code.tex
+Package: pgffor 2025-08-29 v3.1.11a (3.1.11a)
+\pgffor@iter=\dimen352
+\pgffor@skip=\dimen353
+\pgffor@stack=\toks42
+\pgffor@toks=\toks43
+))
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/frontendlayer/tikz/tikz.cod
+e.tex
+Package: tikz 2025-08-29 v3.1.11a (3.1.11a)
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/libraries/pgflibraryplothan
+dlers.code.tex
+File: pgflibraryplothandlers.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgf@plot@mark@count=\count390
+\pgfplotmarksize=\dimen354
+)
+\tikz@lastx=\dimen355
+\tikz@lasty=\dimen356
+\tikz@lastxsaved=\dimen357
+\tikz@lastysaved=\dimen358
+\tikz@lastmovetox=\dimen359
+\tikz@lastmovetoy=\dimen360
+\tikzleveldistance=\dimen361
+\tikzsiblingdistance=\dimen362
+\tikz@figbox=\box142
+\tikz@figbox@bg=\box143
+\tikz@tempbox=\box144
+\tikz@tempbox@bg=\box145
+\tikztreelevel=\count391
+\tikznumberofchildren=\count392
+\tikznumberofcurrentchild=\count393
+\tikz@fig@count=\count394
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/modules/pgfmodulematrix.cod
+e.tex
+File: pgfmodulematrix.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfmatrixcurrentrow=\count395
+\pgfmatrixcurrentcolumn=\count396
+\pgf@matrix@numberofcolumns=\count397
+)
+\tikz@expandcount=\count398
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/frontendlayer/tikz/librarie
+s/tikzlibrarytopaths.code.tex
+File: tikzlibrarytopaths.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)))
+(/usr/local/texlive/2026/texmf-dist/tex/latex/tikz-cd/tikz-cd.sty
+Package: tikz-cd 2021/05/04 v1.0 Commutative diagrams with TikZ
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/tikz-cd/tikzlibrarycd.code.tex
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/frontendlayer/tikz/librarie
+s/tikzlibrarymatrix.code.tex
+File: tikzlibrarymatrix.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/frontendlayer/tikz/librarie
+s/tikzlibraryquotes.code.tex
+File: tikzlibraryquotes.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/libraries/pgflibraryarrows.
+meta.code.tex
+File: pgflibraryarrows.meta.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+\pgfarrowinset=\dimen363
+\pgfarrowlength=\dimen364
+\pgfarrowwidth=\dimen365
+\pgfarrowlinewidth=\dimen366
+)))
+(/usr/local/texlive/2026/texmf-dist/tex/latex/physics/physics.sty
+Package: physics 
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/frontendlayer/tikz/librarie
+s/tikzlibrarypositioning.code.tex
+File: tikzlibrarypositioning.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/frontendlayer/tikz/librarie
+s/tikzlibraryfit.code.tex
+File: tikzlibraryfit.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+)
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/frontendlayer/tikz/librarie
+s/tikzlibraryshapes.geometric.code.tex
+File: tikzlibraryshapes.geometric.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+
+(/usr/local/texlive/2026/texmf-dist/tex/generic/pgf/libraries/shapes/pgflibrary
+shapes.geometric.code.tex
+File: pgflibraryshapes.geometric.code.tex 2025-08-29 v3.1.11a (3.1.11a)
+))
+(/usr/local/texlive/2026/texmf-dist/tex/latex/calrsfs/calrsfs.sty
+\symrsfscript=\mathgroup9
+)
+\c@myequations=\count399
+\cftbeforemyequationsskip=\skip106
+\cftmyequationsindent=\skip107
+\cftmyequationsnumwidth=\skip108
+\c@equdepth=\count400
+\cftbeforeequtitleskip=\skip109
+\cftafterequtitleskip=\skip110
+\c@myremarks=\count401
+\cftbeforemyremarksskip=\skip111
+\cftmyremarksindent=\skip112
+\cftmyremarksnumwidth=\skip113
+\c@rmkdepth=\count402
+\cftbeforermktitleskip=\skip114
+\cftafterrmktitleskip=\skip115
+\c@rmkcntr=\count403
+\c@mydefinitions=\count404
+\cftbeforemydefinitionsskip=\skip116
+\cftmydefinitionsindent=\skip117
+\cftmydefinitionsnumwidth=\skip118
+\c@defdepth=\count405
+\cftbeforedeftitleskip=\skip119
+\cftafterdeftitleskip=\skip120
+\c@defcntr=\count406
+LaTeX Font Info:    Trying to load font information for T1+jkp on input line 18
+2.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/t1jkp.fd
+File: t1jkp.fd 2007/01/24 Fontinst v1.928 font definitions for T1/jkp.
+) (./Template.aux
+
+LaTeX Warning: Label `subsec:numerical_integration' multiply defined.
+
+
+LaTeX Warning: Label `fig:identifycarac' multiply defined.
+
+)
+\openout1 = `Template.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/jkp/m/it on input line 182.
+LaTeX Font Info:    Trying to load font information for OML+jkp on input line 1
+82.
+ (/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/omljkp.fd
+File: omljkp.fd 2006/08/15 v1.0
+)
+LaTeX Font Info:    ... okay on input line 182.
+LaTeX Font Info:    Checking defaults for OMS/jkp/m/n on input line 182.
+LaTeX Font Info:    Trying to load font information for OMS+jkp on input line 1
+82.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/omsjkp.fd
+File: omsjkp.fd 2006/08/15 v1.0
+)
+LaTeX Font Info:    ... okay on input line 182.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 182.
+LaTeX Font Info:    ... okay on input line 182.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 182.
+LaTeX Font Info:    ... okay on input line 182.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 182.
+LaTeX Font Info:    ... okay on input line 182.
+LaTeX Font Info:    Checking defaults for OMX/jkp/m/n on input line 182.
+LaTeX Font Info:    Trying to load font information for OMX+jkp on input line 1
+82.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/omxjkp.fd
+File: omxjkp.fd 2006/08/15 v1.0
+)
+LaTeX Font Info:    ... okay on input line 182.
+LaTeX Font Info:    Checking defaults for U/jkpexa/m/n on input line 182.
+LaTeX Font Info:    Trying to load font information for U+jkpexa on input line 
+182.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/ujkpexa.fd
+File: ujkpexa.fd 2006/08/15 v1.0
+)
+LaTeX Font Info:    ... okay on input line 182.
+
+(/usr/local/texlive/2026/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count407
+\scratchdimen=\dimen367
+\scratchbox=\box146
+\nofMPsegments=\count408
+\nofMParguments=\count409
+\everyMPshowfont=\toks44
+\MPscratchCnt=\count410
+\MPscratchDim=\dimen368
+\MPnumerator=\count411
+\makeMPintoPDFobject=\count412
+\everyMPtoPDFconversion=\toks45
+) (/usr/local/texlive/2026/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
+85.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
+e
+))
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: float package is loaded.
+Package caption Info: listings package is loaded.
+Package caption Info: End \AtBeginDocument code.
+\c@lstlisting=\count413
+
+*geometry* driver: auto-detecting
+*geometry* detected driver: pdftex
+*geometry* verbose mode - [ preamble ] result:
+* driver: pdftex
+* paper: a4paper
+* layout: <same size as paper>
+* layoutoffset:(h,v)=(0.0pt,0.0pt)
+* modes: 
+* h-part:(L,W,R)=(71.13188pt, 483.69687pt, 42.67912pt)
+* v-part:(T,H,B)=(85.35826pt, 645.87756pt, 113.81102pt)
+* \paperwidth=597.50787pt
+* \paperheight=845.04684pt
+* \textwidth=483.69687pt
+* \textheight=645.87756pt
+* \oddsidemargin=-1.1381pt
+* \evensidemargin=-1.1381pt
+* \topmargin=-53.91173pt
+* \headheight=12.0pt
+* \headsep=55.0pt
+* \topskip=10.0pt
+* \footskip=30.0pt
+* \marginparwidth=57.0pt
+* \marginparsep=11.0pt
+* \columnsep=10.0pt
+* \skip\footins=9.0pt plus 4.0pt minus 2.0pt
+* \hoffset=0.0pt
+* \voffset=0.0pt
+* \mag=1000
+* \@twocolumnfalse
+* \@twosidefalse
+* \@mparswitchfalse
+* \@reversemarginfalse
+* (1in=72.27pt=25.4mm, 1cm=28.453pt)
+
+LaTeX Font Info:    Trying to load font information for T1+jkpss on input line 
+183.
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/t1jkpss.fd
+File: t1jkpss.fd 2007/07/16 Fontinst v1.928 font definitions for T1/jkpss.
+)
+LaTeX Font Info:    Trying to load font information for OT1+jkp on input line 1
+86.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/ot1jkp.fd
+File: ot1jkp.fd 2007/08/30 Fontinst v1.928 font definitions for OT1/jkp.
+)
+LaTeX Font Info:    Trying to load font information for U+jkpsya on input line 
+186.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/ujkpsya.fd
+File: ujkpsya.fd 2006/08/15 v1.0
+)
+LaTeX Font Info:    Trying to load font information for U+jkpsyb on input line 
+186.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/ujkpsyb.fd
+File: ujkpsyb.fd 2006/08/15 v1.0
+)
+LaTeX Font Info:    Trying to load font information for U+jkpmia on input line 
+186.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/ujkpmia.fd
+File: ujkpmia.fd 2006/08/15 v1.0
+)
+LaTeX Font Info:    Trying to load font information for U+jkpsyc on input line 
+186.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/ujkpsyc.fd
+File: ujkpsyc.fd 2006/08/15 v1.0
+)
+LaTeX Font Info:    Trying to load font information for OMS+rsfs on input line 
+186.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/calrsfs/OMSrsfs.fd) [1
+
+{/usr/local/texlive/2026/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/loc
+al/texlive/2026/texmf-dist/fonts/enc/dvips/base/8r.enc}] (./Template.toc
+LaTeX Font Info:    Trying to load font information for T1+jkptt on input line 
+38.
+
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/t1jkptt.fd
+File: t1jkptt.fd 2007/01/26 Fontinst v1.928 font definitions for T1/jkptt.
+)
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 44.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 44.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 44.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 44.
+
+<Logo-golfball.jpg, id=11, 996.72375pt x 957.5775pt>
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 44.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[1{/usr/local/texlive/2026/texmf-dist/fonts/enc/dvips/kpfonts/kpfonts-expert.en
+c} <./Logo-golfball.jpg>])
+\tf@toc=\write4
+\openout4 = `Template.toc'.
+
+ (./Template.lof
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 18.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 18.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 18.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 18.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 18.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[2]
+Overfull \hbox (5.39468pt too wide) in paragraph at lines 28--28
+ [][] []\T1/jkp/m/n/10 Python val-i-da-tion pipeline (\T1/jkptt/m/n/10 sci/pipe
+_validation.py\T1/jkp/m/n/10 ). Scilab equiv-a-lents: \T1/jkptt/m/n/10 an-i-m-D
+en-site \T1/jkp/m/n/10 (STFT), 
+ []
+
+
+Overfull \hbox (28.68698pt too wide) in paragraph at lines 28--28
+ \T1/jkptt/m/n/10 Info\T1/jkp/m/n/10 /\T1/jkptt/m/n/10 GetSwing \T1/jkp/m/n/10 
+(speed), \T1/jkptt/m/n/10 an-i-mHilbert \T1/jkp/m/n/10 (en-ve-lope), \T1/jkptt/
+m/n/10 acos(f2/f1) \T1/jkp/m/n/10 (rudi-men-tary az-imuth in \T1/jkptt/m/n/10 t
+estsFFT.sci\T1/jkp/m/n/10 ). []  
+ []
+
+
+Overfull \hbox (3.31416pt too wide) in paragraph at lines 34--34
+ [][] []\T1/jkp/m/n/10 Theoretical (gen-er-ated) cap-ture, con-fig F7 151 km/h,
+ launch $\OT1/jkp/m/n/10 16\OML/jkp/m/it/10 :\OT1/jkp/m/n/10 5[]$\T1/jkp/m/n/10
+ , spin 4000 RPM, side 700 RPM 
+ []
+
+)
+\tf@lof=\write5
+\openout5 = `Template.lof'.
+
+ (./Template.lot)
+\tf@lot=\write6
+\openout6 = `Template.lot'.
+
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 191.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 191.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 191.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 191.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 191.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[3] (./Template.lol)
+\tf@lol=\write7
+\openout7 = `Template.lol'.
+
+ (./Template.equ)
+\tf@equ=\write8
+\openout8 = `Template.equ'.
+
+ (./Template.rmk)
+\tf@rmk=\write9
+\openout9 = `Template.rmk'.
+
+ (./Template.def
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 2.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 2.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 2.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 2.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 2.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[4
+
+])
+\tf@def=\write10
+\openout10 = `Template.def'.
+
+ [5]
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 197.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 197.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 197.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 197.
+
+LaTeX Font Info:    Font shape `T1/jkpss/m/it' in size <10> not available
+(Font)              Font shape `T1/jkpss/m/sl' tried instead on input line 212.
+
+LaTeX Font Info:    Font shape `T1/jkpss/b/it' in size <10> not available
+(Font)              Font shape `T1/jkpss/b/sl' tried instead on input line 212.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 214.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[1]
+Chapter 1.
+LaTeX Font Info:    Trying to load font information for TS1+jkpss on input line
+ 221.
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/ts1jkpss.fd
+File: ts1jkpss.fd 2007/07/16 Fontinst v1.928 font definitions for TS1/jkpss.
+)
+<../sci/img/Pasted image 20250120171635.png, id=43, 1223.57124pt x 821.0675pt>
+File: ../sci/img/Pasted image 20250120171635.png Graphic file (type png)
+<use ../sci/img/Pasted image 20250120171635.png>
+Package pdftex.def Info: ../sci/img/Pasted image 20250120171635.png  used on in
+put line 225.
+(pdftex.def)             Requested size: 284.52756pt x 190.92128pt.
+<../sci/img/Pasted image 20250122083320.png, id=45, 614.295pt x 583.17876pt>
+File: ../sci/img/Pasted image 20250122083320.png Graphic file (type png)
+<use ../sci/img/Pasted image 20250122083320.png>
+Package pdftex.def Info: ../sci/img/Pasted image 20250122083320.png  used on in
+put line 239.
+(pdftex.def)             Requested size: 227.62204pt x 216.09311pt.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 243.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 243.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 243.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 243.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 243.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[2
+
+ <../sci/img/Pasted image 20250120171635.png>]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 250.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[3 <../sci/img/Pasted image 20250122083320.png>]
+Chapter 2.
+
+Underfull \hbox (badness 3229) in paragraph at lines 321--321
+[]\T1/jkpss/b/sl/10 Definition 1: The Air Drag
+ []
+
+
+Overfull \hbox (6.79996pt too wide) in paragraph at lines 321--322
+[]
+ []
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 323.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 323.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 323.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 323.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 323.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[4
+
+]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 362.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[5]
+Overfull \hbox (6.79996pt too wide) in paragraph at lines 377--378
+[][] 
+ []
+
+
+Overfull \hbox (6.79996pt too wide) in paragraph at lines 380--381
+[] 
+ []
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 406.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[6]
+Overfull \hbox (6.79996pt too wide) in paragraph at lines 451--452
+[][] 
+ []
+
+
+Overfull \hbox (6.79996pt too wide) in paragraph at lines 454--455
+[] 
+ []
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 464.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[7]
+Overfull \hbox (6.79996pt too wide) in paragraph at lines 464--465
+[][] 
+ []
+
+<ImpactClubBall.png, id=70, 523.20468pt x 581.92406pt>
+File: ImpactClubBall.png Graphic file (type png)
+<use ImpactClubBall.png>
+Package pdftex.def Info: ImpactClubBall.png  used on input line 473.
+(pdftex.def)             Requested size: 170.71652pt x 189.86894pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 499.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[8 <./ImpactClubBall.png>]
+<clubpath.png, id=75, 550.30594pt x 388.45125pt>
+File: clubpath.png Graphic file (type png)
+<use clubpath.png>
+Package pdftex.def Info: clubpath.png  used on input line 511.
+(pdftex.def)             Requested size: 341.43306pt x 241.02103pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 523.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[9 <./clubpath.png>]
+Overfull \hbox (2.59293pt too wide) in paragraph at lines 537--538
+\T1/jkpss/m/n/10 The golf ball's flight is de-scribed by the fol-low-ing ODE sy
+s-tem for the state vec-tor $[] \OT1/jkp/m/n/10 = [][]$\T1/jkpss/m/n/10 : 
+ []
+
+LaTeX Font Info:    Trying to load font information for TS1+jkp on input line 5
+54.
+(/usr/local/texlive/2026/texmf-dist/tex/latex/kpfonts/ts1jkp.fd
+File: ts1jkp.fd 2007/08/30 Fontinst v1.928 font definitions for TS1/jkp.
+)
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 573.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[10]
+Overfull \hbox (9.14075pt too wide) in paragraph at lines 573--575
+\T1/jkpss/m/n/10 with $\OML/jkp/m/it/10 V[] \OT1/jkp/m/n/10 = (1 \OMS/jkp/m/n/1
+0 ^^@ \OT1/jkp/m/n/10 35\OML/jkp/m/it/10 :\OT1/jkp/m/n/10 56 \OMS/jkp/m/n/10 ^^
+A []\OT1/jkp/m/n/10 )[]$ \T1/jkpss/m/n/10 and $[] \OT1/jkp/m/n/10 = [][]$\T1/jk
+pss/m/n/10 . 
+ []
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 624.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[11]
+
+LaTeX Warning: Citation `smits1994aerodynamic' on page 12 undefined on input li
+ne 685.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 686.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[12] (/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstlang1.sty
+File: lstlang1.sty 2025/11/14 1.11b listings language file
+)
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 752.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[13]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 800.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[14]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 836.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[15]
+Chapter 3.
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 888.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 888.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 888.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 888.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 888.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[16
+
+]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 961.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[17]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1031.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[18]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1099.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[19]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1173.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[20]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1220.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[21]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1277.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[22]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1329.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[23]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1371.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[24]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1419.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[25] (/usr/local/texlive/2026/texmf-dist/tex/latex/listings/lstlang1.sty
+File: lstlang1.sty 2025/11/14 1.11b listings language file
+)
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1476.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[26]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1501.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[27]
+Chapter 4.
+<../sci/img/Pasted image 20250123184355.png, id=142, 348.55219pt x 472.76625pt>
+
+File: ../sci/img/Pasted image 20250123184355.png Graphic file (type png)
+<use ../sci/img/Pasted image 20250123184355.png>
+Package pdftex.def Info: ../sci/img/Pasted image 20250123184355.png  used on in
+put line 1504.
+(pdftex.def)             Requested size: 170.71652pt x 231.55649pt.
+<../sci/img/20250123_132304.jpg, id=143, 4095.3pt x 3071.475pt>
+File: ../sci/img/20250123_132304.jpg Graphic file (type jpg)
+<use ../sci/img/20250123_132304.jpg>
+Package pdftex.def Info: ../sci/img/20250123_132304.jpg  used on input line 151
+1.
+(pdftex.def)             Requested size: 227.62204pt x 170.68915pt.
+<../sci/img/20250123_132310.jpg, id=144, 4095.3pt x 3071.475pt>
+File: ../sci/img/20250123_132310.jpg Graphic file (type jpg)
+<use ../sci/img/20250123_132310.jpg>
+Package pdftex.def Info: ../sci/img/20250123_132310.jpg  used on input line 151
+3.
+(pdftex.def)             Requested size: 113.81102pt x 85.34457pt.
+<../sci/img/20250123_132345.jpg, id=145, 4095.3pt x 3071.475pt>
+File: ../sci/img/20250123_132345.jpg Graphic file (type jpg)
+<use ../sci/img/20250123_132345.jpg>
+Package pdftex.def Info: ../sci/img/20250123_132345.jpg  used on input line 151
+4.
+(pdftex.def)             Requested size: 113.81102pt x 85.34457pt.
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1518.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1518.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1518.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1518.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1518.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[28
+
+ <../sci/img/Pasted image 20250123184355.png>]
+<../sci/img/IMG_2427.jpg, id=150, 192.72pt x 54.9252pt>
+File: ../sci/img/IMG_2427.jpg Graphic file (type jpg)
+<use ../sci/img/IMG_2427.jpg>
+Package pdftex.def Info: ../sci/img/IMG_2427.jpg  used on input line 1521.
+(pdftex.def)             Requested size: 227.62204pt x 64.87233pt.
+<../sci/img/IMG_2428.jpeg, id=151, 233.673pt x 175.3752pt>
+File: ../sci/img/IMG_2428.jpeg Graphic file (type jpg)
+<use ../sci/img/IMG_2428.jpeg>
+Package pdftex.def Info: ../sci/img/IMG_2428.jpeg  used on input line 1528.
+(pdftex.def)             Requested size: 142.26378pt x 106.76997pt.
+<../sci/img/PCB_Back_s.jpg, id=152, 351.3125pt x 244.915pt>
+File: ../sci/img/PCB_Back_s.jpg Graphic file (type jpg)
+<use ../sci/img/PCB_Back_s.jpg>
+Package pdftex.def Info: ../sci/img/PCB_Back_s.jpg  used on input line 1534.
+(pdftex.def)             Requested size: 142.26378pt x 99.1788pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1538.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[29 <../sci/img/20250123_132304.jpg> <../sci/img/20250123_132310.jpg> <../sci/i
+mg/20250123_132345.jpg> <../sci/img/IMG_2427.jpg> <../sci/img/IMG_2428.jpeg>]
+<../sci/img/IMG_2429.png, id=156, 803.0pt x 803.0pt>
+File: ../sci/img/IMG_2429.png Graphic file (type png)
+<use ../sci/img/IMG_2429.png>
+Package pdftex.def Info: ../sci/img/IMG_2429.png  used on input line 1540.
+(pdftex.def)             Requested size: 227.62204pt x 227.61984pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1548.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[30 <../sci/img/PCB_Back_s.jpg> <../sci/img/IMG_2429.png>]
+Chapter 5.
+File: ../sci/img/Pasted image 20250122083320.png Graphic file (type png)
+<use ../sci/img/Pasted image 20250122083320.png>
+Package pdftex.def Info: ../sci/img/Pasted image 20250122083320.png  used on in
+put line 1553.
+(pdftex.def)             Requested size: 227.62204pt x 216.09311pt.
+<../sci/img/Pasted image 20250122082849.png, id=161, 614.295pt x 583.17876pt>
+File: ../sci/img/Pasted image 20250122082849.png Graphic file (type png)
+<use ../sci/img/Pasted image 20250122082849.png>
+Package pdftex.def Info: ../sci/img/Pasted image 20250122082849.png  used on in
+put line 1561.
+(pdftex.def)             Requested size: 227.62204pt x 216.09311pt.
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1565.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1565.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1565.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1565.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1565.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[31
+
+]
+<../sci/img/Pasted image 20250122082913.png, id=166, 614.295pt x 583.17876pt>
+File: ../sci/img/Pasted image 20250122082913.png Graphic file (type png)
+<use ../sci/img/Pasted image 20250122082913.png>
+Package pdftex.def Info: ../sci/img/Pasted image 20250122082913.png  used on in
+put line 1567.
+(pdftex.def)             Requested size: 227.62204pt x 216.09311pt.
+<../sci/img/Pasted image 20250120172502.png, id=167, 614.295pt x 583.17876pt>
+File: ../sci/img/Pasted image 20250120172502.png Graphic file (type png)
+<use ../sci/img/Pasted image 20250120172502.png>
+Package pdftex.def Info: ../sci/img/Pasted image 20250120172502.png  used on in
+put line 1574.
+(pdftex.def)             Requested size: 227.62204pt x 216.09311pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1578.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[32 <../sci/img/Pasted image 20250122082849.png> <../sci/img/Pasted image 20250
+122082913.png>]
+<../sci/img/Pasted image 20250122082958.png, id=173, 614.295pt x 583.17876pt>
+File: ../sci/img/Pasted image 20250122082958.png Graphic file (type png)
+<use ../sci/img/Pasted image 20250122082958.png>
+Package pdftex.def Info: ../sci/img/Pasted image 20250122082958.png  used on in
+put line 1580.
+(pdftex.def)             Requested size: 227.62204pt x 216.09311pt.
+<../sci/img/Pasted image 20250122083851.png, id=174, 913.91437pt x 432.86719pt>
+
+File: ../sci/img/Pasted image 20250122083851.png Graphic file (type png)
+<use ../sci/img/Pasted image 20250122083851.png>
+Package pdftex.def Info: ../sci/img/Pasted image 20250122083851.png  used on in
+put line 1586.
+(pdftex.def)             Requested size: 341.43306pt x 161.71713pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1590.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[33 <../sci/img/Pasted image 20250120172502.png> <../sci/img/Pasted image 20250
+122082958.png>]
+<../sci/img/Pasted image 20250217094457.png, id=180, 614.295pt x 583.17876pt>
+File: ../sci/img/Pasted image 20250217094457.png Graphic file (type png)
+<use ../sci/img/Pasted image 20250217094457.png>
+Package pdftex.def Info: ../sci/img/Pasted image 20250217094457.png  used on in
+put line 1592.
+(pdftex.def)             Requested size: 227.62204pt x 216.09311pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1598.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[34 <../sci/img/Pasted image 20250122083851.png> <../sci/img/Pasted image 20250
+217094457.png>]
+Chapter 6.
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1630.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1630.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1630.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1630.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1630.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[35
+
+]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1680.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[36]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1720.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[37]
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1785.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[38]
+<../sci/img/setup_radar.png, id=200, 1156.32pt x 542.025pt>
+File: ../sci/img/setup_radar.png Graphic file (type png)
+<use ../sci/img/setup_radar.png>
+Package pdftex.def Info: ../sci/img/setup_radar.png  used on input line 1791.
+(pdftex.def)             Requested size: 227.62204pt x 106.69106pt.
+<../sci/img/PatchedBall.png, id=201, 415.5525pt x 199.947pt>
+File: ../sci/img/PatchedBall.png Graphic file (type png)
+<use ../sci/img/PatchedBall.png>
+Package pdftex.def Info: ../sci/img/PatchedBall.png  used on input line 1797.
+(pdftex.def)             Requested size: 227.62204pt x 109.52269pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1801.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[39 <../sci/img/setup_radar.png>]
+<../sci/img/spectro_F7-123m-150kmh-5274trm-210trm-cs111.png, id=206, 650.43pt x
+ 505.89pt>
+File: ../sci/img/spectro_F7-123m-150kmh-5274trm-210trm-cs111.png Graphic file (
+type png)
+<use ../sci/img/spectro_F7-123m-150kmh-5274trm-210trm-cs111.png>
+Package pdftex.def Info: ../sci/img/spectro_F7-123m-150kmh-5274trm-210trm-cs111
+.png  used on input line 1803.
+(pdftex.def)             Requested size: 284.52756pt x 221.30316pt.
+<../sci/img/spectro_F7-131m-162kmh-6185trm-7102trm-cs124.png, id=207, 650.43pt 
+x 505.89pt>
+File: ../sci/img/spectro_F7-131m-162kmh-6185trm-7102trm-cs124.png Graphic file 
+(type png)
+<use ../sci/img/spectro_F7-131m-162kmh-6185trm-7102trm-cs124.png>
+Package pdftex.def Info: ../sci/img/spectro_F7-131m-162kmh-6185trm-7102trm-cs12
+4.png  used on input line 1809.
+(pdftex.def)             Requested size: 284.52756pt x 221.30316pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1813.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[40 <../sci/img/PatchedBall.png> <../sci/img/spectro_F7-123m-150kmh-5274trm-210
+trm-cs111.png>]
+<../sci/img/spectro_F7-137m-166kmh-4990trm-1312trm-cs118.png, id=213, 650.43pt 
+x 505.89pt>
+File: ../sci/img/spectro_F7-137m-166kmh-4990trm-1312trm-cs118.png Graphic file 
+(type png)
+<use ../sci/img/spectro_F7-137m-166kmh-4990trm-1312trm-cs118.png>
+Package pdftex.def Info: ../sci/img/spectro_F7-137m-166kmh-4990trm-1312trm-cs11
+8.png  used on input line 1815.
+(pdftex.def)             Requested size: 284.52756pt x 221.30316pt.
+<../sci/img/spectro_MODELE_2025-11-08.png, id=214, 650.43pt x 505.89pt>
+File: ../sci/img/spectro_MODELE_2025-11-08.png Graphic file (type png)
+<use ../sci/img/spectro_MODELE_2025-11-08.png>
+Package pdftex.def Info: ../sci/img/spectro_MODELE_2025-11-08.png  used on inpu
+t line 1821.
+(pdftex.def)             Requested size: 312.9803pt x 243.43425pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1825.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[41 <../sci/img/spectro_F7-131m-162kmh-6185trm-7102trm-cs124.png> <../sci/img/s
+pectro_F7-137m-166kmh-4990trm-1312trm-cs118.png>]
+<../sci/img/spectro_MODELE_102m-151kmh.png, id=220, 650.43pt x 505.89pt>
+File: ../sci/img/spectro_MODELE_102m-151kmh.png Graphic file (type png)
+<use ../sci/img/spectro_MODELE_102m-151kmh.png>
+Package pdftex.def Info: ../sci/img/spectro_MODELE_102m-151kmh.png  used on inp
+ut line 1827.
+(pdftex.def)             Requested size: 312.9803pt x 243.43425pt.
+<../sci/img/spectro_MODELE_137m-166kmh.png, id=221, 650.43pt x 505.89pt>
+File: ../sci/img/spectro_MODELE_137m-166kmh.png Graphic file (type png)
+<use ../sci/img/spectro_MODELE_137m-166kmh.png>
+Package pdftex.def Info: ../sci/img/spectro_MODELE_137m-166kmh.png  used on inp
+ut line 1833.
+(pdftex.def)             Requested size: 312.9803pt x 243.43425pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1837.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[42 <../sci/img/spectro_MODELE_2025-11-08.png> <../sci/img/spectro_MODELE_102m-
+151kmh.png>]
+<../sci/img/traj_MODELE_2025-11-08.png, id=227, 650.43pt x 361.35pt>
+File: ../sci/img/traj_MODELE_2025-11-08.png Graphic file (type png)
+<use ../sci/img/traj_MODELE_2025-11-08.png>
+Package pdftex.def Info: ../sci/img/traj_MODELE_2025-11-08.png  used on input l
+ine 1839.
+(pdftex.def)             Requested size: 256.0748pt x 142.26578pt.
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1844.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[43 <../sci/img/spectro_MODELE_137m-166kmh.png> <../sci/img/traj_MODELE_2025-11
+-08.png>]
+Chapter 7.
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1859.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1859.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1859.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1859.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1859.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[44
+
+]
+Chapter 8.
+(./Template.bbl
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 2.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 2.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 2.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 2.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 2.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[45
+
+]
+Underfull \hbox (badness 10000) in paragraph at lines 15--18
+[]\T1/jkpss/m/n/10 Burglund Brett and Street Ryan.  Golf ball flight dy-nam-ics
+ 5-13-2011 1.
+ []
+
+)
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1874.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1874.
+
+
+Package fancyhdr Warning: \fancyhead's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1874.
+
+
+Package fancyhdr Warning: \fancyfoot's `E' option without twoside option is use
+less.
+(fancyhdr)                Please consider using the `twoside' option on input l
+ine 1874.
+
+File: Logo-golfball.jpg Graphic file (type jpg)
+<use Logo-golfball.jpg>
+Package pdftex.def Info: Logo-golfball.jpg  used on input line 1874.
+(pdftex.def)             Requested size: 14.22636pt x 13.66168pt.
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 17.26172pt, for example:
+(fancyhdr)                \setlength{\headheight}{17.26172pt}.
+(fancyhdr)                You might also make \topmargin smaller:
+(fancyhdr)                \addtolength{\topmargin}{-5.26172pt}.
+
+[46
+
+] 
+enddocument/afterlastpage (AED): lastpage setting LastPage.
+(./Template.aux)
+ ***********
+LaTeX2e <2025-11-01>
+L3 programming layer <2026-03-20>
+ ***********
+
+
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: There were multiply-defined labels.
+
+ ) 
+Here is how much of TeX's memory you used:
+ 28592 strings out of 467349
+ 555127 string characters out of 5415635
+ 1288119 words of memory out of 5000000
+ 57141 multiletter control sequences out of 15000+600000
+ 824214 words of font info for 254 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 84i,19n,97p,761b,2342s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</usr/local/texlive/2026/texmf-dist/fonts/type1/public/kpfonts/jkpbmi.pfb></u
+sr/local/texlive/2026/texmf-dist/fonts/type1/public/kpfonts/jkpbn8a.pfb></usr/l
+ocal/texlive/2026/texmf-dist/fonts/type1/public/kpfonts/jkpbne.pfb></usr/local/
+texlive/2026/texmf-dist/fonts/type1/public/kpfonts/jkpex.pfb></usr/local/texliv
+e/2026/texmf-dist/fonts/type1/public/kpfonts/jkpmi.pfb></usr/local/texlive/2026
+/texmf-dist/fonts/type1/public/kpfonts/jkpmia.pfb></usr/local/texlive/2026/texm
+f-dist/fonts/type1/public/kpfonts/jkpmit8a.pfb></usr/local/texlive/2026/texmf-d
+ist/fonts/type1/public/kpfonts/jkpmn8a.pfb></usr/local/texlive/2026/texmf-dist/
+fonts/type1/public/kpfonts/jkpmn8a.pfb></usr/local/texlive/2026/texmf-dist/font
+s/type1/public/kpfonts/jkpmnc.pfb></usr/local/texlive/2026/texmf-dist/fonts/typ
+e1/public/kpfonts/jkpmne.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/pu
+blic/kpfonts/jkpssbn8a.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/publ
+ic/kpfonts/jkpssbn8a.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public
+/kpfonts/jkpssbne.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/kp
+fonts/jkpssmn8a.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/kpfo
+nts/jkpssmn8a.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/kpfont
+s/jkpssmne.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/kpfonts/j
+kpssmne.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/kpfonts/jkps
+y.pfb></usr/local/texlive/2026/texmf-dist/fonts/type1/public/kpfonts/jkpsya.pfb
+></usr/local/texlive/2026/texmf-dist/fonts/type1/public/kpfonts/jkpsyb.pfb></us
+r/local/texlive/2026/texmf-dist/fonts/type1/public/kpfonts/jkpttbn8a.pfb></usr/
+local/texlive/2026/texmf-dist/fonts/type1/public/kpfonts/jkpttmn8a.pfb>
+Output written on Template.pdf (52 pages, 19130098 bytes).
+PDF statistics:
+ 343 PDF objects out of 1000 (max. 8388607)
+ 192 compressed objects within 2 object streams
+ 0 named destinations out of 1000 (max. 500000)
+ 153 words of extra memory for PDF output out of 10000 (max. 10000000)
+
