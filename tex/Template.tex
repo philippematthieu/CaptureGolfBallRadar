@@ -255,9 +255,7 @@ The main equation is the ball's flight. The equation accounts 3 forces : Magnus 
 \sum{\overrightarrow{F}} =  \overrightarrow{F_{m}} + \overrightarrow{F_{d}} + \overrightarrow{F_{g}}
 \end{equation}\myequations{Flight Forces}
 
----
-
-
+\bigskip
 \begin{figure}[h]
 \centering
 \label{fig:forces_golf_ball}
@@ -314,15 +312,7 @@ The main equation is the ball's flight. The equation accounts 3 forces : Magnus 
 \end{figure}
 
 
----
-
-
-
-
-
-
-
-
+\bigskip
 \section{Drag Force}
 \subsection{Air characteristics}
 
@@ -902,8 +892,7 @@ restitution coefficients due to energy loss from deformation and other dissipati
     for all golf ball models or surface types. Experimental validation for different conditions is recommended.
 \end{itemize}
 
----
-
+\bigskip
 \subsubsection{Bounce Angle and Velocity Update}
 \label{subsubsec:bounce_angle}
 
@@ -1206,8 +1195,7 @@ new errors or inconsistencies.
 
 This section provides a detailed explanation of the Scilab code used to simulate the flight, bounce, and roll of a golf ball. The code is designed with simplifications to ensure rapid computation, as it is intended to process real-time radar data of the ball's initial flight (which will be discussed in the next chapter).
 
----
-
+\bigskip
 \subsection{The \texttt{flightg} Function}
 \label{subsec:flightg}
 
@@ -1324,8 +1312,7 @@ The \texttt{flightg} function follows these steps to compute the derivatives:
 
 \textbf{Note}: The simplification of assuming no spin decay during flight is made to ensure rapid computation, as the model is designed to process real-time radar data of the ball's initial flight, which will be discussed in the next chapter.
 
----
-
+\bigskip
 \subsection{The \texttt{rolling} Function}
 \label{subsec:rolling}
 
@@ -1388,7 +1375,7 @@ The \texttt{rolling} function follows these steps:
 
 \textbf{Note}: The simplifications in the rolling model are made to ensure rapid computation, as the model is designed to process real-time radar data of the ball's initial flight, which will be discussed in the next chapter.
 
----
+\bigskip
 \subsection{The \texttt{AltiSol} and \texttt{dAltiSol} Functions}
 \label{subsec:altisol_daltisol}
 
@@ -1432,7 +1419,7 @@ The \texttt{AltiSol} and \texttt{dAltiSol} functions are used to model the terra
     \end{itemize}
 \end{itemize}
 
----
+\bigskip
 \subsection{Event Detection Functions}
 \label{subsec:event_functions}
 
@@ -1475,7 +1462,7 @@ The \texttt{events} and \texttt{events2} functions are used to detect discrete e
     \end{itemize}
 \end{itemize}
 
----
+\bigskip
 \subsection{Numerical Integration with \texttt{ode}}
 \label{subsec:numerical_integration}
 
@@ -1870,6 +1857,9 @@ The following figures show the measured spectrograms of the 2019-02-24 F7 captur
 \end{lstlisting}
 
 //\chapter*{}
+\section*{Acknowledgments}
+The first version of this project was written in 2016 and then set aside. It was taken up again in 2026 in light of the power of AI tools. I resumed the project to evaluate and learn how to use AI: finding bugs in the historical Scilab code, porting the processing chain to Python, and improving the estimators through our discussions (robust post-impact median instead of the global max, patch periodicity instead of the spectral excursion alone, stereo pairing of the two radars, quality controls). This also showed that the electronic setup (two 10.525~GHz Doppler radars, amplifier, Arduino Nano, USB sound card) was feasible and coherent. The French translation of this document was produced entirely by AI (Mistral Vibe).
+
 \section*{Conflicts of Interest}
 The authors declare no conflict of interest.
 
