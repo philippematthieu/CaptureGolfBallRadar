@@ -1,0 +1,40 @@
+\babel@toc {english}{}\relax 
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces HMI Of Simulation}}{2}{}%
+\contentsline {figure}{\numberline {1.2}{\ignorespaces Radar Captures}}{3}{}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces \textbf {Schéma des forces agissant sur une balle de golf en vol.}}}{4}{}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Velocity Components}}{8}{}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Club Path}}{9}{}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces The suitecase}}{28}{}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Internal with Arduino, Radar, Amplifier, Audio Boards}}{29}{}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Tiny Arduino}}{29}{}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Audio Board}}{29}{}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Audio Amplifier Board}}{30}{}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Radar Board}}{30}{}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Wav Radar Captures and its echo}}{31}{}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces Captured Raw Data Wav}}{32}{}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces FFT of Filtered Raw Data}}{32}{}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces My power density Algorithm Results to identify Speed and BackSpin}}{33}{}%
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Results of normalized mean filtered power spectral density}}{33}{}%
+\contentsline {figure}{\numberline {5.6}{\ignorespaces Results of the filtered Density and caracteristics identification}}{34}{}%
+\contentsline {figure}{\numberline {5.7}{\ignorespaces Speed and Backspin echos}}{34}{}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Top view of the two-radar setup. $f_C$ carries $V_x$ (speed), $f_\Delta $ carries $V_z$ (azimuth $\alpha $ in the $x$--$z$ plane). The factor $2L/b$ corrects the parallax: the farther the ball, the smaller the frequency difference for the same $V_z$.}}{36}{}%
+\contentsline {figure}{\numberline {6.2}{\ignorespaces The aluminium patch as a single dominant scatterer. Both the flash periodicity and the spectral excursion measure the \emph {total} spin $\omega $; neither separates backspin from sidespin.}}{37}{}%
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Python validation pipeline (\texttt {sci/pipe\_validation.py}). Scilab equivalents: \texttt {animDensite} (STFT), \texttt {Info}/\texttt {GetSwing} (speed), \texttt {animHilbert} (envelope), \texttt {acos(f2/f1)} (rudimentary azimuth in \texttt {testsFFT.sci}).}}{39}{}%
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Radar setup geometry (also in README).}}{39}{}%
+\contentsline {figure}{\numberline {6.5}{\ignorespaces Patch on the ball (aluminium tape).}}{40}{}%
+\contentsline {figure}{\numberline {6.6}{\ignorespaces Measured spectrogram, shot 123~m / 150~km/h / 5274~RPM (SkyTrak reference).}}{40}{}%
+\contentsline {figure}{\numberline {6.7}{\ignorespaces Measured spectrogram, shot 131~m / 162~km/h / 6185 back + 7102 side RPM ($\beta \approx 48.9^\circ $, strong curvature).}}{41}{}%
+\contentsline {figure}{\numberline {6.8}{\ignorespaces Measured spectrogram, shot 137~m / 166~km/h / 4990+1312~RPM ($\beta \approx 14.7^\circ $).}}{41}{}%
+\contentsline {figure}{\numberline {6.9}{\ignorespaces Theoretical (generated) capture, config F7 151~km/h, launch $16.5^\circ $, spin 4000~RPM, side 700~RPM ($\beta =10.1^\circ $), club 115~km/h, carry 102~m.}}{42}{}%
+\contentsline {figure}{\numberline {6.10}{\ignorespaces Generated capture, same config, swing-complete 450~ms version (v2).}}{42}{}%
+\contentsline {figure}{\numberline {6.11}{\ignorespaces Generated capture with the real 137~m shot parameters (166~km/h, 4990/1312~RPM, club 118).}}{43}{}%
+\contentsline {figure}{\numberline {6.12}{\ignorespaces Model trajectory (flight + lateral deviation of the slice) for the 2025-11-08 generated capture.}}{43}{}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\babel@toc {english}{}\relax 

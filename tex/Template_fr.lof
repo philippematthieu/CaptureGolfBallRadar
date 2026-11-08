@@ -1,0 +1,40 @@
+\babel@toc {french}{}\relax 
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {1.1}{\ignorespaces IHM de la simulation}}{2}{}%
+\contentsline {figure}{\numberline {1.2}{\ignorespaces Captures radar}}{3}{}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {2.1}{\ignorespaces \textbf {Schéma des forces agissant sur une balle de golf en vol.}}}{4}{}%
+\contentsline {figure}{\numberline {2.2}{\ignorespaces Composantes de vitesse}}{8}{}%
+\contentsline {figure}{\numberline {2.3}{\ignorespaces Trajectoire du club}}{9}{}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces La valise}}{25}{}%
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Intérieur avec Arduino, radar, amplificateur, cartes audio}}{26}{}%
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Tiny Arduino}}{26}{}%
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Carte audio}}{26}{}%
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Carte amplificateur audio}}{27}{}%
+\contentsline {figure}{\numberline {4.6}{\ignorespaces Carte radar}}{27}{}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Captures WAV radar et leur écho}}{28}{}%
+\contentsline {figure}{\numberline {5.2}{\ignorespaces WAV brut capturé}}{29}{}%
+\contentsline {figure}{\numberline {5.3}{\ignorespaces FFT du brut filtré}}{29}{}%
+\contentsline {figure}{\numberline {5.4}{\ignorespaces Résultats de mon algorithme de densité de puissance pour identifier vitesse et backspin}}{30}{}%
+\contentsline {figure}{\numberline {5.5}{\ignorespaces Résultats de la densité spectrale de puissance filtrée en moyenne et normalisée}}{30}{}%
+\contentsline {figure}{\numberline {5.6}{\ignorespaces Résultats du filtrage de la densité et de l'identification des caractéristiques}}{31}{}%
+\contentsline {figure}{\numberline {5.7}{\ignorespaces Échos de vitesse et de backspin}}{31}{}%
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {6.1}{\ignorespaces Vue de dessus du dispositif à deux radars. $f_C$ porte $V_x$ (vitesse), $f_\Delta $ porte $V_z$ (azimut $\alpha $ dans le plan $x$--$z$). Le facteur $2L/b$ corrige la parallaxe : plus la balle est loin, plus la différence de fréquence est faible pour le même $V_z$.}}{33}{}%
+\contentsline {figure}{\numberline {6.2}{\ignorespaces Le patch aluminium comme diffuseur dominant unique. La périodicité du flash comme l'excursion spectrale mesurent le spin \emph {total} $\omega $ ; aucune des deux ne sépare backspin et sidespin.}}{34}{}%
+\contentsline {figure}{\numberline {6.3}{\ignorespaces Pipe de validation Python (\texttt {sci/pipe\_validation.py}). Équivalents Scilab : \texttt {animDensite} (STFT), \texttt {Info}/\texttt {GetSwing} (vitesse), \texttt {animHilbert} (enveloppe), \texttt {acos(f2/f1)} (azimut rudimentaire dans \texttt {testsFFT.sci}).}}{36}{}%
+\contentsline {figure}{\numberline {6.4}{\ignorespaces Géométrie du dispositif radar (aussi dans le README).}}{36}{}%
+\contentsline {figure}{\numberline {6.5}{\ignorespaces Patch sur la balle (ruban aluminium).}}{37}{}%
+\contentsline {figure}{\numberline {6.6}{\ignorespaces Spectrogramme mesuré, coup 123~m / 150~km/h / 5274~tr/min (référence SkyTrak).}}{37}{}%
+\contentsline {figure}{\numberline {6.7}{\ignorespaces Spectrogramme mesuré, coup 131~m / 162~km/h / 6185 back + 7102 latéral tr/min ($\beta \approx 48{,}9^\circ $, forte courbure).}}{38}{}%
+\contentsline {figure}{\numberline {6.8}{\ignorespaces Spectrogramme mesuré, coup 137~m / 166~km/h / 4990+1312~tr/min ($\beta \approx 14{,}7^\circ $).}}{38}{}%
+\contentsline {figure}{\numberline {6.9}{\ignorespaces Capture théorique (générée), config F7 151~km/h, départ $16{,}5^\circ $, spin 4000~tr/min, latéral 700~tr/min ($\beta =10{,}1^\circ $), club 115~km/h, portée 102~m.}}{39}{}%
+\contentsline {figure}{\numberline {6.10}{\ignorespaces Capture générée, même config, version swing complet 450~ms (v2).}}{39}{}%
+\contentsline {figure}{\numberline {6.11}{\ignorespaces Capture générée avec les paramètres du vrai coup de 137~m (166~km/h, 4990/1312~tr/min, club 118).}}{40}{}%
+\contentsline {figure}{\numberline {6.12}{\ignorespaces Trajectoire modèle (vol + déviation latérale du slice) pour la capture générée du 2025-11-08.}}{40}{}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\babel@toc {french}{}\relax 

@@ -1,0 +1,333 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{physics}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{geometry}
+\usepackage{tikz}
+\geometry{left=2cm, right=2cm, top=2cm, bottom=2cm}
+\usetikzlibrary{arrows.meta, positioning, quotes}
+
+%  Title and author 
+\title{\textbf{Modèle Complet du Vol d'une Balle de Golf} \\
+       \large{Formulation Littérale et Équations Physiques}}
+\author{Matthieu PHILIPPE}
+\date{\today}
+
+%  Custom commands for physics 
+\newcommand{\vb}[1]{\mathbf{#1}}       % Vector bold
+\newcommand{\uvb}[1]{\hat{\mathbf{#1}}} % Unit vector bold
+\newcommand{\dd}{\mathrm{d}}             % Differential
+\newcommand{\pder}[2]{\frac{\partial #1}{\partial #2}} % Partial derivative
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Ce document présente une \textbf{formulation littérale complète} du modèle de vol d'une balle de golf, incluant les forces aérodynamiques (traînée, portance, effet Magnus), les équations du mouvement, et les paramètres physiques (masse, spin, coefficients aérodynamiques). Le modèle est basé sur les travaux de \textsc{Bearman \& Harvey (1976)}, \textsc{Penner (2002)}, et \textsc{Palmer (2005)}, et intègre des corrections pour les régimes turbulents et les effets de rotation.
+\end{abstract}
+
+
+
+\section{Introduction}
+Le vol d'une balle de golf est gouverné par des \textbf{forces aérodynamiques complexes} :
+\begin{itemize}
+    \item \textbf{Traînée} (drag), opposée au mouvement.
+    \item \textbf{Portance} (lift), due à l'effet Magnus (rotation de la balle).
+    \item \textbf{Gravité}, accélération constante vers le sol.
+\end{itemize}
+Ce modèle combine ces forces dans un \textbf{système d'équations différentielles} pour décrire la trajectoire 3D de la balle, en tenant compte de sa vitesse initiale, de son spin, et des conditions environnementales.
+
+
+
+\section{Notations et Paramètres Physiques}
+\label{sec:parameters}
+
+\begin{table}[h]
+\centering
+\caption{Paramètres physiques du modèle.}
+\label{tab:parameters}
+\begin{tabular}{llll}
+\toprule
+\textbf{Symbole} & \textbf{Description} & \textbf{Valeur Typique} & \textbf{Unité} \\
+\midrule
+$m$               & Masse de la balle & $0.04545$ & kg \\
+$d$               & Diamètre de la balle & $0.043$ & m \\
+$A$               & Section transversale ($A = \pi (d/2)^2$) & $1.45 \times 10^{-3}$ & m$^2$ \\
+$\rho_\text{air}$ & Masse volumique de l'air & $1.292$ & kg/m$^3$ \\
+$g$               & Accélération gravitationnelle & $9.81$ & m/s$^2$ \\
+$\mu$              & Viscosité dynamique de l'air & $1.5 \times 10^{-5}$ & m$^2$/s \\
+$\vb{v}$          & Vitesse de la balle ($v_x, v_y, v_z$) & -- & m/s \\
+$\vb{\omega}$     & Vitesse angulaire (spin) ($\omega_x, \omega_y, \omega_z$) & -- & rad/s \\
+$Re$              & Nombre de Reynolds ($Re = \frac{\rho_\text{air} \cdot d \cdot \|\vb{v}\|}{\mu}$) & $\sim 2 \times 10^5$ & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+\section{Forces en Jeu}
+\label{sec:forces}
+
+\subsection{Force de Traînée (Drag)}
+La force de traînée s'oppose au mouvement de la balle et est donnée par :
+\begin{equation}
+    \vb{F}_D = -\frac{1}{2} \rho_\text{air} \cdot C_D \cdot A \cdot \|\vb{v}\| \cdot \vb{v},
+\end{equation}
+où :
+\begin{itemize}
+    \item $C_D$ est le \textbf{coefficient de traînée}, dépendant du nombre de Reynolds $Re$ :
+    \begin{equation}
+        C_D =
+        \begin{cases}
+            0.36 + \frac{24}{Re} + \frac{6}{1 + \sqrt{Re}} & \text{si } Re < 10^5, \\
+            0.25 + 0.01 \left( \frac{Re}{10^5} - 2 \right) & \text{si } Re \geq 10^5.
+        \end{cases}
+    \end{equation}
+    \item $\|\vb{v}\| = \sqrt{v_x^2 + v_y^2 + v_z^2}$ est la norme de la vitesse.
+\end{itemize}
+
+\subsection{Force de Portance (Lift) et Effet Magnus}
+L'effet Magnus génère une force de portance perpendiculaire à la vitesse et à l'axe de rotation. La force de Magnus $\vb{F}_M$ est donnée par :
+\begin{equation}
+    \vb{F}_M = \frac{1}{2} \rho_\text{air} \cdot A \cdot d \cdot \vb{\omega} \times \vb{v},
+\end{equation}
+où :
+\begin{itemize}
+    \item $\vb{\omega} = (\omega_x, \omega_y, \omega_z)$ est le vecteur de vitesse angulaire (spin).
+    \item $\times$ désigne le produit vectoriel.
+    \item Le coefficient de Magnus $C_M$ peut être décomposé par axe :
+    \begin{equation}
+        C_{M,x} = 0.1, \quad C_{M,y} = 0.15, \quad C_{M,z} = 0.2.
+    \end{equation}
+\end{itemize}
+La force de Magnus est alors :
+\begin{equation}
+    \vb{F}_M = \begin{pmatrix}
+        C_{M,x} \cdot (\omega_y v_z - \omega_z v_y) \\
+        C_{M,y} \cdot (\omega_z v_x - \omega_x v_z) \\
+        C_{M,z} \cdot (\omega_x v_y - \omega_y v_x)
+    \end{pmatrix}.
+\end{equation}
+
+\subsection{Force Gravitationnelle}
+La gravité agit uniquement sur l'axe vertical ($y$) :
+\begin{equation}
+    \vb{F}_g = \begin{pmatrix} 0 \\ -m g \\ 0 \end{pmatrix}.
+\end{equation}
+
+
+\section{Équations du Mouvement}
+\label{sec:equations}
+
+Le mouvement de la balle est décrit par les \textbf{équations différentielles du second ordre} de Newton :
+\begin{equation}
+    m \frac{\dd^2 \vb{r}}{\dd t^2} = \vb{F}_D + \vb{F}_M + \vb{F}_g,
+\end{equation}
+où $\vb{r} = (x, y, z)$ est la position de la balle.
+
+En décomposant par axe, on obtient le système suivant :
+\begin{subequations}
+    \label{eq:ode_system}
+    \begin{align}
+        \frac{\dd v_x}{\dd t} &= \frac{1}{m} \left( F_{D,x} + F_{M,x} \right), \\
+        \frac{\dd v_y}{\dd t} &= \frac{1}{m} \left( F_{D,y} + F_{M,y} - m g \right), \\
+        \frac{\dd v_z}{\dd t} &= \frac{1}{m} \left( F_{D,z} + F_{M,z} \right),
+    \end{align}
+\end{subequations}
+avec :
+\begin{equation}
+    \frac{\dd \vb{r}}{\dd t} = \vb{v} = (v_x, v_y, v_z).
+\end{equation}
+
+\subsection{Décélération du Spin}
+Le spin décélère en raison des frottements aérodynamiques. On modélise cette décélération par :
+\begin{equation}
+    \frac{\dd \vb{\omega}}{\dd t} = -k \cdot \vb{\omega} \cdot \|\vb{v}\|,
+\end{equation}
+où $k = 10^{-5}$ est un coefficient empirique.
+
+
+\section{Conditions Initiales}
+\label{sec:initial_conditions}
+
+Les conditions initiales dépendent des paramètres du coup :
+\begin{itemize}
+    \item \textbf{Vitesse initiale} $\vb{v}_0 = (v_{0,x}, v_{0,y}, v_{0,z})$ :
+    \begin{equation}
+        \begin{aligned}
+            v_{0,x} &= V_0 \cos(\theta_\text{launch}) \cos(\alpha_\text{club}), \\
+            v_{0,y} &= V_0 \sin(\theta_\text{launch}), \\
+            v_{0,z} &= -V_0 \cos(\theta_\text{launch}) \sin(\alpha_\text{club}),
+        \end{aligned}
+    \end{equation}
+    où :
+    \begin{itemize}
+        \item $V_0$ est la vitesse initiale de la balle (en m/s),
+        \item $\theta_\text{launch}$ est l'angle de lancement (en radians),
+        \item $\alpha_\text{club}$ est l'angle du chemin du club (en radians).
+    \end{itemize}
+
+    \item \textbf{Spin initial} $\vb{\omega}_0 = (\omega_{0,x}, \omega_{0,y}, \omega_{0,z})$ :
+    \begin{equation}
+        \begin{aligned}
+            \omega_{0,x} &= 0, \\
+            \omega_{0,y} &= V_0 \sin(\theta_\text{launch}) \sin(\gamma_\text{face}) \cdot C_{\text{spin,lift}}, \\
+            \omega_{0,z} &= V_0 \cos(\theta_\text{launch}) \sin(\theta_\text{loft}) \cdot C_{\text{spin}},
+        \end{aligned}
+    \end{equation}
+    où :
+    \begin{itemize}
+        \item $\gamma_\text{face}$ est l'angle de la face du club (en radians),
+        \item $C_{\text{spin}}$ et $C_{\text{spin,lift}}$ sont des coefficients empiriques dépendant du club.
+    \end{itemize}
+\end{itemize}
+
+
+%  Custom commands for physics 
+\newcommand{\vb}[1]{\mathbf{#1}}       % Vector bold
+\newcommand{\uvb}[1]{\hat{\mathbf{#1}}} % Unit vector bold
+
+
+\begin{figure}[h]
+\centering
+\caption{\textbf{Schéma des forces agissant sur une balle de golf en vol.}}
+\label{fig:forces_golf_ball}
+\begin{tikzpicture}[
+    scale=1.5,
+    force/.style={->, thick, line cap=round},
+    velocity/.style={->, thick, blue, line cap=round},
+    spin/.style={->, thick, purple, line cap=round},
+    axis/.style={->, gray, thin},
+    node distance=0.5cm and 1cm,
+]
+
+%  Draw the golf ball (as a circle) 
+\draw[fill=white, draw=black, thick] (0,0) circle (0.5cm);
+\node at (0,0) {};
+
+%  Draw velocity vector (v) 
+\draw[velocity] (0,0) -- (1.5,0.5) node[right] {$\vb{v}$};
+\node[above right=0.2cm and 0.5cm of 0,0] {};
+
+%  Draw spin vector (omega) 
+\draw[spin] (0,0) -- (-0.3,0.8) node[above left] {$\vb{\omega}$};
+\node[above left=0.2cm and 0.3cm of 0,0] {};
+
+%  Draw forces 
+% Drag force (opposite to velocity)
+\draw[force, red] (0,0) -- (-0.8,-0.3) node[left] {$\vb{F}_D$};
+\node[below left=0.2cm and 0.3cm of 0,0] {};
+
+% Magnus force (perpendicular to v and omega)
+\draw[force, green!60!black] (0,0) -- (0,1.2) node[above] {$\vb{F}_M$};
+\node[above=0.2cm of 0,1.2] {};
+
+% Gravity force (downwards)
+\draw[force, orange] (0,0) -- (0,-1.2) node[below] {$\vb{F}_g$};
+\node[below=0.2cm of 0,-1.2] {};
+
+%  Draw coordinate system 
+\draw[axis] (0,0) -- (2,0) node[right] {$x$};
+\draw[axis] (0,0) -- (0,2) node[above] {$y$};
+\draw[axis] (0,0) -- (-1.5,-1) node[below left] {$z$};
+
+%  Add right-hand rule for spin 
+\draw[->, purple, dashed] (-0.3,0.8) arc (120:180:0.5) node[left] {$\omega$};
+\draw[->, purple, dashed] (0,0) -- (-0.5,0) node[left] {$\uvb{x}$};
+\draw[->, purple, dashed] (0,0) -- (0,0.5) node[above] {$\uvb{y}$};
+
+%  Add legend 
+\matrix[draw, below left=1cm and -1cm of current bounding box.south east, anchor=north east] {
+    \draw[velocity] (0,0) -- (0.5,0); & \node[right] {Vitesse $\vb{v}$}; \\
+    \draw[force, red] (0,0) -- (0.5,0); & \node[right] {Traînée $\vb{F}_D$}; \\
+    \draw[force, green!60!black] (0,0) -- (0.5,0); & \node[right] {Portance $\vb{F}_M$}; \\
+    \draw[force, orange] (0,0) -- (0.5,0); & \node[right] {Gravité $\vb{F}_g$}; \\
+    \draw[spin] (0,0) -- (0.5,0); & \node[right] {Spin $\vb{\omega}$}; \\
+};
+
+\end{tikzpicture}
+\end{figure}
+
+
+
+\section{Modèle de Rebond}
+\label{sec:bounce}
+
+Lors d'un impact avec le sol, la balle subit un rebond modélisé par :
+\begin{itemize}
+    \item \textbf{Angle d'impact} :
+    \begin{equation}
+        \theta_\text{impact} = \arctan\left( \frac{\sqrt{v_x^2 + v_z^2}}{|v_y|} \right).
+    \end{equation}
+    \item \textbf{Angle de rebond} (selon \textsc{Penner, 2002}) :
+    \begin{equation}
+        \theta_\text{rebond} = 15.4 \cdot \frac{\|\vb{v}\|}{18.6} \cdot \frac{\theta_\text{impact}}{44.4} \quad (\text{en radians}).
+    \end{equation}
+    \item \textbf{Coefficient de restitution} $e_\text{ball}$ :
+    \begin{equation}
+        e_\text{ball} =
+        \begin{cases}
+            0.510 - 0.0375 \cdot |v_y'| + 0.000903 \cdot |v_y'|^2 & \text{si } |v_y'| < 20 \, \text{m/s}, \\
+            0.120 & \text{sinon},
+        \end{cases}
+    \end{equation}
+    où $v_y'$ est la vitesse verticale après rebond.
+    \item \textbf{Vitesses après rebond} :
+    \begin{equation}
+        \begin{aligned}
+            v_x' &= v_x \cos(\theta_\text{rebond}) - |v_y| \sin(\theta_\text{rebond}), \\
+            v_y' &= e_\text{ball} \cdot |v_y|, \\
+            v_z' &= v_z \cos(\theta_\text{rebond}) - |v_y| \sin(\theta_\text{rebond}).
+        \end{aligned}
+    \end{equation}
+\end{itemize}
+
+
+\section{Modèle de Roulement}
+\label{sec:rolling}
+
+Une fois la balle au sol avec une vitesse de rebond faible, elle entre en phase de \textbf{roulement}. La décélération est modélisée par :
+\begin{equation}
+    \frac{\dd v_x}{\dd t} = -\frac{5}{7} \rho_g \cdot g \cdot \frac{v_x}{\|\vb{v}\|},
+\end{equation}
+où :
+\begin{itemize}
+    \item $\rho_g$ est le coefficient de frottement du terrain (ex: $\rho_g = 0.131$ pour un green, $\rho_g = 0.1$ pour un fairway).
+    \item $\|\vb{v}\| = \sqrt{v_x^2 + v_z^2}$ est la vitesse horizontale.
+\end{itemize}
+
+
+\section{Implémentation Numérique}
+\label{sec:numerical}
+
+Le système d'équations différentielles (\ref{eq:ode_system}) est résolu numériquement à l'aide d'une méthode de type \textbf{Runge-Kutta} 
+(ex: `ode4` dans MATLAB/Scilab). Les étapes sont :
+\begin{enumerate}
+    \item Intégrer les équations du vol jusqu'à ce que la balle touche le sol ($y \leq \text{Altitude du sol}$).
+    \item Appliquer le modèle de rebond pour mettre à jour les vitesses.
+    \item Répéter jusqu'à ce que la vitesse soit nulle ou que le nombre maximal de rebonds soit atteint.
+    \item Passer en phase de roulement si la vitesse verticale est négligeable.
+\end{enumerate}
+
+
+\section{Conclusion}
+Ce modèle combine :
+\begin{itemize}
+    \item Une \textbf{description physique précise} des forces en jeu (traînée, Magnus, gravité).
+    \item Des \textbf{paramètres empiriques} calibrés sur des données expérimentales.
+    \item Une \textbf{implémentation numérique robuste} pour simuler des trajectoires réalistes.
+\end{itemize}
+Il peut être étendu pour inclure des effets supplémentaires comme le vent, la température, ou des terrains complexes.
+
+
+\bibliographystyle{plain}
+\bibliography{references} % À remplacer par votre fichier .bib
+
+\end{document}
