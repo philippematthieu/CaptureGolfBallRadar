@@ -33,8 +33,8 @@ pour être optimale en temps et en signal — c'est ce que le traitement *devrai
 Config : fer 7, V₀ = 151 km/h, launch = 16,5°, spin total = 4000 rpm, side spin = 700 rpm (slice droite → β = 10,1°), cs = 115 km/h.
 Validation par `sci/pipe_validation.py` : spin retrouvé à −0,1 % (3996 vs 4000 rpm).
 
-Densité spectrale de la captation modèle :
-<img src="sci/img/spectro_MODELE_2025-11-08.png"  width="430" height="339">
+Densité spectrale de la captation modèle à swing complet (config du coup réel 137m : 166 km/h, 4990/1312 rpm, cs 118) :
+<img src="sci/img/spectro_MODELE_137m-166kmh.png"  width="430" height="339">
 
 Trajectoire modèle (vol + déviation latérale du slice) :
 <img src="sci/img/traj_MODELE_2025-11-08.png"  width="480" height="267">
