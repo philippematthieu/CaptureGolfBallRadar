@@ -27,9 +27,10 @@
 \usepackage{tabularray}
 \usepackage{tocloft}
 \usepackage{tikz}
-\usetikzlibrary{positioning}
 \usepackage{tikz-cd}
-\usetikzlibrary{fit,shapes.geometric}
+\usepackage{physics} % Pour \vb (vecteurs en gras)
+\usetikzlibrary{positioning,fit,shapes.geometric,arrows.meta, positioning, matrix}
+\usepackage{amsmath} % Pour \mathbf et \hat
 
 \usepackage{calrsfs}
 \DeclareMathAlphabet{\pazocal}{OMS}{zplm}{m}{n}
@@ -180,7 +181,7 @@
 
 \begin{document}
 \sffamily
-\pagestyle{plain}
+%\pagestyle{plain}
 
 \rmfamily\maketitle\sffamily
 %\noindent\makebox[\linewidth]{\rule{\textwidth}{0.4pt}}
@@ -195,20 +196,29 @@
 \newpage
 \pagestyle{plainstar}
 \section*{ABSTRACT}\setcounter{page}{1}
-By using the equations of golf ball flight dynamics, this article demonstrates how to code a swing simulator for a ball in Scilab.
+By using the equations of golf ball flight dynamics, this article demonstrates how to code a swing simulator for a 
+ball in Scilab.
 
-The simulator uses an ODE (ordinary differential equation) solver from Scilab, the fluid dynamics equations on a ball (taking into account gravity, drag forces, and Magnus forces), the restitution of forces from a golf club applied to a ball for launches, its  flight, bounce and roll. 
+The simulator uses an ODE (ordinary differential equation) solver from Scilab, the fluid dynamics equations on a 
+ball (taking into account gravity, drag forces, and Magnus forces), the restitution of forces from a golf club 
+applied to a ball for launches, its  flight, bounce and roll. 
 
-In the second part, the article presents a method for capturing the speed of the ball in flight using 2 low-cost radars, coupled with an Arduino Mini and an adapted sound card. 
+In the second part, the article presents a method for capturing the speed of the ball in flight using 2 low-cost 
+radars, coupled with an Arduino Mini and an adapted sound card connected to the wave radar's output . 
 
-The radar signal is recorded in WAV format and filtered to extract speed and spin information during flight, using power spectral density.
+The radar signal is recorded in WAV format and filtered to extract speed and spin informations during first meters of flight, 
+using power spectral density in realtime mode.
 
 \emph{\textbf{Keywords:} Golf Ball, Simulator, Scilab, Radar, Spectral dentisty.}
 
 \chapter{Introduction}
-After spending a few years playing golf, I wanted to learn more about the dynamics of the interactions between the club, the ball, and the elements. 
+After spending a few years playing golf, I wanted to learn more about the dynamics of the interactions between 
+the club, the ball, and the elements. 
 
-Of course, the academic literature and publications were quite abundant. But I came accross articles \cite{PWBJKH76} written in 1976 and \cite{SASDR94} in 1994. The description of the ball's physics pushed me to undertake modeling this system in Scilab (fig \ref{fig:hmisimulation}). Subsequently, I did it in Java, C++, and then C\# to use it under \emph{Unity game engine}{\textregistered \texttrademark}.
+Of course, the academic literature and publications were quite abundant. But I came accross articles \cite{PWBJKH76} 
+written in 1976 and \cite{SASDR94} in 1994. The description of the ball's physics pushed me to undertake modeling 
+this system in Scilab (fig \ref{fig:hmisimulation}). Subsequently, I did it in Java, C++, and then C\# to use it 
+under \emph{Unity game engine}{\textregistered \texttrademark}.
 
 
 \begin{figure} [H]\centering
@@ -218,17 +228,21 @@ Of course, the academic literature and publications were quite abundant. But I c
 \end{figure}
 
 
-When the results were satisfactory, I thought about capturing the flight of a golf ball with instrumentation. After tests with sonar, which were largely insufficient, I took small presence detection radars for automatic doors.
+When the results were satisfactory, I thought about capturing the flight of a golf ball with instrumentation. After 
+tests with sonar, which were largely insufficient, I took small presence detection radars for automatic doors.
 
-I didn't know what I was getting into, but after a updating my knowledge on signal filtering and a few lines of programming in Scilab, I found a way to capture the essential data. Namely the speed and backspin of the flight of a golf ball (figure \ref{fig:radarcapture}).
+I didn't know what I was getting into, but after a updating my knowledge on signal filtering and a few lines of 
+programming in Scilab, I found a way to capture the essential data. Namely the speed and backspin of the flight 
+of a golf ball and the club's echo  since juste before smashing and during flight( figure \ref{fig:radarcapture0}).
 
 \begin{figure} [H]\centering
 \includegraphics[width=8cm,keepaspectratio, ]{../sci/img/Pasted image 20250122083320.png}
 \caption{Radar Captures}
-\label{fig:radarcapture}
+\label{fig:radarcapture0}
 \end{figure}
 
-This article describes all items I found, and how I set all them together. Equations, programs, filtering, estimators and electronics compounents to make a Virtual Golf Simulation.
+This article describes all items I found, and how I set all them together. Equations, programs, filtering, 
+estimators and electronics compounents to make a Virtual Golf Simulation.
 
 All the equations presented in this article are derived from public publications or books, with references listed in the bibliography. I will not revisit the demonstrations and physical explanations, as they are not the focus of these pages. 
 What matters to me is the relationship between this information and how I have used or adapted it.
@@ -241,10 +255,80 @@ The main equation is the ball's flight. The equation accounts 3 forces : Magnus 
 \sum{\overrightarrow{F}} =  \overrightarrow{F_{m}} + \overrightarrow{F_{d}} + \overrightarrow{F_{g}}
 \end{equation}\myequations{Flight Forces}
 
+---
+
+
+\begin{figure}[h]
+\centering
+\label{fig:forces_golf_ball}
+\begin{tikzpicture}[
+    scale=1.5,
+    force/.style={->, thick, line cap=round},
+    velocity/.style={->, thick, blue, line cap=round},
+    spin/.style={->, thick, purple, line cap=round},
+    axis/.style={->, gray, thin},
+    node distance=0.5cm and 1cm,
+]
+
+% --- Draw the golf ball (as a circle) ---
+\draw[fill=white, draw=black, thick] (0,0) circle (0.5cm);
+
+% --- Draw velocity vector (v) ---
+\draw[velocity] (0,0) -- (1.5,0.5) node[right] {$\mathbf{v}$};
+
+% --- Draw spin vector (omega) ---
+\draw[spin] (0,0) -- (-0.3,0.8) node[above left] {$\mathbf{\omega}$};
+
+% --- Draw forces ---
+% Drag force (opposite to velocity)
+\draw[force, red] (0,0) -- (-0.8,-0.3) node[left] {$\mathbf{F}_D$};
+
+% Magnus force (perpendicular to v and omega)
+\draw[force, green!60!black] (0,0) -- (0,1.2) node[above] {$\mathbf{F}_M$};
+
+% Gravity force (downwards)
+\draw[force, orange] (0,0) -- (0,-1.2) node[below] {$\mathbf{F}_g$};
+
+% --- Draw coordinate system ---
+\draw[axis] (0,0) -- (2,0) node[right] {$x$};
+\draw[axis] (0,0) -- (0,2) node[above] {$y$};
+\draw[axis] (0,0) -- (-1.5,-1) node[below left] {$z$};
+
+% --- Add right-hand rule for spin ---
+\draw[->, purple, dashed] (-0.3,0.8) arc (120:180:0.5) node[left] {$\omega$};
+\draw[->, purple, dashed] (0,0) -- (-0.5,0) node[left] {$\hat{\mathbf{x}}$};
+\draw[->, purple, dashed] (0,0) -- (0,0.5) node[above] {$\hat{\mathbf{y}}$};
+
+% --- Add legend ---
+\matrix[draw, below left=1cm and -1cm of current bounding box.south east, anchor=north east] {
+    \draw[velocity] (0,0) -- (0.5,0); & \node[right] {Vitesse $\mathbf{v}$}; \\
+    \draw[force, red] (0,0) -- (0.5,0); & \node[right] {Traînée $\mathbf{F}_D$}; \\
+    \draw[force, green!60!black] (0,0) -- (0.5,0); & \node[right] {Portance $\mathbf{F}_M$}; \\
+    \draw[force, orange] (0,0) -- (0.5,0); & \node[right] {Gravité $\mathbf{F}_g$}; \\
+    \draw[spin] (0,0) -- (0.5,0); & \node[right] {Spin $\mathbf{\omega}$}; \\
+};
+
+\end{tikzpicture}
+\caption{\textbf{Schéma des forces agissant sur une balle de golf en vol.}}
+
+\end{figure}
+
+
+---
+
+
+
+
+
+
+
+
 \section{Drag Force}
 \subsection{Air characteristics}
 
-\mydefinitions{The Air Drag Force}{The Air Drag Force is the resitance exposed on the cross-sectional area of an object, orthogonal to the displacement, determined by the relation given by \cite{BBRS11} as \ref{eq:aircaracteristic2}} :
+\mydefinitions{The Air Drag Force}{The Air Drag Force is the resitance exposed on the cross-sectional 
+area of an object, orthogonal to the displacement, determined by the relation given by \cite{BBRS11} as 
+\ref{eq:aircaracteristic2}} :
 
 \begin{eqnarray}
 F_d(V)&=&-\frac{1}{2}.\rho(T).C_d.S.V^2(t)\label{eq:aircaracteristic2}
@@ -440,32 +524,23 @@ Due to the Club Path ($\alpha_{cp}$) and the Face to Path and Face Angle ($\gamm
 \end{figure}
 
 Ainsi :
-\[
-V_{b0}\cdot\overrightarrow{i} = V_{bi} \cdot (1 - 0.3556 \cdot miss) 
-\cdot \cos(\theta + \arctan\left(\frac{\sin(\theta) \cdot (1 + \frac{m}{M})}{(1 + e) \cdot \cos(\theta) \cdot (1 + \frac{m}{M} + \frac{5}{2})}\right)
-\]
 
-\[
-V_{b0}\cdot\overrightarrow{j} = V_{bi} \cdot (1 - 0.3556 \cdot miss) 
-\cdot \sin(\theta + \arctan\left(\frac{\sin(\theta) \cdot (1 + \frac{m}{M})}{(1 + e) \cdot \cos(\theta) \cdot (1 + \frac{m}{M} + \frac{5}{2})}\right)
-\]
-\[
-V_{b0}\cdot\overrightarrow{k}=0 
-\]
+$V_{b0} \cdot \vb{i} = V_{bi} \cdot (1 - 0.3556 \cdot \text{miss}) \cdot \cos(\theta + \arctan(\frac{\sin(\theta) \cdot (1 + \frac{m}{M})}{(1 + e) \cdot \cos(\theta) \cdot (1 + \frac{m}{M} + \frac{5}{2})}))$
+% Assurez-vous d'avoir ces packages dans votre préambule
 
-The spin about the $\overrightarrow{i}$ axis is not a component along the club path axis. Spin is applied in the ground plane, with SideSpin aligned along the club face axis $\overrightarrow{j}$, and BackSpin aligned along the club path axis $\overrightarrow{k}$.\[
-w_{\overrightarrow{i}} = 0
-\]
+$V_{b0} \cdot \overrightarrow{j} = V_{bi} \cdot (1 - 0.3556 \cdot \text{miss}) \cdot \sin\left(\theta + \arctan\left(\frac{\sin(\theta) \cdot \left(1 + \frac{m}{M}\right)}{(1 + e) \cdot \cos(\theta) \cdot \left(1 + \frac{m}{M} + \frac{5}{2}\right)}\right)\right)$
 
-\[
-w_{\overrightarrow{j}} = V_{b0}\overrightarrow{j} \cdot sin(\alpha_{cp} - \gamma_{fp}) \cdot Sac.coeffSpinLift(Sac.Type == Club)
-\]
+$V_{b0} \cdot \overrightarrow{k} = 0$
 
-\[
-w_{\overrightarrow{k}} = V_{b0}\overrightarrow{i} \cdot sin(\theta)  \cdot Sac.coeffSpin(Sac.Type == Club)
-\]
+The spin about the $\overrightarrow{i}$ axis is not a component along the club path axis.
+Spin is applied in the ground plane, with \textit{SideSpin} aligned along the club face axis $\overrightarrow{j}$,
+and \textit{BackSpin} aligned along the club path axis $\overrightarrow{k}$.
+%
+$w_{\overrightarrow{i}} = 0$
 
+$w_{\overrightarrow{j}} = V_{b0} \cdot \overrightarrow{j} \cdot \sin(\alpha_{cp} - \gamma_{fp}) \cdot \text{Sac.coeffSpinLift}(\text{Sac.Type} == \text{Club})$
 
+$w_{\overrightarrow{k}} = V_{b0} \cdot \overrightarrow{i} \cdot \sin(\theta) \cdot \text{Sac.coeffSpin}(\text{Sac.Type} == \text{Club})$
 
 \section{Complete Model of flight}
 \subsection{Complete Model of Flight (Matrix/Vector Form)}
@@ -578,13 +653,862 @@ The initial spin vector $\vec{\omega}_0$ is:
 
 
 \section{External Function for the Ordinary Differential Equation solver}
+\label{sec:ode_functions}
+
+The simulation of the golf ball's trajectory relies on solving a system of \textbf{ordinary differential equations (ODEs)} 
+that model the physical forces acting on the ball during flight, bounce, and roll. This section 
+details the design and implementation of the external functions used to define these ODEs, as well as 
+their integration with the numerical solver. The approach leverages modularity to separate the physical 
+modeling from the numerical resolution, enabling flexibility and maintainability.
+
+\subsection{Architecture and Design}
+\label{subsec:ode_architecture}
+
+The ODE solver architecture is structured around \textbf{three core components}:
+\begin{itemize}
+    \item \textbf{Equation Definition}: External functions (e.g., \texttt{flightg} for flight and \texttt{rolling} 
+    for roll) define the system of ODEs based on physical laws.
+    \item \textbf{Event Detection}: Functions like \texttt{events} and \texttt{events2} handle discrete events (
+        e.g., ball impact with the ground or stopping condition).
+    \item \textbf{Numerical Integration}: The \texttt{ode} function in Scilab (or equivalent in other languages) 
+    performs the time integration using a specified method (e.g., Runge-Kutta 4th order).
+\end{itemize}
+
+This separation ensures that the physical model can be modified independently of the numerical solver, which is 
+critical for iterative development and validation.
+
+
+\subsection{Equation Definition Functions}
+\label{subsec:equation_functions}
+
+The ODEs are defined in external functions that return the time derivatives of the state variables. For example, the \texttt{flightg} function in Scilab computes the derivatives for the flight phase, incorporating the following forces:
+
+\begin{itemize}
+    \item \textbf{Drag Force}:
+    The drag force is modeled using the \textbf{White's formula} for the drag coefficient \( C_d \), which depends on the Reynolds number \( \text{Re} \):
+    \[
+    C_d = 0.36 + \frac{24}{\text{Re}} + \frac{6}{1 + \sqrt{\text{Re}}}, \quad \text{where} \quad \text{Re} = \frac{V \cdot D}{\nu}
+    \]
+    Here, \( V \) is the ball's velocity, \( D \) is the ball's diameter, and \( \nu \) is the kinematic viscosity of air (\( 1.5 \times 10^{-5} \, \text{m}^2/\text{s} \)).
+
+    \item \textbf{Magnus Force}:
+    The Magnus force, responsible for the lift due to spin, is computed using the \textbf{Smits and Smith model} \cite{smits1994aerodynamic}:
+    \[
+    C_m = C_{l1} \cdot r \cdot \left| \frac{\omega}{V} \right|^{0.4}
+    \]
+    where \( C_{l1} \) is an empirical coefficient, \( r \) is the ball's radius, \( \omega \) is the spin rate, and \( V \) is the ball's velocity. The Magnus force is then:
+    \[
+    \mathbf{F}_m = \frac{1}{2} \rho C_m A r (\boldsymbol{\omega} \times \mathbf{v})
+    \]
+    where \( \rho \) is the air density, \( A \) is the ball's cross-sectional area, and \( \mathbf{v} \) is the velocity vector.
+
+    \item \textbf{Gravity}:
+    The gravitational force is simply \( \mathbf{F}_g = (0, 0, -mg) \), where \( g \) is the gravitational acceleration.
+\end{itemize}
+
+The state vector for the flight phase includes the ball's position \((x, y, z)\), velocity \((v_x, v_y, v_z)\), and spin \((\omega_x, \omega_y, \omega_z)\). The ODEs are thus a system of 9 coupled equations:
+\[
+\frac{d}{dt}
+\begin{bmatrix}
+x \\ v_x \\ y \\ v_y \\ z \\ v_z \\ \omega_x \\ \omega_y \\ \omega_z
+\end{bmatrix}
+=
+\begin{bmatrix}
+v_x \\
+\frac{F_{dx} + F_{mx}}{m} \\
+v_y \\
+\frac{F_{dy} + F_{my}}{m} - g \\
+v_z \\
+\frac{F_{dz} + F_{mz}}{m} \\
+0 \\
+0 \\
+0
+\end{bmatrix}
+\]
+Note that the current implementation assumes \textbf{no spin decay} during flight (\( \frac{d\boldsymbol{\omega}}{dt} = 0 \)), which is a simplification that may introduce errors over long distances (see Section~\ref{subsec:limitations_ode}).
+
+\subsection{Event Detection}
+\label{subsec:event_detection}
+
+Discrete events, such as the ball's impact with the ground or its stopping condition, are handled using \textbf{event functions}. These functions are critical for:
+\begin{itemize}
+    \item Detecting when the ball hits the ground (\( y \leq \text{Altitude}(x, z) \)).
+    \item Triggering the transition from flight to bounce or roll phases.
+    \item Ensuring numerical stability by adapting the time step near event points.
+\end{itemize}
+
+In Scilab, the \texttt{events} function checks for the ball's impact with the ground:
+\begin{lstlisting}[language=Scilab]
+function [value] = events(t, x)
+    if (x(3) < AltiSol(x(1), x(5))) then
+        value = 0;
+    else
+        value = x(3) - AltiSol(x(1), x(5));
+    end
+endfunction
+\end{lstlisting}
+Here, \texttt{x(3)} represents the ball's height \( y \), and \texttt{AltiSol} computes the ground altitude at position \((x, z)\). The event is triggered when the ball's height falls below the ground level.
+
+Similarly, the \texttt{events2} function detects when the ball stops rolling by checking if its horizontal velocity \( v_x \) falls below a threshold:
+\begin{lstlisting}[language=Scilab]
+function [value] = events2(t, x)
+    value = x(2) - 0; // Stop if v_x <= 0
+endfunction
+\end{lstlisting}
+
+\textbf{Limitations}:
+\begin{itemize}
+    \item The current event detection uses a \textbf{fixed threshold} (e.g., \( 10^{-4} \)), which may not be optimal for all scenarios. A dynamic threshold based on the ball's velocity or spin could improve robustness.
+    \item The event functions do not account for \textbf{latitudinal motion} (\( v_y \)) during rolling, which may lead to inaccuracies in cases where the ball has a significant side spin.
+\end{itemize}
+
+
+\subsection{Numerical Integration}
+\label{subsec:numerical_integration}
+
+The ODE system is integrated numerically using Scilab's \texttt{ode} function, which supports various methods such as \textbf{Runge-Kutta 4th order (RK4)}. The integration is performed with a fixed time step \( \Delta t \), which is set to \( 0.1 \, \text{s} \) in the current implementation.
+
+\begin{lstlisting}[language=Scilab]
+[Pos, rd] = ode('roots', Init0, T0, 0:0.1:Tfin, flightg, 1, events);
+\end{lstlisting}
+Here:
+\begin{itemize}
+    \item \texttt{Init0} is the initial state vector.
+    \item \texttt{T0} is the initial time.
+    \item \texttt{0:0.1:Tfin} defines the time grid with a step size of \( 0.1 \, \text{s} \).
+    \item \texttt{flightg} is the function defining the ODEs for the flight phase.
+    \item \texttt{events} is the event function for detecting impacts.
+\end{itemize}
+
+\textbf{Strengths}:
+\begin{itemize}
+    \item The use of a \textbf{standard numerical method} (RK4) ensures stability and accuracy for most scenarios.
+    \item The modular design allows for easy replacement of the solver (e.g., switching to an adaptive method like RK).
+\end{itemize}
+
+\textbf{Limitations}:
+\begin{itemize}
+    \item The \textbf{fixed time step} (\( \Delta t = 0.1 \, \text{s} \)) may be too large to capture rapid dynamics, such as the initial phase of the flight or the bounce. A smaller step (e.g., \( 0.01 \, \text{s} \)) or an adaptive method would improve precision.
+    \item The solver does not account for \textbf{stiffness} in the ODE system, which could arise in certain edge cases (e.g., very high spin rates). Implicit or semi-implicit methods (e.g., BDF) may be more suitable for such scenarios.
+\end{itemize}
+
+
+\subsection{Limitations and Potential Evolutions}
+\label{subsec:limitations_ode}
+
+While the current implementation is robust and validated experimentally, several limitations and areas for improvement have been identified:
+
+\begin{itemize}
+    \item \textbf{Spin Decay}:
+    The current model assumes that the spin rate remains constant during flight (\( \frac{d\boldsymbol{\omega}}{dt} = 0 \)). In reality, spin decays due to air resistance, which affects the Magnus force and thus the trajectory. Adding spin decay terms to the ODEs would improve accuracy, particularly for long-distance shots (e.g., driver shots).
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Introduce a spin decay model based on the torque due to air resistance:
+        \[
+        \frac{d\boldsymbol{\omega}}{dt} = -\frac{k \rho A r \boldsymbol{\omega} V}{I}
+        \]
+        where \( k \) is an empirical coefficient, \( I \) is the ball's moment of inertia, and \( V \) is the ball's velocity.
+    \end{itemize}
+
+    \item \textbf{Dynamic Drag and Magnus Coefficients}:
+    The drag coefficient \( C_d \) and Magnus coefficient \( C_m \) are currently modeled using simplified formulas. While these are reasonable approximations, they do not fully capture the complexities of a golf ball's aerodynamics, particularly the effect of dimples.
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Use experimental data or CFD simulations to derive more accurate coefficients for \( C_d \) and \( C_m \) as functions of \( \text{Re} \) and spin rate.
+    \end{itemize}
+
+    \item \textbf{Event Detection Robustness}:
+    The current event detection relies on fixed thresholds, which may not be optimal for all scenarios. For example, the threshold for detecting ground impact (\( 10^{-4} \)) may be too large for high-precision simulations.
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Implement a dynamic threshold or use interpolation to precisely locate the event time between time steps.
+    \end{itemize}
+
+    \item \textbf{Adaptive Time Stepping}:
+    The fixed time step (\( \Delta t = 0.1 \, \text{s} \)) may not be efficient for all phases of the simulation. For instance, a smaller step is needed during the bounce phase, while a larger step may suffice during the roll phase.
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Replace the fixed-step RK4 method with an adaptive method (e.g., RK45 or Dormand-Prince) that adjusts the time step based on the local truncation error.
+    \end{itemize}
+
+    \item \textbf{Lateral Motion in Bounces}:
+    The current bounce model does not account for lateral motion (\( v_y \)) or side spin (\( \omega_z \)) during the bounce. This limits the model's ability to accurately simulate slices and hooks.
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Extend the bounce model to include lateral components, using a 3D restitution model that accounts for both vertical and horizontal velocities, as well as spin.
+    \end{itemize}
+
+    \item \textbf{Terrain-Specific Parameters}:
+    The friction coefficients (\( \mu \)) and rolling resistance (\( \rho_g \)) are currently constant. In reality, these parameters depend on the terrain type (e.g., green, fairway, rough).
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Introduce terrain-specific parameters and allow the user to select the terrain type for each simulation.
+    \end{itemize}
+\end{itemize}
+
+These evolutions would enhance the model's accuracy and robustness, particularly for edge cases and high-precision applications. However, they should be implemented incrementally and validated against experimental data to ensure that the improvements do not introduce new errors.
+
 
 \chapter{Bouncing and Rolling}
-\section{Ball's characteristics bouncing on the grass}
-\cite{rwlc2010}
-\section{Ball's characteristics rolling on the grass}
-\cite{PA07}
-\cite{PA022}
+\section{Bouncing and Rolling}
+\label{sec:bouncing_rolling}
+
+The dynamics of a golf ball after impact with the ground are governed by complex interactions between the ball's 
+velocity, spin, and the surface properties. This section details the modeling of the \textbf{bouncing} 
+and \textbf{rolling} phases, based on the work of Woo-Jin Roh and Chong-Won Lee \cite{rwlc2010} and 
+the experimental validation of the Scilab implementation. The transition from flight to bounce 
+and then to roll is critical for accurately predicting the ball's final position, particularly 
+for short-game shots where these phases dominate the total distance.
+
+
+\subsection{Ball's Characteristics During Bouncing}
+\label{subsec:bouncing_characteristics}
+
+The bouncing phase begins when the ball impacts the ground, detected using the event function described 
+in Section~\ref{subsec:event_detection}. The model for bouncing is based on the 
+\textbf{restitution coefficients} and \textbf{friction forces} acting during the 
+short duration of the impact. The key parameters and equations are derived from 
+\cite{rwlc2010}, with adaptations to fit the experimental data.
+
+
+\subsubsection{Impact Angle and Restitution}
+\label{subsubsec:impact_angle}
+
+The impact angle $\theta_{\text{impact}}$ is defined as the angle between the ball's 
+velocity vector and the ground at the moment of impact. In the implementation, this is computed as:
+\[
+\theta_{\text{impact}} = \arctan\left(\frac{|v_{ix}|}{|v_{iy}|}\right),
+\]
+where:
+\begin{itemize}
+    \item $v_{ix} = \sqrt{v_x^2 + v_z^2}$ is the horizontal component of the velocity (in the plane of the ground).
+    \item $v_{iy}$ is the vertical component of the velocity.
+\end{itemize}
+
+The \textbf{restitution coefficient} $e_{\text{ball}}$ determines the ratio of the relative 
+velocity after the impact to the relative velocity before the impact. In the model, 
+$e_{\text{ball}}$ is empirically defined as a function of the vertical velocity component $v_{iy}'$:
+\[
+e_{\text{ball}} =
+\begin{cases}
+0.510 - 0.0375 \cdot |v_{iy}'| + 0.000903 \cdot |v_{iy}'|^2 & \text{if } |v_{iy}'| < 20 \, \text{m/s}, \\
+0.120 & \text{otherwise}.
+\end{cases}
+\]
+This piecewise function captures the \textbf{nonlinear behavior} of 
+the ball's restitution, where higher impact velocities result in lower 
+restitution coefficients due to energy loss from deformation and other dissipative effects.
+
+\textbf{Critique}:
+\begin{itemize}
+    \item The empirical coefficients (0.510, -0.0375, 0.000903) are specific to 
+    the \textbf{green turf} conditions tested in \cite{rwlc2010}. These may not be 
+    universally applicable to other surfaces (e.g., fairway, rough, or sand).
+    \item The threshold of $20 \, \text{m/s}$ is arbitrary and may not hold 
+    for all golf ball models or surface types. Experimental validation for different conditions is recommended.
+\end{itemize}
+
+---
+
+\subsubsection{Bounce Angle and Velocity Update}
+\label{subsubsec:bounce_angle}
+
+The angle of the ball's trajectory after the bounce, $\theta_{\text{rebond}}$, 
+is computed using an empirical relationship from \cite{rwlc2010}:
+\[
+\theta_{\text{rebond}} = 15.4 \cdot \frac{|\vec{v}_i|}{18.6} \cdot \frac{\theta_{\text{impact}}}{44.4},
+\]
+where $|\vec{v}_i|$ is the magnitude of the ball's velocity at impact. 
+This equation assumes that the bounce angle is proportional to both the impact 
+angle and the velocity magnitude, scaled by empirical constants.
+
+The post-impact velocities are then calculated as:
+\[
+\begin{aligned}
+v_{ix}' &= |\vec{v}_i| \cos(\theta_{\text{rebond}}) - |v_{iy}| \sin(\theta_{\text{rebond}}), \\
+v_{iy}' &= |\vec{v}_i| \sin(\theta_{\text{rebond}}) + |v_{iy}| \cos(\theta_{\text{rebond}}).
+\end{aligned}
+\]
+
+\textbf{Critique}:
+\begin{itemize}
+    \item The empirical constants (15.4, 18.6, 44.4) are derived from experiments 
+    on specific turf types and may not generalize well to other surfaces. 
+    For example, a harder surface (e.g., fairway) would likely result in a smaller 
+    $\theta_{\text{rebond}}$ for the same impact conditions.
+    \item The model assumes a \textbf{2D bounce} (ignoring lateral motion $v_y$). 
+    This simplification may lead to inaccuracies for shots with significant side 
+    spin or lateral velocity components (e.g., slices or hooks).
+\end{itemize}
+
+\textbf{Proposed Improvements}:
+\begin{itemize}
+    \item \textbf{Terrain-Specific Parameters}: Introduce a terrain-dependent 
+    scaling factor for $\theta_{\text{rebond}}$. For example:
+    \[
+    \theta_{\text{rebond}} = k_{\text{terrain}} \cdot 15.4 \cdot 
+    \frac{|\vec{v}_i|}{18.6} \cdot \frac{\theta_{\text{impact}}}{44.4},
+    \]
+    where $k_{\text{terrain}}$ is 1.0 for green, 0.8 for fairway, and 0.6 for rough.
+    \item \textbf{3D Bounce Model}: Extend the model to include lateral motion and 
+    side spin. For example, the post-impact lateral velocity $v_{iy}'$ could be updated as:
+    \[
+    v_{iy}' = e_{\text{lat}} \cdot v_{iy} \cdot \text{sign}(v_y),
+    \]
+    where $e_{\text{lat}}$ is a lateral restitution coefficient (typically $0.8$--$0.9$ for green).
+\end{itemize}
+
+
+
+\subsubsection{Friction and Spin During Bounce}
+\label{subsubsec:friction_spin}
+
+During the bounce, friction between the ball and the ground affects both 
+the \textbf{linear velocity} and the \textbf{spin} of the ball. The model 
+uses a \textbf{Coulomb friction} approach, where the friction force is proportional 
+to the normal force and the coefficient of friction $\mu$. The critical friction
+ oefficient $\mu_{\text{critic}}$ determines whether the ball \textbf{slides} 
+ or \textbf{rolls without slipping} after the bounce:
+\[
+\mu_{\text{critic}} = \frac{2 \left(|v_{ix}'| + r |\omega_i|\right)}{7 (1 + e_{\text{ball}}) |v_{iy}'|},
+\]
+where:
+\begin{itemize}
+    \item $r$ is the ball's radius.
+    \item $\omega_i$ is the initial spin rate (backspin or side spin).
+\end{itemize}
+
+If $\mu < \mu_{\text{critic}}$, the ball slides, and the post-impact velocities and spin are updated as:
+\[
+\begin{aligned}
+v_{rx}' &= v_{ix}' - \mu |v_{iy}'| (1 + e_{\text{ball}}), \\
+v_{ry}' &= e_{\text{ball}} |v_{iy}'|, \\
+\omega_r &= \omega_i - 5 \mu |v_{iy}'| (1 + e_{\text{ball}}).
+\end{aligned}
+\]
+If $\mu \geq \mu_{\text{critic}}$, the ball rolls without slipping, and the velocities and spin are updated as:
+\[
+\begin{aligned}
+v_{rx}' &= \frac{5}{7} v_{ix}' - \frac{2}{7} r \omega_i, \\
+v_{ry}' &= e_{\text{ball}} |v_{iy}'|, \\
+\omega_r &= -\frac{v_{rx}'}{r}.
+\end{aligned}
+\]
+
+\textbf{Critique}:
+\begin{itemize}
+    \item The coefficient of friction $\mu = 0.40$ is a \textbf{fixed value} 
+    for all surfaces. In reality, $\mu$ varies significantly with terrain type 
+    (e.g., 0.2--0.3 for fairway, 0.5--0.7 for rough).
+    \item The model assumes that the \textbf{side spin} ($\omega_z$) does not 
+    affect the bounce dynamics, which is a simplification. In reality, side spin 
+    can induce lateral forces during the bounce, particularly on uneven surfaces.
+\end{itemize}
+
+\textbf{Proposed Improvements}:
+\begin{itemize}
+    \item \textbf{Dynamic Friction Coefficients}: Use terrain-specific values 
+    for $\mu$ and $\mu_{\text{critic}}$. For example:
+    \[
+    \mu =
+    \begin{cases}
+    0.40 & \text{for green}, \\
+    0.20 & \text{for fairway}, \\
+    0.60 & \text{for rough}.
+    \end{cases}
+    \]
+    \item \textbf{Side Spin in Bounce}: Extend the model to include the effect 
+    of side spin on lateral motion. For example, the lateral velocity after 
+    bounce could be updated as:
+    \[
+    v_{ry}' = e_{\text{lat}} \cdot v_{iy} + k_{\text{spin}} \cdot r \omega_z,
+    \]
+    where $k_{\text{spin}}$ is an empirical coefficient (e.g., 0.1--0.2).
+\end{itemize}
+
+\subsection{Ball's Characteristics During Rolling}
+\label{subsec:rolling_characteristics}
+
+Once the ball's vertical velocity is negligible and it remains in contact with 
+the ground, the rolling phase begins. During this phase, the ball's motion is 
+dominated by \textbf{friction} and \textbf{rolling resistance}. The model 
+for rolling is based on the work of Penner \cite{PA022,PA07}, which assumes 
+a linear relationship between the deceleration and the velocity.
+
+\subsubsection{Rolling Resistance}
+\label{subsubsec:rolling_resistance}
+
+The rolling resistance force is modeled as a \textbf{viscous friction} term, proportional to the ball's velocity:
+\[
+\mathbf{F}_{\text{roll}} = -\frac{5}{7} \rho_g g \mathbf{v},
+\]
+where:
+\begin{itemize}
+    \item $\rho_g = 0.131$ is the rolling resistance coefficient for green turf.
+    \item $g$ is the gravitational acceleration.
+    \item $\mathbf{v} = (v_x, v_y, v_z)$ is the velocity vector.
+\end{itemize}
+
+The equations of motion for the rolling phase are:
+\[
+\frac{d}{dt}
+\begin{bmatrix}
+x \\ v_x \\ y \\ v_y \\ z \\ v_z
+\end{bmatrix}
+=
+\begin{bmatrix}
+v_x \\
+-\frac{5}{7} \rho_g g \frac{v_x}{\|\mathbf{v}\|} \\
+v_y \\
+-\frac{5}{7} \rho_g g \frac{v_y}{\|\mathbf{v}\|} \\
+v_z \\
+-\frac{5}{7} \rho_g g \frac{v_z}{\|\mathbf{v}\|}
+\end{bmatrix}.
+\]
+
+\textbf{Critique}:
+\begin{itemize}
+    \item The rolling resistance coefficient $\rho_g = 0.131$ is 
+    \textbf{fixed} and specific to green turf. For other surfaces, 
+    $\rho_g$ can vary significantly (e.g., 0.065--0.196 for fairway \cite{PA07}).
+    \item The model assumes that the ball \textbf{slides} until it stops, which is 
+    
+    not physically accurate. In reality, the ball transitions to \textbf{rolling without slipping} 
+    when the friction force is sufficient to prevent sliding.
+\end{itemize}
+
+\textbf{Proposed Improvements}:
+\begin{itemize}
+    \item \textbf{Terrain-Specific Rolling Resistance}: Use terrain-dependent values for $\rho_g$. For example:
+    \[
+    \rho_g =
+    \begin{cases}
+    0.131 & \text{for green}, \\
+    0.10 & \text{for fairway}, \\
+    0.30 & \text{for rough}.
+    \end{cases}
+    \]
+    \item \textbf{Rolling Without Slipping}: Add a condition to transition to rolling without 
+    slipping when the friction force balances the rolling resistance. For example:
+    \[
+    \text{If } |\mathbf{v}| < v_{\text{roll}}, \text{ then } \frac{d\mathbf{v}}{dt} = 0,
+    \]
+    where $v_{\text{roll}}$ is the velocity threshold for rolling without slipping (e.g., $0.1 \, \text{m/s}$).
+\end{itemize}
+
+
+\subsubsection{Stopping Condition}
+\label{subsubsec:stopping_condition}
+
+The rolling phase ends when the ball's horizontal velocity falls below a threshold, detected using 
+the \texttt{events2} function:
+\[
+\text{value} = v_x - 0.
+\]
+This condition triggers the end of the simulation when $v_x \leq 0$.
+
+\textbf{Critique}:
+\begin{itemize}
+    \item The stopping condition only checks the \textbf{horizontal velocity} $v_x$ and 
+    ignores $v_y$ and $v_z$. This may lead to premature termination of the simulation if 
+    the ball has a significant lateral or vertical velocity component.
+    \item The threshold of $0$ is arbitrary and may not capture the ball's motion accurately for all scenarios.
+\end{itemize}
+
+\textbf{Proposed Improvements}:
+\begin{itemize}
+    \item \textbf{3D Stopping Condition}: Use the magnitude of the velocity vector as the stopping criterion:
+    \[
+    \text{value} = \|\mathbf{v}\| - v_{\text{stop}},
+    \]
+    where $v_{\text{stop}} = 10^{-4} \, \text{m/s}$ is a small threshold.
+    \item \textbf{Dynamic Threshold}: Use a dynamic threshold based on the ball's spin or the 
+    surface roughness. For example:
+    \[
+    v_{\text{stop}} = k_{\text{stop}} \cdot r \omega,
+    \]
+    where $k_{\text{stop}}$ is an empirical coefficient (e.g., 0.01).
+\end{itemize}
+
+
+\subsection{Limitations and Potential Evolutions}
+\label{subsec:limitations_bouncing_rolling}
+
+While the bouncing and rolling model is based on well-established physical principles and 
+has been validated experimentally, several limitations and areas for improvement have been identified:
+
+\begin{itemize}
+    \item \textbf{Fixed Coefficients}:
+    The restitution coefficient $e_{\text{ball}}$, friction coefficient $\mu$, and rolling 
+    resistance $\rho_g$ are currently fixed. These coefficients depend on the \textbf{terrain type}, 
+    \textbf{ball model}, and \textbf{impact conditions}.
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Introduce a \textbf{terrain-specific parameter set} 
+        and allow the user to select the terrain type for each simulation. For example, 
+        create a lookup table for $e_{\text{ball}}$, $\mu$, and $\rho_g$ based on 
+        the surface (green, fairway, rough, sand).
+    \end{itemize}
+
+    \item \textbf{2D Bounce Model}:
+    The current bounce model assumes a 2D motion (ignoring lateral components 
+    $v_y$ and $\omega_z$). This limits the model's ability to accurately simulate \textbf{slices} and \textbf{hooks}.
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Extend the bounce model to 3D by including lateral 
+        motion and side spin. For example, use a 3D restitution model that accounts for all velocity and spin components:
+        \[
+        \begin{aligned}
+        v_{ix}' &= e_{\text{long}} v_{ix} - \mu (1 + e_{\text{long}}) |v_{iy}|, \\
+        v_{iy}' &= e_{\text{vert}} v_{iy}, \\
+        v_{iz}' &= e_{\text{lat}} v_{iz} + k_{\text{spin}} r \omega_z, \\
+        \omega_x' &= \omega_x, \\
+        \omega_y' &= \omega_y - \frac{5}{2} \mu (1 + e_{\text{vert}}) |v_{iy}|, \\
+        \omega_z' &= \omega_z - \frac{5}{2} \mu (1 + e_{\text{lat}}) |v_{iz}|,
+        \end{aligned}
+        \]
+        where $e_{\text{long}}$, $e_{\text{vert}}$, and $e_{\text{lat}}$ are the longitudinal, 
+        vertical, and lateral restitution coefficients, respectively.
+    \end{itemize}
+
+    \item \textbf{Spin Decay During Rolling}:
+    The current model assumes that the spin remains constant during rolling. In reality, 
+    spin decays due to \textbf{rolling resistance} and \textbf{friction}.
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Add a spin decay term to the rolling equations. For example:
+        \[
+        \frac{d\omega}{dt} = -\frac{k \rho_g g r \omega}{I},
+        \]
+        where $k$ is an empirical coefficient (e.g., 0.1) and $I$ is the ball's moment of inertia.
+    \end{itemize}
+
+    \item \textbf{Surface Roughness and Slope}:
+    The current model assumes a \textbf{flat and uniform surface}. In reality, the surface may 
+    have \textbf{slope} or \textbf{roughness}, which can affect the ball's motion.
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Incorporate a \textbf{slope model} into the rolling 
+        equations. For example, if the surface has a slope $\alpha$ in the $x$-direction, 
+        the gravitational force component along the slope is:
+        \[
+        F_{g,x} = m g \sin(\alpha).
+        \]
+        This force can be added to the rolling resistance term.
+    \end{itemize}
+
+    \item \textbf{Validation for Different Balls}:
+    The current model uses empirical coefficients derived from specific ball models (e.g., Mizuno JPX, Decathlon). 
+    These coefficients may not be applicable to all golf balls.
+    \begin{itemize}
+        \item \textbf{Proposed Evolution}: Conduct experiments to derive \textbf{ball-specific coefficients} 
+        for $e_{\text{ball}}$, $\mu$, and $\rho_g$. Store these coefficients in a lookup table indexed by ball model.
+    \end{itemize}
+\end{itemize}
+
+These evolutions would significantly enhance the accuracy and robustness of the bouncing and rolling model, 
+particularly for edge cases such as high-spin shots, uneven surfaces, or non-standard ball models. However, 
+each improvement should be \textbf{validated against experimental data} to ensure that it does not introduce 
+new errors or inconsistencies.
+
+\section{Scilab Code Explanation for Golf Ball Simulation}
+\label{sec:scilab_code}
+
+This section provides a detailed explanation of the Scilab code used to simulate the flight, bounce, and roll of a golf ball. The code is designed with simplifications to ensure rapid computation, as it is intended to process real-time radar data of the ball's initial flight (which will be discussed in the next chapter).
+
+---
+
+\subsection{The \texttt{flightg} Function}
+\label{subsec:flightg}
+
+The \texttt{flightg} function is the core of the flight phase simulation. It computes the time derivatives of the state variables (position, velocity, and spin) based on the physical forces acting on the ball: drag, Magnus lift, and gravity.
+
+\subsubsection{Inputs and Outputs}
+\begin{itemize}
+    \item \textbf{Inputs}:
+    \begin{itemize}
+        \item \texttt{t}: Current time (s).
+        \item \texttt{v}: State vector of size 12 containing:
+        \begin{itemize}
+            \item \texttt{v(1)}: Position \(x\) (m).
+            \item \texttt{v(2)}: Velocity \(v_x\) (m/s).
+            \item \texttt{v(3)}: Position \(y\) (m).
+            \item \texttt{v(4)}: Velocity \(v_y\) (m/s).
+            \item \texttt{v(5)}: Position \(z\) (m).
+            \item \texttt{v(6)}: Velocity \(v_z\) (m/s).
+            \item \texttt{v(7)}: Spin \(\omega_x\) (rad/s).
+            \item \texttt{v(8)}: Spin \(\omega_y\) (rad/s).
+            \item \texttt{v(9)}: Spin \(\omega_z\) (rad/s).
+            \item \texttt{v(10)}: Magnus coefficient \(C_m\).
+            \item \texttt{v(11)}: Mass \(m\) (kg).
+            \item \texttt{v(12)}: Diameter \(D\) (m).
+        \end{itemize}
+    \end{itemize}
+    \item \textbf{Output}:
+    \begin{itemize}
+        \item \texttt{vprime}: Vector of time derivatives of the state variables.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Internal Logic}
+The \texttt{flightg} function follows these steps to compute the derivatives:
+
+\begin{enumerate}
+    \item \textbf{Physical Constants Initialization}:
+    \begin{itemize}
+        \item The mass \(m\) and diameter \(D\) are extracted from the state vector.
+        \item The air density \(\rho_{\text{air}}\) is calculated based on a fixed temperature \(T = 20^\circ C\):
+        \[
+        \rho_{\text{air}} = 1.292 \times \frac{273.15}{273.15 + T}
+        \]
+        \item The cross-sectional area \(A\) of the ball is computed:
+        \[
+        A = \pi \left(\frac{D}{2}\right)^2
+        \]
+    \end{itemize}
+
+    \item \textbf{Velocity and Spin Calculation}:
+    \begin{itemize}
+        \item The velocity magnitude \(V_m\) is computed:
+        \[
+        V_m = \sqrt{v_x^2 + v_y^2 + v_z^2}
+        \]
+        \item The spin magnitude \(W_m\) is computed:
+        \[
+        W_m = \sqrt{\omega_x^2 + \omega_y^2 + \omega_z^2}
+        \]
+    \end{itemize}
+
+    \item \textbf{Drag Coefficient Calculation}:
+    \begin{itemize}
+        \item The Reynolds number \(\text{Re}\) is computed:
+        \[
+        \text{Re} = \frac{V_m \times D}{1.5 \times 10^{-5}}
+        \]
+        \item The drag coefficient \(C_d\) is computed using White's formula:
+        \[
+        C_d = 0.36 + \frac{24}{\text{Re}} + \frac{6}{1 + \sqrt{\text{Re}}}
+        \]
+    \end{itemize}
+
+    \item \textbf{Drag Force Calculation}:
+    \begin{itemize}
+        \item The magnitude of the drag force \(D\) is computed:
+        \[
+        D = \frac{1}{2} \rho_{\text{air}} C_d A V_m^2
+        \]
+        \item The components of the drag force are computed based on the direction of velocity:
+        \[
+        F_{dx} = -\frac{D \times v_x}{V_m}, \quad F_{dy} = -\frac{D \times v_y}{V_m}, \quad F_{dz} = -\frac{D \times v_z}{V_m}
+        \]
+    \end{itemize}
+
+    \item \textbf{Magnus Force Calculation}:
+    \begin{itemize}
+        \item The magnitude of the Magnus force \(M\) is computed using the empirical coefficient \(C_{l1}\) stored in \texttt{v(10)}:
+        \[
+        M = \frac{1}{2} \rho_{\text{air}} A \left(\frac{D}{2}\right) C_{l1} V_m
+        \]
+        \item The components of the Magnus force are computed using the cross product \(\boldsymbol{\omega} \times \mathbf{v}\):
+        \[
+        F_{mx} = M \times (\omega_y v_z - \omega_z v_y), \quad F_{my} = M \times (\omega_z v_x - \omega_x v_z), \quad F_{mz} = M \times (\omega_x v_y - \omega_y v_x)
+        \]
+    \end{itemize}
+
+    \item \textbf{Time Derivatives Calculation}:
+    \begin{itemize}
+        \item The derivatives of the positions are the velocities:
+        \[
+        \frac{dx}{dt} = v_x, \quad \frac{dy}{dt} = v_y, \quad \frac{dz}{dt} = v_z
+        \]
+        \item The derivatives of the velocities are computed using the drag, Magnus, and gravity forces:
+        \[
+        \frac{dv_x}{dt} = \frac{F_{dx} + F_{mx}}{m}, \quad \frac{dv_y}{dt} = -g + \frac{F_{dy} + F_{my}}{m}, \quad \frac{dv_z}{dt} = \frac{F_{dz} + F_{mz}}{m}
+        \]
+        \item The derivatives of the spin components are assumed to be zero (no spin decay during flight for simplification):
+        \[
+        \frac{d\omega_x}{dt} = \frac{d\omega_y}{dt} = \frac{d\omega_z}{dt} = 0
+        \]
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Note}: The simplification of assuming no spin decay during flight is made to ensure rapid computation, as the model is designed to process real-time radar data of the ball's initial flight, which will be discussed in the next chapter.
+
+---
+
+\subsection{The \texttt{rolling} Function}
+\label{subsec:rolling}
+
+The \texttt{rolling} function models the rolling phase of the ball after it has landed. It computes the time derivatives of the state variables, taking into account friction and rolling resistance.
+
+\subsubsection{Inputs and Outputs}
+\begin{itemize}
+    \item \textbf{Inputs}:
+    \begin{itemize}
+        \item \texttt{t}: Current time (s).
+        \item \texttt{v}: State vector of size 10 containing:
+        \begin{itemize}
+            \item \texttt{v(1)}: Position \(x\) (m).
+            \item \texttt{v(2)}: Velocity \(v_x\) (m/s).
+            \item \texttt{v(3)}: Position \(y\) (m).
+            \item \texttt{v(4)}: Velocity \(v_y\) (m/s).
+            \item \texttt{v(5)}: Position \(z\) (m).
+            \item \texttt{v(6)}: Velocity \(v_z\) (m/s).
+            \item \texttt{v(7)}: Spin \(\omega_x\) (rad/s).
+            \item \texttt{v(8)}: Spin \(\omega_y\) (rad/s).
+            \item \texttt{v(9)}: Spin \(\omega_z\) (rad/s).
+            \item \texttt{v(10)}: Rolling resistance coefficient.
+        \end{itemize}
+    \end{itemize}
+    \item \textbf{Output}:
+    \begin{itemize}
+        \item \texttt{vprime}: Vector of time derivatives of the state variables.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Internal Logic}
+The \texttt{rolling} function follows these steps:
+
+\begin{enumerate}
+    \item \textbf{Physical Constants Initialization}:
+    \begin{itemize}
+        \item The mass \(m\) is fixed at \(0.04545 \, \text{kg}\).
+        \item The air density \(\rho_{\text{air}}\) is calculated for a temperature of \(20^\circ C\).
+        \item The rolling resistance coefficient \(\rho_g\) is fixed at \(0.131\) (typical value for a green).
+        \item The gravitational acceleration \(g\) is fixed at \(9.81 \, \text{m/s}^2\).
+    \end{itemize}
+
+    \item \textbf{Time Derivatives Calculation}:
+    \begin{itemize}
+        \item The derivatives of the positions are the velocities:
+        \[
+        \frac{dx}{dt} = v_x, \quad \frac{dy}{dt} = v_y, \quad \frac{dz}{dt} = v_z
+        \]
+        \item The derivatives of the velocities are computed using a friction model proportional to velocity:
+        \[
+        \frac{dv_x}{dt} = -\frac{5}{7} \rho_g g \frac{v_x}{\sqrt{v_x^2 + v_y^2 + v_z^2}}, \quad \frac{dv_z}{dt} = -\frac{5}{7} \rho_g g \frac{v_z}{\sqrt{v_x^2 + v_y^2 + v_z^2}}
+        \]
+        \item The derivative of \(v_y\) accounts for the terrain slope via the \texttt{dAltiSol} function:
+        \[
+        \frac{dv_y}{dt} = -\frac{5}{7} \rho_g g \frac{\text{dAltiSol}(v_x, v_z)}{\sqrt{v_x^2 + v_y^2 + v_z^2}}
+        \]
+        \item The derivatives of the spin components are assumed to be zero (no spin decay during rolling for simplification).
+    \end{itemize}
+\end{enumerate}
+
+\textbf{Note}: The simplifications in the rolling model are made to ensure rapid computation, as the model is designed to process real-time radar data of the ball's initial flight, which will be discussed in the next chapter.
+
+---
+\subsection{The \texttt{AltiSol} and \texttt{dAltiSol} Functions}
+\label{subsec:altisol_daltisol}
+
+The \texttt{AltiSol} and \texttt{dAltiSol} functions are used to model the terrain altitude and its slope, respectively.
+
+\subsubsection{The \texttt{AltiSol} Function}
+\begin{itemize}
+    \item \textbf{Role}: Computes the terrain altitude at a position \((x, z)\).
+    \item \textbf{Inputs}:
+    \begin{itemize}
+        \item \texttt{Longueur}: Position \(x\) (m).
+        \item \texttt{largeur}: Position \(z\) (m).
+    \end{itemize}
+    \item \textbf{Output}:
+    \begin{itemize}
+        \item \texttt{Altitude}: Terrain altitude at position \((x, z)\) (m).
+    \end{itemize}
+    \item \textbf{Logic}:
+    \begin{itemize}
+        \item If \(x < 30 \, \text{m}\), the altitude is set to \(0\) (flat terrain).
+        \item Otherwise, the altitude is also set to \(0\), but a commented line suggests a potential model for sloped terrain.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{The \texttt{dAltiSol} Function}
+\begin{itemize}
+    \item \textbf{Role}: Computes the derivative of the terrain altitude with respect to the horizontal position, used to model the slope during rolling.
+    \item \textbf{Inputs}:
+    \begin{itemize}
+        \item \texttt{vLongueur}: Velocity \(v_x\) (m/s).
+        \item \texttt{vlargeur}: Velocity \(v_z\) (m/s).
+    \end{itemize}
+    \item \textbf{Output}:
+    \begin{itemize}
+        \item \texttt{vAltitude}: Derivative of the terrain altitude.
+    \end{itemize}
+    \item \textbf{Logic}:
+    \begin{itemize}
+        \item If \(v_x < 30 \, \text{m/s}\), the derivative is set to \(0\) (flat terrain).
+        \item Otherwise, the derivative is also set to \(0\), but a commented line suggests a potential model for sloped terrain.
+    \end{itemize}
+\end{itemize}
+
+---
+\subsection{Event Detection Functions}
+\label{subsec:event_functions}
+
+The \texttt{events} and \texttt{events2} functions are used to detect discrete events during the simulation, such as the ball's impact with the ground or its stopping condition.
+
+\subsubsection{The \texttt{events} Function}
+\begin{itemize}
+    \item \textbf{Role}: Detects when the ball hits the ground (\(y \leq \text{Altitude}(x, z)\)).
+    \item \textbf{Inputs}:
+    \begin{itemize}
+        \item \texttt{t}: Current time (s).
+        \item \texttt{x}: State vector.
+    \end{itemize}
+    \item \textbf{Output}:
+    \begin{itemize}
+        \item \texttt{value}: Value used by the ODE solver to detect the event.
+    \end{itemize}
+    \item \textbf{Logic}:
+    \begin{itemize}
+        \item If the ball's height \texttt{x(3)} is less than the terrain altitude at position \((\texttt{x(1)}, \texttt{x(5)})\), the event is triggered (\texttt{value = 0}).
+        \item Otherwise, the function returns the difference between the ball's height and the terrain altitude.
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{The \texttt{events2} Function}
+\begin{itemize}
+    \item \textbf{Role}: Detects when the ball stops rolling (\(v_x \leq 0\)).
+    \item \textbf{Inputs}:
+    \begin{itemize}
+        \item \texttt{t}: Current time (s).
+        \item \texttt{x}: State vector.
+    \end{itemize}
+    \item \textbf{Output}:
+    \begin{itemize}
+        \item \texttt{value}: Value used by the ODE solver to detect the event.
+    \end{itemize}
+    \item \textbf{Logic}:
+    \begin{itemize}
+        \item The event is triggered when the horizontal velocity \texttt{x(2)} is less than or equal to \(0\).
+    \end{itemize}
+\end{itemize}
+
+---
+\subsection{Numerical Integration with \texttt{ode}}
+\label{subsec:numerical_integration}
+
+The numerical solution of the differential equations is performed using Scilab's \texttt{ode} function. This function uses the Runge-Kutta 4th order method (RK4) by default to integrate the ODE system.
+
+\subsubsection{Calling the \texttt{ode} Function}
+In the main \texttt{Golfball} function, the \texttt{ode} function is called as follows:
+
+\begin{lstlisting}[language=Matlab, caption={Calling the \texttt{ode} function for the flight phase}, label=lst:ode_call]
+[Pos, rd] = ode('roots', Init0, T0, 0:0.1:Tfin, flightg, 1, events);
+\end{lstlisting}
+
+\begin{itemize}
+    \item \textbf{Parameters}:
+    \begin{itemize}
+        \item \texttt{'roots'}: Integration method (RK4 by default).
+        \item \texttt{Init0}: Initial state vector.
+        \item \texttt{T0}: Initial time (usually \(0\)).
+        \item \texttt{0:0.1:Tfin}: Time grid with a step size of \(0.1 \, \text{s}\).
+        \item \texttt{flightg}: Function defining the ODEs for the flight phase.
+        \item \texttt{1}: Indicates that events should be detected.
+        \item \texttt{events}: Event detection function for impacts.
+    \end{itemize}
+    \item \textbf{Outputs}:
+    \begin{itemize}
+        \item \texttt{Pos}: Matrix containing the state vector at each time step.
+        \item \texttt{rd}: Vector containing the times at which events (e.g., impacts) occur.
+    \end{itemize}
+\end{itemize}
+
+\textbf{Note}: The fixed time step of \(0.1 \, \text{s}\) is chosen to balance computational efficiency and accuracy, as the model is designed to process real-time radar data of the ball's initial flight, which will be discussed in the next chapter.
+
+
 
 
 \chapter{Hardware}
@@ -689,7 +1613,6 @@ The initial spin vector $\vec{\omega}_0$ is:
 \begin{lstlisting}[language=matlab, caption=Listing of the golf ball fligth, label={lst:gaolfballsci}]
 // Copyright (C) 2016 - Corporation - Author
 //
-// About your license if you have any
 //
 // Date of creation: 16 juin 2016
 //
