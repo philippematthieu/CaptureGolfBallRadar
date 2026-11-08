@@ -115,6 +115,37 @@ def track_edges(P, f, fc):
     return fminus, fplus
 
 
+def spin_peaks_mean(xf, t0, rel_db=REL_DB):
+    """Approche 'pics intenses' : densité spectrale moyenne (pondérée par la puissance) apres impact,
+    pics locaux > -rel_db dB du max ; centre = pic max, f- = pic fort sous fc, f+ = pic fort au-dessus.
+    Retourne (spin_rpm, symetrie) ; symetrie = |(fc-f-)-(f+-fc)|/df  (eta du doc §11)."""
+    t, ridge, power, f, specs = spectrogram(xf)
+    i0 = int(np.argmin(np.abs(t - t0)))
+    after = np.arange(len(t)) >= i0
+    w = power[after]
+    if w.sum() == 0:
+        return float('nan'), float('nan')
+    S = np.average(np.array(specs)[after], axis=0, weights=w)
+    thr = S.max() * 10 ** (-rel_db / 10.0)
+    idx = np.where((S[1:-1] >= S[:-2]) & (S[1:-1] >= S[2:]) & (S[1:-1] > thr))[0] + 1
+    if len(idx) < 3:
+        return float('nan'), float('nan')
+    kc = int(np.argmax(S))
+    fc = parabolic_peak(S, kc) * FS / NFFT
+    fp = f[idx]
+    lo = fp < fc - EDGE_MIN
+    hi = fp > fc + EDGE_MIN
+    if not (lo.any() and hi.any()):
+        return float('nan'), float('nan')
+    fminus = fp[lo][int(np.argmax(S[idx[lo]]))]
+    fplus = fp[hi][int(np.argmax(S[idx[hi]]))]
+    df = (fplus - fminus) / 2.0
+    if df <= 0:
+        return float('nan'), float('nan')
+    sym = abs((fc - fminus) - (fplus - fc)) / df
+    return df / KS, sym
+
+
 def estimate_channel(x):
     x = x - x.mean()
     xf = bandpass(x, FMIN, FMAX)
@@ -144,6 +175,13 @@ def estimate_channel(x):
             continue
         spins_edge.append(df / KS)
     spin_edge = float(np.median(spins_edge)) if spins_edge else float('nan')
+    # --- Hybride : pics intenses (centre/min/max) si symetrie < eta, prioritaire sur l'excursion frame ---
+    spin_pk, sym_pk = spin_peaks_mean(xf, t0)
+    if not np.isnan(spin_pk) and sym_pk < ETA:
+        spin_edge = spin_pk   # bords propres -> pics fiables
+        n_edge_note = f'peaks(sym={sym_pk:.2f})'
+    else:
+        n_edge_note = f'edge n={len(spins_edge)}'
 
     # --- Spin par periodicite du patch : spectre de l'enveloppe (Hilbert) apres impact ---
     # Le fondamental f_rot est le pic qui explique le plus d'harmoniques (k*f_rot) :
@@ -183,7 +221,8 @@ def estimate_channel(x):
             spin_period = 60.0 * f_rot            # f_rot = RPM/60
 
     return dict(vball=vball, spin_edge=spin_edge, spin_period=spin_period, t0=t0,
-                n_edge=len(spins_edge), t=t, ridge=ridge, power=power, specs=specs, fgrid=f)
+                n_edge=len(spins_edge), note=n_edge_note, t=t, ridge=ridge, power=power,
+                specs=specs, fgrid=f)
 
 
 # --- Direction horizontale alpha(t) : appariement stereo f_C / f_Delta (cf. doc §8, §12) ---

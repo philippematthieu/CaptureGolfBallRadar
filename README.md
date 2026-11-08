@@ -15,6 +15,17 @@ Au shoot : l'axe de spin ω est incliné de β → backspin = ω·cos β, sidesp
 <img src="sci/img/Pasted image 20250122082924.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122082939.png"  width="280" height="190"><img src="sci/img/Pasted image 20250122082958.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122083320.png"  width="280" height="190">
 <img src="sci/img/Pasted image 20250122083456.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122083851.png"  width="280" height="190">
 
+### Densités spectrales régénérées en Python (pipe_validation.py, CSV 2019-02-24-F7) — 2 voies R1/R2, axe Y en km/h (f/19,49), ridge balle en cyan
+<img src="sci/img/spectro_F7-113m-156kmh-11624trm-999trmcs-136.png"  width="300" height="236">
+<img src="sci/img/spectro_F7-123m-150kmh-5274trm-210trm-cs111.png"  width="300" height="236">
+<img src="sci/img/spectro_F7-124m-156kmh-5948trm-597trm-cs119.png"  width="300" height="236">
+<img src="sci/img/spectro_F7-128m-151kmh-3978trm-630trm-cs104.png"  width="300" height="236">
+<img src="sci/img/spectro_F7-131m-162kmh-6185trm-7102trm-cs124.png"  width="300" height="236">
+<img src="sci/img/spectro_F7-133m-160kmh-5432trm-311trm-cs117.png"  width="300" height="236">
+<img src="sci/img/spectro_F7-134m-151kmh-3037trm-393trm-cs99.png"  width="300" height="236">
+<img src="sci/img/spectro_F7-134m-159kmh-3648trm-1926trm-cs107.png"  width="300" height="236">
+<img src="sci/img/spectro_F7-137m-166kmh-4990trm-1312trm-cs118.png"  width="300" height="236">
+
 # Find backspin
 
 <img src="sci/img/Pasted image 20250120172502.png"  width="560" height="380">
