@@ -1,3 +1,5 @@
+import os
+import sys
 import numpy as np
 from scipy.integrate import odeint
 
@@ -236,7 +238,58 @@ def handle_rolling(y, t):
 # SIMULATION COMPLÈTE (VOL + REBONDS + ROULEMENT)
 # =============================================
 
-def simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3):
+def load_capture(path):
+    """Charge une captation radar : CSV (2 lignes ';' = R1/R2, export Scilab) ou WAV (stéréo).
+    Retourne (rows[2], fs)."""
+    if path.lower().endswith('.wav'):
+        import wave
+        with wave.open(path, 'rb') as w:
+            n, ch, sw, fs = w.getnframes(), w.getnchannels(), w.getsampwidth(), w.getframerate()
+            raw = w.readframes(n)
+        if sw == 2:
+            data = np.frombuffer(raw, dtype='<i2').astype(np.float64) / 32768.0
+        elif sw == 4:
+            data = np.frombuffer(raw, dtype='<i4').astype(np.float64) / 2.0 ** 31
+        else:
+            data = np.frombuffer(raw, dtype=np.uint8).astype(np.float64) / 128.0 - 1.0
+        data = data.reshape(-1, ch).T
+        rows = [data[0], data[1] if ch > 1 else data[0]]
+        return rows, fs
+    rows = []
+    with open(path, encoding='utf-8', errors='replace') as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                rows.append(np.array([float(v) for v in line.replace(',', '.').split(';') if v.strip()]))
+    return rows, 44100
+
+def estimate_from_capture(path):
+    """Estime (vBall km/h radiale, SpinTotal rpm, alpha0 deg) d'une captation via sci/pipe_validation.py."""
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'sci'))
+    import pipe_validation as pv
+    rows, fs = load_capture(path)
+    res = [pv.estimate_channel(r) for r in rows[:2]]
+    v, spin, conf = pv.aggregate(res)
+    al = pv.compute_alpha(res[0], res[1] if len(res) > 1 else res[0])
+    a0 = float(al['alpha0']) if al else 0.0
+    print(f"capture {os.path.basename(path)} : vBall={v:.1f} km/h (radiale), SpinTotal={spin:.0f} rpm, "
+          f"alpha0={a0:+.2f} deg, conf={conf}")
+    return v, spin, a0
+
+def simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3, v0_ms=None, launch_deg=None, azim_deg=None,
+                       spin_rpm=None, side_rpm=None):
+    global vx0, vy0, vz0, spin_x, spin_y, spin_z
+    if v0_ms is not None:
+        # conditions initiales imposées (ex. mesurées sur une captation radar)
+        la = np.radians(launch_deg if launch_deg is not None else launch_angle_deg)
+        az = np.radians(azim_deg if azim_deg is not None else 0.0)
+        spin_tot = (spin_rpm * 2 * np.pi / 60) if spin_rpm else 0.0
+        side = (side_rpm * 2 * np.pi / 60) if side_rpm else 0.0
+        back = np.sqrt(max(spin_tot ** 2 - side ** 2, 0.0))
+        vx0 = v0_ms * np.cos(la) * np.cos(az)
+        vy0 = v0_ms * np.sin(la)
+        vz0 = -v0_ms * np.cos(la) * np.sin(az)
+        spin_x, spin_y, spin_z = 0.0, side, back
     # Conditions initiales (y_init pour ne pas masquer le global y0 = position initiale)
     y_init = [x0, y0, z0, vx0, vy0, vz0, spin_x, spin_y, spin_z, C_l]  # C_l = Cl1 en derniere position (mis a 0 apres rebond)
     t = np.arange(0, t_max, dt)
@@ -351,16 +404,37 @@ def BallGolf(V0Ballkmh, Psi, miss, e, m_, M, coeffSpin=180.0):
 
 
 if __name__ == '__main__':
+    import argparse
+    ap = argparse.ArgumentParser(description="Simulation 3D du vol d'une balle de golf. "
+                                             "Avec une captation (.csv 2 lignes ';' ou .wav stéréo), "
+                                             "les conditions initiales sont mesurées dessus (pipe_validation).")
+    ap.add_argument('capture', nargs='?', default=None,
+                    help="fichier de captation radar : .csv (2 lignes ';' = canaux R1/R2) ou .wav (stéréo 44,1 kHz)")
+    ap.add_argument('--launch', type=float, default=16.5, help='launch angle en degrés (défaut 16.5, ignoré si captation)')
+    args = ap.parse_args()
+
+    v0_ms = None
+    launch_deg = args.launch
+    azim_deg = 0.0
+    spin_rpm = None
+    if args.capture:
+        v_kmh, spin_rpm, azim_deg = estimate_from_capture(args.capture)
+        v0_ms = v_kmh / 3.6 / np.cos(np.radians(20.0))  # correction angle radar ~20° (biais géométrique)
+        print(f"-> simulation lancée avec V0={v0_ms*3.6:.1f} km/h, spin={spin_rpm:.0f} rpm, "
+              f"azimut={azim_deg:+.2f} deg, launch={launch_deg} deg")
+
     if not HAS_MPL:
         # mode headless : résultats texte uniquement (pas d'animation)
-        t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3)
+        t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3, v0_ms=v0_ms,
+                                                launch_deg=launch_deg, azim_deg=azim_deg, spin_rpm=spin_rpm)
         print(f'Rebonds: {bounce_count}  Portee: {y[-1, 0]:.1f} m  Apex: {y[:, 2].max():.1f} m  Tfin: {t[-1]:.1f} s')
         raise SystemExit(0)
     # =============================================
     # EXÉCUTION DE LA SIMULATION
     # =============================================
 
-    t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3)
+    t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3, v0_ms=v0_ms,
+                                            launch_deg=launch_deg, azim_deg=azim_deg, spin_rpm=spin_rpm)
     x, y_pos, z, vx, vy, vz, wx, wy, wz, cl1 = y.T
 
     # =============================================
