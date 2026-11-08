@@ -11,6 +11,7 @@
 #include "Club.h"
 #include "Ball.h"
 #include "Capture.h"
+#include "PlotSVG.h"
 
 using namespace std;
 
@@ -34,6 +35,9 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     auto mf = theBall.getMatriceFlight();
     printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
+    write_traj_svg("trajectoire_capture.svg", mf, "Trajectoire depuis captation — portée " +
+                   std::to_string((int)mf.back()[0]) + " m");
+    printf("SVG écrit : trajectoire_capture.svg\n");
     return 0;
 }
 
@@ -90,5 +94,12 @@ int main(int argc, char *argv[]) {
     double portee = mf.back()[0], apex = theBall.getMaxHeight(), zfinal = mf.back()[2];
     cout << "RESULT portee=" << portee << " m  apex=" << apex << " m  z_final=" << zfinal
          << " m  temps=" << theBall.getTempsTotal() << " s  chute=" << theBall.getIndexChute() << endl;
+    // graphique SVG de la trajectoire (profil + dessus), ouvrable dans un navigateur
+    char svgname[256];
+    snprintf(svgname, sizeof(svgname), "trajectoire_%s.svg", sac[j].getType().c_str());
+    write_traj_svg(svgname, mf,
+                   "Trajectoire " + sac[j].getType() + " — portée " + std::to_string((int)portee) + " m, apex " +
+                   std::to_string((int)apex) + " m");
+    cout << "SVG écrit : " << svgname << " (ouvrir avec Safari/Aperçu)" << endl;
     return 0;
 }
