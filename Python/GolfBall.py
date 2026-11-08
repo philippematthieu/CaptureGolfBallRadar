@@ -420,6 +420,15 @@ if __name__ == '__main__':
     azim_deg = 0.0
     spin_rpm = None
     if args.capture:
+        if not os.path.exists(args.capture):
+            print(f"ERREUR: fichier de captation introuvable : {args.capture}")
+            print("usage : GolfBall.py [capture.csv|capture.wav] [--launch 16.5] [--elev 10] [--azim 180]")
+            print("exemples de fichiers existants :")
+            sci = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'sci')
+            for f in sorted(os.listdir(sci)):
+                if f.endswith(('.csv', '.wav')) and 'F7' in f:
+                    print(f"  ../sci/{f}")
+            raise SystemExit(2)
         v_kmh, spin_rpm, azim_deg = estimate_from_capture(args.capture)
         v0_ms = v_kmh / 3.6 / np.cos(np.radians(20.0))  # correction angle radar ~20° (biais géométrique)
         print(f"-> simulation lancée avec V0={v0_ms*3.6:.1f} km/h, spin={spin_rpm:.0f} rpm, "
