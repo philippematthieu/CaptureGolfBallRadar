@@ -378,6 +378,7 @@ if __name__ == '__main__':
     ax.set_ylabel('Hauteur (m)')
     ax.set_zlabel('Dév. latérale (m)')
     ax.set_title('Simulation du vol d\'une balle de golf (3D)')
+    ax.view_init(elev=18, azim=-72)  # vue de 3/4 latérale : trajectoire au-dessus du fairway, pas vu du dessous
 
     # Dessiner le sol
     xx, zz = np.meshgrid(np.linspace(0, max(x) * 1.1, 10), np.linspace(-max(abs(z)) * 1.1, max(abs(z)) * 1.1, 10))
