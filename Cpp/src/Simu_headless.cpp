@@ -10,8 +10,32 @@
 #include <cmath>
 #include "Club.h"
 #include "Ball.h"
+#include "Capture.h"
 
 using namespace std;
+
+// mode captation : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale]
+static int run_from_capture(const char* path, const char* clubType, double spinScale) {
+    Capture c = load_capture(path);
+    EstRadar e = estimate(c);
+    printf("capture %s : vBall=%.1f km/h (radiale), spin=%.0f rpm, alpha0=%+.2f deg, t0=%.3f s, %zu ech/canal\n",
+           path, e.vball_kmh, e.spin_rpm, e.alpha0_deg, e.t0_s, c.r1.size());
+    // club par défaut F7
+    vector<Club> sac(13);
+    sac[5] = Club("F7", 0.200, 20.0, 30, 0.83, 380.00, 420.0, 0.54, 122.3, 0.0, 0.0, -6.5);
+    unsigned j = 5;
+    for (unsigned i = 0; i < sac.size(); i++) if (sac[i].getType() == clubType) j = i;
+    // vitesse club estimée = vBall / 1.35 (smash typique)
+    sac[j].setClubV0Kmh(e.vball_kmh / 1.35);
+    sac[j].setAlphaClubPathDegre(e.alpha0_deg);
+    Ball theBall("Decathlon", 320, 3, sac[j], 18.0, 0.01);
+    theBall.rescaleSpin(spinScale * e.spin_rpm / max(theBall.getSpinYOrgrpm(), 1.0));
+    theBall.runSimu();
+    auto mf = theBall.getMatriceFlight();
+    printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
+           mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
+    return 0;
+}
 
 int main(int argc, char *argv[]) {
     vector<Club> sac(13);
@@ -33,8 +57,13 @@ int main(int argc, char *argv[]) {
 
     if (argc < 2) {
         cout << "usage: Simu_headless Type ClubV0kmh AlphaClubPathDeg GamaFacePathDeg ShaftLeanImpDeg [spinScale]" << endl;
+        cout << "       Simu_headless --capture fichier.csv|.wav [club] [spinScale]" << endl;
         cout << "clubs: Dr B5 H3 F5 F6 F7 F8 F9 PW AW SW LW Pt" << endl;
         return 1;
+    }
+    if (string(argv[1]) == "--capture") {
+        if (argc < 3) { cout << "il manque le fichier de captation" << endl; return 1; }
+        return run_from_capture(argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0);
     }
     for (unsigned i = 0; i < sac.size(); i++)
         if (sac[i].getType() == argv[1]) j = i;
