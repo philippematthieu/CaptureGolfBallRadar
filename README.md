@@ -26,6 +26,19 @@ Au shoot : l'axe de spin ω est incliné de β → backspin = ω·cos β, sidesp
 <img src="sci/img/spectro_F7-134m-159kmh-3648trm-1926trm-cs107.png"  width="300" height="236">
 <img src="sci/img/spectro_F7-137m-166kmh-4990trm-1312trm-cs118.png"  width="300" height="236">
 
+### Référence théorique : captation modèle générée (idéale)
+
+Les deux images ci-dessous ne sont **pas des mesures** : c'est une captation **générée** par `Python/gen_capture_modele.py`
+pour être optimale en temps et en signal — c'est ce que le traitement *devrait* obtenir théoriquement.
+Config : fer 7, V₀ = 151 km/h, launch = 16,5°, spin total = 4000 rpm, side spin = 700 rpm (slice droite → β = 10,1°), cs = 115 km/h.
+Validation par `sci/pipe_validation.py` : spin retrouvé à −0,1 % (3996 vs 4000 rpm).
+
+Densité spectrale de la captation modèle :
+<img src="sci/img/spectro_MODELE_2025-11-08.png"  width="430" height="339">
+
+Trajectoire modèle (vol + déviation latérale du slice) :
+<img src="sci/img/traj_MODELE_2025-11-08.png"  width="480" height="267">
+
 # Find backspin
 
 <img src="sci/img/Pasted image 20250120172502.png"  width="560" height="380">
