@@ -1608,6 +1608,252 @@ In the main \texttt{Golfball} function, the \texttt{ode} function is called as f
 \end{figure}
 
 
+\chapter{Radar Doppler Processing Pipeline: from Scilab to Python}
+\label{chap:radarpipe}
+
+This chapter documents the complete signal-processing chain used to extract ball speed, spin total and launch azimuth from the two 10.525~GHz Doppler radars (audio acquisition at $F_s=44100$~Hz, one channel per radar), the corrections applied to the historical Scilab code (\texttt{sci/FFT\_Mat.sce}, commit \texttt{73ef2d8}), and the Python port (\texttt{sci/pipe\_validation.py}) used for blind validation on the 2019-02-24 F7 captures (9 shots) plus 2 generated model signals.
+
+\section{Two-radar geometry and the Doppler observables}
+
+Each radar measures only the projection of the ball velocity on its line of sight:
+\begin{equation}
+f_i = \frac{2}{\lambda}\,\vb V\cdot\vb u_i = K_V\,V_{r,i}, \qquad K_V \approx 19.49\ \text{Hz/(km/h)}, \quad \lambda = c/f_0 \approx 0.02848\ \text{m}
+\end{equation}
+
+With radars at $R_1=(0,-b/2)$ and $R_2=(0,+b/2)$ in the horizontal plane (axis $x$ = nominal shot direction, $z$ = lateral, $b=0.30$~m), ball at $P=(x,z)$, $L_1\approx L_2\approx L$:
+
+\begin{align}
+f_1 &= K\,\frac{V_x x + V_z(z+b/2)}{L}, \qquad f_2 = K\,\frac{V_x x + V_z(z-b/2)}{L}
+\end{align}
+
+Summing cancels the $\pm b/2$ terms (common mode), subtracting cancels the longitudinal terms (differential mode):
+
+\begin{align}
+f_C &= \frac{f_1+f_2}{2} \approx K\,V_x \quad \text{``how fast it goes forward''} \\
+f_\Delta &= \frac{f_1-f_2}{2} = K\,\frac{V_z\, b}{2L} \quad \text{``how fast it drifts laterally, seen through the parallax } b/L\text{''}
+\end{align}
+
+The ratio gives back the slope of the velocity vector, i.e.\ the tangent of the horizontal launch angle $\alpha$ (angle between $\vb V$ and the $x$ axis in the $x$--$z$ plane):
+
+\begin{equation}
+\boxed{\tan\alpha = \frac{V_z}{V_x} = \frac{2L}{b}\,\frac{f_\Delta}{f_C}
+\quad\Longrightarrow\quad
+\alpha(t) = \arctan\!\left[\frac{2L(t)}{b}\,\frac{f_\Delta(t)}{f_C(t)}\right], \qquad
+L(t) = L_0 + \int_{t_0}^{t} V_x(\tau)\,d\tau }
+\end{equation}
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[scale=1.3, >=Stealth, font=\small]
+  \draw[->] (0,0) -- (6.4,0) node[right] {$x$ (shot direction)};
+  \draw[->] (3,-1.6) -- (3,2.4) node[above] {$z$ (lateral)};
+  \fill (3,-1) circle (2pt) node[below] {R1};
+  \fill (3,1)  circle (2pt) node[above] {R2};
+  \draw[<->] (3.18,-1) -- (3.18,1) node[right, midway] {$b$};
+  \fill (5.6,0.7) circle (3pt) node[above right] {P};
+  \draw[dashed] (3,-1) -- (5.6,0.7);
+  \draw[dashed] (3,1)  -- (5.6,0.7);
+  \draw[->, very thick, red] (5.6,0.7) -- (6.5,1.25) node[right] {$\vb V$};
+  \draw (6.2,0.7) arc[start angle=0, end angle=31, radius=0.6];
+  \node at (6.35,0.88) {$\alpha$};
+  \draw[<->] (3,-0.25) -- (5.6,-0.25) node[midway, below] {$L$};
+  \node[red] at (5.2,1.45) {$V_x = V\cos\alpha$};
+  \node[red, rotate=90] at (6.75,1.0) {$V_z = V\sin\alpha$};
+\end{tikzpicture}
+\caption{Top view of the two-radar setup. $f_C$ carries $V_x$ (speed), $f_\Delta$ carries $V_z$ (azimuth $\alpha$ in the $x$--$z$ plane). The factor $2L/b$ corrects the parallax: the farther the ball, the smaller the frequency difference for the same $V_z$.}
+\label{fig:geom2radars}
+\end{figure}
+
+\section{STFT and ridge tracking}
+
+For each channel, a short-time Fourier transform gives the spectrogram $P_i(k,m)=|X_i(k,m)|^2$:
+\begin{itemize}
+  \item Scilab \texttt{animDensite} (\texttt{FFT\_Mat.sce}): Hann window 512, hop 16, threshold in dB per frame, normalized by the frame max;
+  \item Python \texttt{spectrogram} (\texttt{pipe\_validation.py}): Hann window $N=2048$ (46~ms), hop 1024 (50\% overlap), parabolic sub-bin interpolation of the peak.
+\end{itemize}
+
+The ridge frequency of frame $m$ is the peak bin refined by a parabola:
+\begin{equation}
+k^* = \arg\max_k P_m(k), \qquad
+\delta = \frac{0.5\,(P_{k^*-1}-P_{k^*+1})}{P_{k^*-1}-2P_{k^*}+P_{k^*+1}}, \qquad
+f_{ridge}(m) = (k^*+\delta)\,\frac{F_s}{N}
+\end{equation}
+
+The impact time is the most energetic frame (the metallic club gives a strong, clipped echo):
+\begin{equation}
+t_0 = \arg\max_m \sum_k P_m(k)
+\end{equation}
+
+\section{Speed: median of the post-impact ridge vs global max}
+
+The global max of the time-summed spectrum, $\hat f_B = f_5[\arg\max_k \sum_m M_5(m,k)^2]$ (Scilab \texttt{Info}), is dominated by the strong clipped club echo (6.6--14.8\% of samples at $\pm0.489$), whose spectrum is broad and flat. The ball produces a narrow ridge that \emph{lasts} the whole flight. Hence the Python estimator:
+\begin{equation}
+\hat V = \frac{1}{19.49}\,\operatorname*{median}_{m\in[t_0,\,t_0+50\,\text{ms}]} f_{ridge}(m)
+\end{equation}
+Each frame votes one frequency, unweighted: the median tolerates up to 50\% of aberrant frames (club residue, false lobes), whereas the energy-weighted sum lets one strong false frame pull the result. Measured on the 11 CSV: MAE 5.7\% radial, 1.9\% after the $\cos 20^\circ$ geometric correction. On a microcontroller (Arduino), the impact detection is $O(1)$ per frame and a max over the post-impact window is acceptable when $t_0$ is reliable; the median is the safety margin when it is not.
+
+\section{Spin: patch periodicity vs spectral excursion}
+
+The ball is partially covered with aluminium tape (one dominant scatterer, ``the patch''). Two estimators of the \emph{total} spin exist:
+
+\begin{enumerate}
+  \item \textbf{Spectral excursion} (Scilab \texttt{GetSwing}/\texttt{Info2}): the surface point speed is $v_t = r\omega$, so the Doppler spread is
+  \begin{equation}
+  \Delta f_{spin} = \frac{f_+ - f_-}{2} = \frac{2r\omega}{\lambda}, \qquad
+  SpinTotal_{RPM} = \frac{\Delta f_{spin}}{K_S}, \quad K_S \approx 0.1567\ \text{Hz/RPM}
+  \end{equation}
+  This uses the two \emph{extreme edges} of the micro-Doppler spectrum -- the weakest points, hence the most buried in noise and ADC clipping. Measured MAE: 41.4\% (\texttt{GetSwing}) to 51--68\% (variants).
+
+  \item \textbf{Patch periodicity} (Python): the patch produces one radar ``flash'' per revolution, whatever the tilt $\beta$ of the spin axis, so the Hilbert envelope of the post-impact signal contains a line at
+  \begin{equation}
+  f_{rot} = \frac{SpinTotal}{60} \quad\Longrightarrow\quad \boxed{SpinTotal_{period} = 60\,f_{rot}}
+  \end{equation}
+  $f_{rot}$ is the envelope-spectrum peak with the best harmonic score $\sum_q P(k_q)$ for $f_q \approx k f_{rot}$ (avoids sub-harmonics and the degenerate 2-flashes-per-turn case when the spin axis is aligned with the line of sight). Measured MAE: \textbf{19.9\%} on the 9 real shots, and \textbf{$-0.1$\%} (3996 vs 4000~RPM) on the clean generated model signal.
+\end{enumerate}
+
+Both estimators measure the \emph{total} spin $\omega = \sqrt{\omega_{back}^2+\omega_{side}^2}$, not the backspin: the flash frequency is $\omega/2\pi$ whatever $\beta$, and the excursion is $2r\omega/\lambda$. Splitting BackSpin/SideSpin requires $\beta$, identified elsewhere (curvature of $\alpha(t)$, or the \texttt{SpinAxis} of \texttt{GetSwing}: $\beta \approx \operatorname{asin}[Spin_3/\sqrt{((Spin_1+Spin_2)/2)^2+Spin_3^2}]$, qualitative only: MAE $\approx 15$--$18^\circ$).
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[scale=1.2, >=Stealth, font=\small]
+  \draw[thick] (0,0) circle (1.4);
+  \fill[gray!60] (0,0) -- (30:1.4) arc[start angle=30, end angle=80, radius=1.4] -- cycle;
+  \node at (55:1.05) {patch};
+  \draw[->, very thick] (0,0) -- (0.7,1.9) node[above] {$\vb\omega$ (axis tilted by $\beta$)};
+  \draw[dashed, ->] (-3.2,0.6) -- (-1.5,0.25) node[left] {radar};
+  \draw[->] (0,0) -- (1.4,0) node[right] {$r$};
+  \node at (0,-1.9) {flash once per turn: $f_{rot}=\omega/2\pi$};
+  \node at (0,-2.4) {excursion: $\Delta f = 2r\omega/\lambda$};
+\end{tikzpicture}
+\caption{The aluminium patch as a single dominant scatterer. Both the flash periodicity and the spectral excursion measure the \emph{total} spin $\omega$; neither separates backspin from sidespin.}
+\label{fig:patch}
+\end{figure}
+
+\section{Stereo pairing of the two ridges}
+
+Tracking the FFT maximum of each radar independently can pick two different micro-Doppler lobes and produce a false azimuth (errors $>20^\circ$ observed). The Python tracker pairs them: knowing $f_1$ (ridge of R1), $f_2$ is searched in the R2 spectrum within $\pm 300$~Hz of $f_1$, with the coherence constraint $|f_1-f_2| \lesssim 30$~Hz (geometry, $b=0.30$~m). Then $\alpha(t)$ follows from eq.\ above, with
+\begin{equation}
+\alpha_0 = \operatorname*{median}_{t\in[t_0,t_0+50\,\text{ms}]}\alpha(t), \qquad
+\Delta\alpha_{BF} = \operatorname*{median}_{W_F}(\alpha) - \operatorname*{median}_{W_0}(\alpha)
+\end{equation}
+Measured: $\alpha_0$ resolved 9/9 ($-3.1^\circ$ to $-0.2^\circ$); sign of $\Delta\alpha$ vs reference sidespin 0/9 because the reference files encode $|$sidespin$|$ only (signed left/right dataset is the next priority).
+
+\section{Quality controls (``non identifiable'' is a valid output)}
+\begin{itemize}
+  \item symmetry of the micro-Doppler edges: $|(f_C-f_-)-(f_+-f_C)| < \eta\,\Delta f_{spin}$, $\eta=0.2$;
+  \item inter-radar coherence: $|Spin_1-Spin_2|/\mathrm{mean} < 20\%$;
+  \item edge/period concordance $<20\%$ to merge the two spin estimators, else periodicity alone;
+  \item inter-radar speed divergence $>15\%$ $\Rightarrow$ reject the false-lobe channel;
+  \item validation targets: MAE$_V<2$~km/h, MAE$_{spin}<500$~RPM (8\%), MAE$_{\alpha_0}<1^\circ$, $>90\%$ correct curvature signs, MAE$_\beta<7^\circ$ then $3$--$5^\circ$.
+\end{itemize}
+
+\section{Scilab $\rightarrow$ Python: corrections and validation results}
+
+Corrections committed to \texttt{sci/FFT\_Mat.sce} (commit \texttt{73ef2d8}, merged to \texttt{main}):
+\begin{itemize}
+  \item \texttt{deltaF}: added the missing $3.6$ factor (km/h $\to$ m/s) and harmonized $r=0.04267/2$, now consistent with \texttt{Freq2RpmSpin};
+  \item \texttt{animDensite2/3}: keep the \emph{low} half of the spectrum ($M1(:,1:\$/2)$) matching the frequency vector (was \texttt{\$/2:\$-1}, high half, broken mapping); threshold set to 0 instead of $-1000$ (which crushed the peak after normalization);
+  \item \texttt{Enveloppe}: I/Q demodulation at the band-center carrier $f_c=(f_b+f_h)/2$ instead of $\cos(t\cdot F_s)=\cos(n)$ (demodulation at $F_s/2\pi\approx 7$~kHz, out of band).
+\end{itemize}
+
+Blind validation on the 11 CSV files (references encoded in the file names), port of the exact Scilab pipes (README ``Simples Scilab Commands'' + \texttt{testsFFT.sci} line 1029) vs the Python pipe:
+
+\begin{table}[H]\centering
+\caption{Measured results, 11 CSV (9 real F7 shots + 2 model signals).}
+\label{tab:scilabvspython}
+\small
+\begin{tabular}{|l|c|c|c|}
+\hline
+Estimator & MAE $V_{ball}$ radial & MAE corr. $\cos20^\circ$ & MAE SpinTotal \\ \hline
+Scilab \texttt{GetSwing} (port) & 5.7\% & $\approx$1.9\% & 41.4\% (excursion) \\
+Scilab robust variants & 5.7\% & $\approx$1.9\% & 60--68\% \\
+Python \texttt{pipe\_validation.py} & \textbf{5.7\%} & \textbf{1.9\%} & \textbf{19.9\%} (periodicity) \\ \hline
+\end{tabular}
+\end{table}
+
+Conclusion: the Scilab chain is \emph{good for speed and impact} (identical MAE to Python) and indicative for spin; the Python pipe adds the patch-periodicity spin estimator, the stereo pairing for $\alpha$, and the quality controls -- the gains come from choosing the right observable, not from heavier math.
+
+\section{Processing pipeline}
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[node distance=5mm and 6mm, box/.style={draw, rounded corners, align=center, font=\footnotesize, inner sep=3pt}, >=Stealth]
+  \node[box] (csv) {CSV 2 channels R1/R2 \\ ($F_s=44100$)};
+  \node[box, below=of csv] (bp) {band-pass 1--6 kHz};
+  \node[box, below=of bp] (stft) {STFT Hann 2048, hop 1024 \\ $P_m(k)=|X_m(k)|^2$};
+  \node[box, below=of stft] (t0) {$t_0=\arg\max_m\sum_k P_m(k)$ (impact)};
+  \node[box, below left=of t0] (ridge) {ridge $f_{ridge}(m)$ \\ parabolic $\delta$};
+  \node[box, below right=of t0] (pair) {stereo pairing: $f_2$ near $f_1$ \\ $|f_1-f_2|\le30$ Hz};
+  \node[box, below=of ridge] (v) {$\hat V=\mathrm{median}_{m>t_0} f_{ridge}/19.49$};
+  \node[box, below=of pair] (al) {$f_C,f_\Delta\Rightarrow\alpha(t),\alpha_0,\Delta\alpha$};
+  \node[box, below left=of v, xshift=-1cm] (edge) {edges $f_\pm$: $Spin_{edge}$, sym. $\eta$};
+  \node[box, below right=of v, xshift=1cm] (per) {Hilbert 250 ms: $Spin_{period}=60f_{rot}$};
+  \node[box, below=of v, yshift=-1.2cm] (agg) {fusion + quality controls \\ else ``non identifiable''};
+  \draw[->] (csv) -- (bp); \draw[->] (bp) -- (stft); \draw[->] (stft) -- (t0);
+  \draw[->] (t0) -- (ridge); \draw[->] (t0) -- (pair);
+  \draw[->] (ridge) -- (v); \draw[->] (pair) -- (al);
+  \draw[->] (stft) -| (edge); \draw[->] (stft) -| (per);
+  \draw[->] (v) -- (agg); \draw[->] (edge) -| (agg); \draw[->] (per) -| (agg);
+\end{tikzpicture}
+\caption{Python validation pipeline (\texttt{sci/pipe\_validation.py}). Scilab equivalents: \texttt{animDensite} (STFT), \texttt{Info}/\texttt{GetSwing} (speed), \texttt{animHilbert} (envelope), \texttt{acos(f2/f1)} (rudimentary azimuth in \texttt{testsFFT.sci}).}
+\label{fig:pipepython}
+\end{figure}
+
+\section{Spectrograms: measured captures vs theoretical model}
+
+The following figures show the measured spectrograms of the 2019-02-24 F7 captures (R1/R2, vertical axis in km/h via $f/19.49$, ball ridge in cyan, impact marked), and the \emph{generated} theoretical captures (\texttt{gen\_capture\_modele.py}: Doppler carrier $f_D(t)=19.49\,V(t)\cos\alpha_{radar}$ + patch phase modulation $e^{-i(2r/\lambda)\sin\omega t}$ + club peak at $t_0=100$~ms + 28~dB noise). The model captures are references of what the processing \emph{should} obtain on a clean signal -- on the 102~m model shot the pipe recovers the spin to $-0.1$\%.
+
+\begin{figure}[H]\centering
+\includegraphics[width=8cm,keepaspectratio]{../sci/img/setup_radar.png}
+\caption{Radar setup geometry (also in README).}
+\label{fig:setupradar}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=8cm,keepaspectratio]{../sci/img/PatchedBall.png}
+\caption{Patch on the ball (aluminium tape).}
+\label{fig:patchedball}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=10cm,keepaspectratio]{../sci/img/spectro\_F7-123m-150kmh-5274trm-210trm-cs111.png}
+\caption{Measured spectrogram, shot 123~m / 150~km/h / 5274~RPM (SkyTrak reference).}
+\label{fig:spectro123}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=10cm,keepaspectratio]{../sci/img/spectro\_F7-131m-162kmh-6185trm-7102trm-cs124.png}
+\caption{Measured spectrogram, shot 131~m / 162~km/h / 6185 back + 7102 side RPM ($\beta\approx48.9^\circ$, strong curvature).}
+\label{fig:spectro131}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=10cm,keepaspectratio]{../sci/img/spectro\_F7-137m-166kmh-4990trm-1312trm-cs118.png}
+\caption{Measured spectrogram, shot 137~m / 166~km/h / 4990+1312~RPM ($\beta\approx14.7^\circ$).}
+\label{fig:spectro137}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=11cm,keepaspectratio]{../sci/img/spectro\_MODELE\_2025-11-08.png}
+\caption{Theoretical (generated) capture, config F7 151~km/h, launch $16.5^\circ$, spin 4000~RPM, side 700~RPM ($\beta=10.1^\circ$), club 115~km/h, carry 102~m.}
+\label{fig:spectromodele}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=11cm,keepaspectratio]{../sci/img/spectro\_MODELE\_102m-151kmh.png}
+\caption{Generated capture, same config, swing-complete 450~ms version (v2).}
+\label{fig:spectromodele102}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=11cm,keepaspectratio]{../sci/img/spectro\_MODELE\_137m-166kmh.png}
+\caption{Generated capture with the real 137~m shot parameters (166~km/h, 4990/1312~RPM, club 118).}
+\label{fig:spectromodele137}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=9cm,keepaspectratio]{../sci/img/traj\_MODELE\_2025-11-08.png}
+\caption{Model trajectory (flight + lateral deviation of the slice) for the 2025-11-08 generated capture.}
+\label{fig:trajmodele}
+\end{figure}
+
 \chapter{Listings}
 \section{Golfball.sci}
 \begin{lstlisting}[language=matlab, caption=Listing of the golf ball fligth, label={lst:gaolfballsci}]
