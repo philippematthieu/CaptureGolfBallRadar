@@ -305,7 +305,7 @@ def aggregate(res):
 
 def main():
     d = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
-    files = sorted(glob.glob(os.path.join(d, '2019-02-24-F7-*.csv')))
+    files = sorted(glob.glob(os.path.join(d, '*-F7-*.csv')))  # toutes dates, y compris captations modèle
     print(f"{len(files)} CSV trouves dans {d}\n")
     hdr = (f"{'fichier':<44} {'vRef':>4} {'vMes':>6} {'v/20°':>6} {'err%':>6} | "
            f"{'spinRef':>7} {'edge':>6} {'period':>6} {'spin':>6} {'err%':>6} | {'betaRef':>6} {'alpha0':>7} {'dAlpha':>7} {'signe':>4} | conf")
