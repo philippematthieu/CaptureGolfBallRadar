@@ -13,7 +13,7 @@ using namespace std;
 
 SolverODE::SolverODE() {
 }
-SolverODE::SolverODE(EquationODE *pEqn, double ps, double pds, std::vector<double> pq):  sCurrent(ps), ds(pds), q(pq) ,numEqns(pq.size()) {
+SolverODE::SolverODE(EquationODE *pEqn, double ps, double pds, std::vector<double> pq):  numEqns(pq.size()), q(pq), ds(pds), sCurrent(ps) {
 	eqn = pEqn;
 	bzeroCrossing = false;
 	underMinDs = false;

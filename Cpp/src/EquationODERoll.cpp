@@ -22,13 +22,6 @@ std::vector<double>  EquationODERoll::getEvaluation(double s, std::vector<double
 	 * @author
 	 * @param
 	 */
-	double wx			= getParamEq(0);
-	double wy			= getParamEq(1);
-	double wz			= getParamEq(2);
-	double getRayon		= getParamEq(3);
-	double getBallArea	= getParamEq(5);
-	double getCl1		= getParamEq(6);
-	double getMasse		= getParamEq(7);
 
 	double vx 			= q[1];		// = dxdt en m/s
 	double vy 			= q[3];		// = dydt en m/s

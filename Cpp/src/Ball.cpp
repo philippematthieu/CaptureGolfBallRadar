@@ -25,17 +25,17 @@ using namespace std;
 Ball::Ball() {}
 Ball::~Ball() {}
 Ball::Ball(string pMarque, int pNbAlveoles, int pNbPieces, Club pGolfClub, double pTimeMax, double pdt):
-													marque(pMarque),	nbAlveoles(pNbAlveoles),	nbPieces(pNbPieces),
-													temperature(pGolfClub.getTemperature()),	masse(0.04545),	rayon(0.0215),
-													area(M_PI*rayon*rayon),	rhoAir(1.292*273.15/(temperature + 273)),	rhoGreen(0.131),
-													g(9.81),	timeMax(pTimeMax),	dt(pdt),	alphaClubPath(pGolfClub.getAlphaClubPathRadian()),
-													v0Initms(6),paramEqn(9,0)
+	marque(pMarque),	masse(0.04545),	nbAlveoles(pNbAlveoles),	nbPieces(pNbPieces),
+	area(0.0),	temperature(pGolfClub.getTemperature()),	rayon(0.0215),	rhoAir(0.0),	// area/rhoAir calculees dans le corps
+	g(9.81),	rhoGreen(0.131),	v0Initms(6),	timeMax(pTimeMax),	dt(pdt),
+	alphaClubPath(pGolfClub.getAlphaClubPathRadian()),	paramEqn(9,0)
 {
 	numEqns = 6;
 	verticalLand = 0.0;
 	//std::vector<double> paramEqn(9);// wx, wy,wz, getRayon, getRhoAir, getBallArea, getCl1, getMasse, getG
 	//std::vector<double> matriceFlight ; // la dimension est faite par le .clone() plus loin
 	area = M_PI*rayon*rayon;
+	rhoAir = 1.292*273.15/(temperature + 273.15); // meme formule que GolfBall.py (rho air 20 C)
 	indexChute = 0;
 	maxHeight = 0.0;   // BUG corrige : maxHeight/tempsTotal n'etaient pas initialises (valeurs indeterminees)
 	tempsTotal = 0.0;
@@ -91,7 +91,6 @@ Ball::Ball(string pMarque, int pNbAlveoles, int pNbPieces, Club pGolfClub, doubl
 	eventRoll	= new EquationODEEventRoll(paramEqn);
 	solveRoll 	= SolverODE(eqnRoulBalle, 0.0, getdt(), v0Initms);
 
-	unsigned i=0;
 	cout << "getV0Initms: "  << v0Initms[0] << " ; " <<3.6* v0Initms[1]   << " ; " << v0Initms[2]   << " ; " << 3.6*v0Initms[3]   << " ; " << v0Initms[4] <<" ; " << 3.6*v0Initms[5]   << endl;
 }
 // methodes pour constantes et variables du systeme
