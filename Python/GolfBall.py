@@ -411,6 +411,8 @@ if __name__ == '__main__':
     ap.add_argument('capture', nargs='?', default=None,
                     help="fichier de captation radar : .csv (2 lignes ';' = canaux R1/R2) ou .wav (stéréo 44,1 kHz)")
     ap.add_argument('--launch', type=float, default=16.5, help='launch angle en degrés (défaut 16.5, ignoré si captation)')
+    ap.add_argument('--elev', type=float, default=10.0, help='elevation caméra 3D en degrés (défaut 10 = vue golfeur)')
+    ap.add_argument('--azim', type=float, default=180.0, help='azimut caméra 3D en degrés (défaut 180 = de derrière, comme le golfeur ; -60 = vue plongeante)')
     args = ap.parse_args()
 
     v0_ms = None
@@ -445,14 +447,14 @@ if __name__ == '__main__':
     ax = fig.add_subplot(111, projection='3d')
 
     # Limites des axes
-    ax.set_xlim(0, max(x) * 1.1)
+    ax.set_xlim(-10, max(x) * 1.1)  # caméra derrière la balle : on voit le départ
     ax.set_ylim(0, max(y_pos) * 1.1)
     ax.set_zlim(-max(abs(z)) * 1.1, max(abs(z)) * 1.1)
     ax.set_xlabel('Distance (m)')
     ax.set_ylabel('Hauteur (m)')
     ax.set_zlabel('Dév. latérale (m)')
     ax.set_title('Simulation du vol d\'une balle de golf (3D)')
-    ax.view_init(elev=18, azim=-72)  # vue de 3/4 latérale : trajectoire au-dessus du fairway, pas vu du dessous
+    ax.view_init(elev=args.elev, azim=args.azim)  # défaut 10/180 : vue de derrière, comme le golfeur (cf. Pasted image 20250120171635.png)
 
     # Dessiner le sol
     xx, zz = np.meshgrid(np.linspace(0, max(x) * 1.1, 10), np.linspace(-max(abs(z)) * 1.1, max(abs(z)) * 1.1, 10))
