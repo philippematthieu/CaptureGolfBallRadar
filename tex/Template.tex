@@ -1798,7 +1798,7 @@ Conclusion: the Scilab chain is \emph{good for speed and impact} (identical MAE 
 
 \section{Spectrograms: measured captures vs theoretical model}
 
-The following figures show the measured spectrograms of the 2019-02-24 F7 captures (R1/R2, vertical axis in km/h via $f/19.49$, ball ridge in cyan, impact marked), and the \emph{generated} theoretical captures (\texttt{gen\_capture\_modele.py}: Doppler carrier $f_D(t)=19.49\,V(t)\cos\alpha_{radar}$ + patch phase modulation $e^{-i(2r/\lambda)\sin\omega t}$ + club peak at $t_0=100$~ms + 28~dB noise). The model captures are references of what the processing \emph{should} obtain on a clean signal -- on the 102~m model shot the pipe recovers the spin to $-0.1$\%.
+The following figures show the measured spectrograms of the 2019-02-24 F7 captures (R1/R2, vertical axis in km/h via $f/19.49$, ball ridge in cyan, impact marked), and the \emph{generated} theoretical captures. The model signal (\texttt{gen\_capture\_modele.py}) is a Doppler carrier plus the patch phase modulation $e^{-i(2r/\lambda)\sin\omega t}$, a club peak at $t_0=100$~ms and 28~dB noise. The model captures are references of what the processing \emph{should} obtain on a clean signal -- on the 102~m model shot the pipe recovers the spin to $-0.1$\%.
 
 \begin{figure}[H]\centering
 \includegraphics[width=8cm,keepaspectratio]{../sci/img/setup_radar.png}
