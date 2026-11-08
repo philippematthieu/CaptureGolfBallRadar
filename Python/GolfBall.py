@@ -384,18 +384,17 @@ if __name__ == '__main__':
     yy = np.zeros_like(xx)
     ax.plot_surface(xx, yy, zz, color='green', alpha=0.3)
 
-    # Initialiser la balle et les forces
+    # Initialiser la balle et les forces (quiver 3D : API stable avec matplotlib >= 3.10)
     ball = ax.plot([], [], [], 'o', markersize=8, color='white', markeredgecolor='black')[0]
-    velocity_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='blue', mutation_scale=20)
-    ax.add_patch(velocity_arrow)
-    drag_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='red', mutation_scale=20)
-    ax.add_patch(drag_arrow)
-    magnus_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='green', mutation_scale=20)
-    ax.add_patch(magnus_arrow)
-    gravity_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='orange', mutation_scale=20)
-    ax.add_patch(gravity_arrow)
-    spin_arrow = FancyArrowPatch((0, 0, 0), (0, 0, 0), arrowstyle='->', color='purple', mutation_scale=20)
-    ax.add_patch(spin_arrow)
+
+    def _arrow(color):
+        return ax.quiver([0], [0], [0], [0.0], [0.0], [0.0], color=color,
+                         arrow_length_ratio=0.15, linewidth=2)
+    velocity_arrow = _arrow('blue')
+    drag_arrow = _arrow('red')
+    magnus_arrow = _arrow('green')
+    gravity_arrow = _arrow('orange')
+    spin_arrow = _arrow('purple')
 
     # Légende
     ax.legend(
@@ -426,19 +425,17 @@ if __name__ == '__main__':
         # Vitesse
         v_norm = np.sqrt(vx[frame] ** 2 + vy[frame] ** 2 + vz[frame] ** 2)
         if v_norm > 0:
-            velocity_arrow.set_data(
-                [x[frame], x[frame] + vx[frame] * scale / v_norm],
-                [y_pos[frame], y_pos[frame] + vy[frame] * scale / v_norm]
-            )
-            velocity_arrow.set_3d_properties([z[frame], z[frame] + vz[frame] * scale / v_norm])
+            velocity_arrow.set_segments([[
+                (x[frame], y_pos[frame], z[frame]),
+                (x[frame] + vx[frame] * scale / v_norm, y_pos[frame] + vy[frame] * scale / v_norm,
+                 z[frame] + vz[frame] * scale / v_norm)]])
 
         # Traînée (opposée à la vitesse)
         F_D_norm = 0.5 * rho_air * C_d0 * A * v_norm
-        drag_arrow.set_data(
-            [x[frame], x[frame] - vx[frame] * F_D_norm * scale / m],
-            [y_pos[frame], y_pos[frame] - vy[frame] * F_D_norm * scale / m]
-        )
-        drag_arrow.set_3d_properties([z[frame], z[frame] - vz[frame] * F_D_norm * scale / m])
+        drag_arrow.set_segments([[
+            (x[frame], y_pos[frame], z[frame]),
+            (x[frame] - vx[frame] * F_D_norm * scale / m, y_pos[frame] - vy[frame] * F_D_norm * scale / m,
+             z[frame] - vz[frame] * F_D_norm * scale / m)]])
 
         # Portance (Magnus)
         spin_norm = np.sqrt(wx[frame] ** 2 + wy[frame] ** 2 + wz[frame] ** 2)
@@ -447,25 +444,19 @@ if __name__ == '__main__':
             F_Mx = F_M_norm * (wy[frame] * vz[frame] - wz[frame] * vy[frame])
             F_My = F_M_norm * (wz[frame] * vx[frame] - wx[frame] * vz[frame])
             F_Mz = F_M_norm * (wx[frame] * vy[frame] - wy[frame] * vx[frame])
-            magnus_arrow.set_data(
-                [x[frame], x[frame] + F_Mx * scale / m],
-                [y_pos[frame], y_pos[frame] + F_My * scale / m]
-            )
-            magnus_arrow.set_3d_properties([z[frame], z[frame] + F_Mz * scale / m])
+            magnus_arrow.set_segments([[
+                (x[frame], y_pos[frame], z[frame]),
+                (x[frame] + F_Mx * scale / m, y_pos[frame] + F_My * scale / m, z[frame] + F_Mz * scale / m)]])
 
         # Gravité
-        gravity_arrow.set_data(
-            [x[frame], x[frame]],
-            [y_pos[frame], y_pos[frame] - m * g * scale / m]
-        )
-        gravity_arrow.set_3d_properties([z[frame], z[frame]])
+        gravity_arrow.set_segments([[
+            (x[frame], y_pos[frame], z[frame]),
+            (x[frame], y_pos[frame] - g * scale, z[frame])]])
 
         # Spin
-        spin_arrow.set_data(
-            [x[frame], x[frame] - 0.2],
-            [y_pos[frame], y_pos[frame] + 0.4]
-        )
-        spin_arrow.set_3d_properties([z[frame], z[frame]])
+        spin_arrow.set_segments([[
+            (x[frame], y_pos[frame], z[frame]),
+            (x[frame] - 0.2, y_pos[frame] + 0.4, z[frame])]])
 
         # Mettre à jour le temps et les rebonds
         time_text.set_text(f'Temps: {t[frame]:.2f} s')
