@@ -242,9 +242,7 @@ L'équation principale est celle du vol de la balle. Elle rend compte de 3 force
 \sum{\overrightarrow{F}} =  \overrightarrow{F_{m}} + \overrightarrow{F_{d}} + \overrightarrow{F_{g}}
 \end{equation}\myequations{Forces en vol}
 
----
-
-
+\bigskip
 \begin{figure}[h]
 \centering
 \label{fig:forces_golf_ball}
@@ -301,15 +299,7 @@ L'équation principale est celle du vol de la balle. Elle rend compte de 3 force
 \end{figure}
 
 
----
-
-
-
-
-
-
-
-
+\bigskip
 \section{Force de traînée}
 \subsection{Caractéristiques de l'air}
 
@@ -855,8 +845,7 @@ Cette fonction par morceaux rend compte du \textbf{comportement non linéaire} d
     \item Le seuil de $20 \, \text{m/s}$ est arbitraire et peut ne pas être valable pour tous les modèles de balles ou types de surface. Une validation expérimentale pour différentes conditions est recommandée.
 \end{itemize}
 
----
-
+\bigskip
 \subsubsection{Angle de rebond et mise à jour des vitesses}
 \label{subsubsec:bounce_angle}
 
@@ -1100,8 +1089,7 @@ Ces évolutions amélioreraient significativement la précision et la robustesse
 
 Cette section donne une explication détaillée du code Scilab utilisé pour simuler le vol, les rebonds et le roulement d'une balle de golf. Le code comporte des simplifications pour garantir un calcul rapide, car il est destiné à traiter en temps réel les données radar du début de vol de la balle (discuté au chapitre suivant).
 
----
-
+\bigskip
 \subsection{La fonction \texttt{flightg}}
 \label{subsec:flightg}
 
@@ -1218,8 +1206,7 @@ La fonction \texttt{flightg} suit ces étapes pour calculer les dérivées :
 
 \textbf{Note} : la simplification consistant à supposer aucune décroissance du spin en vol est faite pour garantir un calcul rapide, le modèle étant destiné à traiter en temps réel les données radar du début de vol de la balle (discuté au chapitre suivant).
 
----
-
+\bigskip
 \subsection{La fonction \texttt{rolling}}
 \label{subsec:rolling}
 
@@ -1282,7 +1269,7 @@ La fonction \texttt{rolling} suit ces étapes :
 
 \textbf{Note} : les simplifications du modèle de roulement visent à garantir un calcul rapide, le modèle étant destiné à traiter en temps réel les données radar du début de vol de la balle (discuté au chapitre suivant).
 
----
+\bigskip
 \subsection{Les fonctions \texttt{AltiSol} et \texttt{dAltiSol}}
 \label{subsec:altisol_daltisol}
 
@@ -1326,7 +1313,7 @@ Les fonctions \texttt{AltiSol} et \texttt{dAltiSol} servent à modéliser l'alti
     \end{itemize}
 \end{itemize}
 
----
+\bigskip
 \subsection{Fonctions de détection d'événements}
 \label{subsec:event_functions}
 
@@ -1369,7 +1356,7 @@ Les fonctions \texttt{events} et \texttt{events2} servent à détecter les évé
     \end{itemize}
 \end{itemize}
 
----
+\bigskip
 \subsection{Intégration numérique avec \texttt{ode}}
 \label{subsec:numerical_integration}
 
@@ -1764,6 +1751,9 @@ Les figures suivantes montrent les spectrogrammes mesurés des captures F7 du 20
 \end{lstlisting}
 
 //\chapter*{}
+\section*{Remerciements}
+Une première version de ce projet a été écrite en 2016 puis laissée de côté. Elle a été reprise en 2026 à la lumière de la puissance des outils d'IA. J'ai repris le projet pour évaluer et apprendre à utiliser l'IA : trouver des bugs dans le code Scilab historique, porter la chaîne de traitement en Python et améliorer les estimateurs au fil de nos discussions (médiane post-impact robuste plutôt que le max global, périodicité du patch plutôt que l'excursion spectrale seule, appariement stéréo des deux radars, contrôles qualité). Cela a aussi montré que le montage électronique (deux radars Doppler 10,525~GHz, amplificateur, Arduino Nano, carte son USB) était bien faisable et cohérent. La traduction française de ce document a été entièrement réalisée par une IA (Mistral Vibe).
+
 \section*{Conflits d'intérêts}
 Les auteurs déclarent n'avoir aucun conflit d'intérêts.
 
