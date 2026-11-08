@@ -352,7 +352,7 @@ C_d&=&0,36 + \frac{24}{Re} + \frac{6}{1+\sqrt{Re}}\label{eq:dragforce4}\\
 \overrightarrow{F_{d}} &=& -\frac{1}{2}.\rho(T).C_d.S.\sqrt{(V(x)^2+V(y)^2+V(z)^2)}.\widehat{V}
 \end{eqnarray}\myequations{Coefficient de traînée, force de traînée}
 
-where,
+où :
 
 \begin{eqnarray*}\label{eq:dragforce2}
 \widehat{V}&=&Vecteur\ unitaire\ de\ la\ vitesse\\
@@ -382,7 +382,7 @@ Par généralisation, le nom d'effet Magnus est appliqué à tout objet soumis �
 \end{eqnarray}\myequations{Effet de portance Magnus}
 
 
-where,
+où :
 \begin{eqnarray*}\label{eq:dragforce3}
 \omega&=&spin\ en\ rad/s\\
 V_p&=&r\omega\ vitesse\ périphérique\\
@@ -481,7 +481,7 @@ V_{bfp}&=&-V_{ci}.\frac{sin(\theta)}{1+\frac{m}{M} + \frac{5}{2}}\\
 \end{eqnarray}\myequations{Vitesse de la balle et angle de départ après l'impact du club}
 
 
-where,
+où :
 \begin{eqnarray*}
 V_{ci}&=&Vitesse\ initiale\ du\ club,\ parallèle\ au\ sol.\\
 V_{bfn}&=&Vitesse\ finale\ de\ la\ balle\ orthogonale\ à\ la\ face\ du\ club\\
@@ -496,7 +496,7 @@ I&=&Inertie\ (\ref{eq:massdiameterintertia})
 \section{Vitesse de la balle avec un centrage imparfait}
 Il est difficile de centrer parfaitement la balle et le club. Le modèle de vitesse de balle est modifié pour inclure un paramètre \emph{Miss}. C'est l'écart au sweet spot ; la vitesse initiale de la balle dans ce cas est (\ref{eq.miss}),
 \begin{equation}\label{eq.miss}
-V_{bi}=(1-35.56*miss).\sqrt{V_{bfn}^2+V_{bfp}^2}\ (miss\ mesured\ in\ meter)
+V_{bi}=(1-35.56*miss).\sqrt{V_{bfn}^2+V_{bfp}^2}\ (miss\ mesuré\ en\ mètre)
 \end{equation}\myequations{Vitesse initiale de la balle après un centrage imparfait}
 
 \section{Vitesse initiale de la face du club}
@@ -564,7 +564,7 @@ Le vecteur d'état initial $\vec{Y}_0$ est :
     \end{pmatrix}
     \label{eq:initial_conditions}
 \end{equation}
-with $V_{bi} = (1 - 35.56 \cdot \text{miss}) \sqrt{V_{bfn}^2 + V_{bfp}^2}$ and $\vec{\omega}_0 = \begin{pmatrix} 0 & V_{b0y} \sin(\alpha_{cp} - \gamma_{fp}) \cdot \text{SpinLiftCoeff} & V_{b0x} \sin(\theta) \cdot \text{SpinCoeff} \end{pmatrix}^T$.
+avec $V_{bi} = (1 - 35.56 \cdot \text{miss}) \sqrt{V_{bfn}^2 + V_{bfp}^2}$ et $\vec{\omega}_0 = \begin{pmatrix} 0 & V_{b0y} \sin(\alpha_{cp} - \gamma_{fp}) \cdot \text{SpinLiftCoeff} & V_{b0x} \sin(\theta) \cdot \text{SpinCoeff} \end{pmatrix}^T$.
 
 \subsection{Modèle complet de vol (notation tensorielle)}
 La dynamique de vol de la balle de golf est décrite en notation tensorielle comme suit :
@@ -615,7 +615,7 @@ Le vecteur d'état initial $\vec{Y}_0$ est :
     \vec{Y}_0 = \begin{pmatrix} \vec{0} \\ \vec{V}_{b0} \end{pmatrix}, \quad \vec{V}_{b0} = V_{bi} \, \hat{u}(\theta, e, m, M)
     \label{eq:tensor_initial}
 \end{equation}
-where $V_{bi} = (1 - 35.56 \cdot \text{miss}) \sqrt{V_{bfn}^2 + V_{bfp}^2}$ and the unit direction vector $\hat{u}$ is:
+où $V_{bi} = (1 - 35.56 \cdot \text{miss}) \sqrt{V_{bfn}^2 + V_{bfp}^2}$ et le vecteur unitaire $\hat{u}$ vaut :
 \begin{equation}
     \hat{u} = \begin{pmatrix}
     \cos\left( \theta + \arctan\left( \frac{\sin \theta \cdot (1 + \frac{m}{M})}{(1 + e) \cos \theta \cdot (1 + \frac{m}{M} + \frac{5}{2})} \right) \right) \\
@@ -661,7 +661,7 @@ Les EDO sont définies dans des fonctions externes qui retournent les dérivées
 \begin{itemize}
     \item \textbf{Force de traînée} : la force de traînée est modélisée par la \textbf{formule de White} pour le coefficient de traînée \( C_d \), qui dépend du nombre de Reynolds \( \text{Re} \) :
     \[
-    C_d = 0.36 + \frac{24}{\text{Re}} + \frac{6}{1 + \sqrt{\text{Re}}}, \quad \text{where} \quad \text{Re} = \frac{V \cdot D}{\nu}
+    C_d = 0.36 + \frac{24}{\text{Re}} + \frac{6}{1 + \sqrt{\text{Re}}}, \quad \text{où} \quad \text{Re} = \frac{V \cdot D}{\nu}
     \]
     Ici, \( V \) est la vitesse de la balle, \( D \) son diamètre, et \( \nu \) la viscosité cinématique de l'air (\( 1{,}5 \times 10^{-5} \, \text{m}^2/\text{s} \)).
 
@@ -724,7 +724,7 @@ Ici, \texttt{x(3)} représente la hauteur \( y \) de la balle, et \texttt{AltiSo
 De même, la fonction \texttt{events2} détecte l'arrêt du roulement en vérifiant si la vitesse horizontale \( v_x \) passe sous un seuil :
 \begin{lstlisting}[language=Scilab]
 function [value] = events2(t, x)
-    value = x(2) - 0; // Stop if v_x <= 0
+    value = x(2) - 0; // Arret si v_x <= 0
 endfunction
 \end{lstlisting}
 
@@ -788,25 +788,25 @@ Si l'implémentation actuelle est robuste et validée expérimentalement, plusie
     \item \textbf{Event Detection Robustness}:
     La détection d'événements actuelle s'appuie sur des seuils fixes, qui peuvent ne pas être optimaux pour tous les scénarios. Par exemple, le seuil de détection de l'impact au sol (\( 10^{-4} \)) peut être trop grand pour des simulations haute précision.
     \begin{itemize}
-        \item \textbf{Proposed Evolution}: Implement a dynamic threshold or use interpolation to precisely locate the event time between time steps.
+        \item \textbf{Évolution proposée} : mettre en place un seuil dynamique ou une interpolation pour localiser précisément l'instant de l'événement entre deux pas de temps.
     \end{itemize}
 
     \item \textbf{Adaptive Time Stepping}:
-    The fixed time step (\( \Delta t = 0.1 \, \text{s} \)) may not be efficient for all phases of the simulation. For instance, a smaller step is needed during the bounce phase, while a larger step may suffice during the roll phase.
+    Le pas de temps fixe (\( \Delta t = 0{,}1 \, \text{s} \)) peut ne pas être efficace pour toutes les phases de la simulation. Par exemple, un pas plus petit est nécessaire pendant la phase de rebond, tandis qu'un pas plus grand peut suffire pendant le roulement.
     \begin{itemize}
-        \item \textbf{Proposed Evolution}: Replace the fixed-step RK4 method with an adaptive method (e.g., RK45 or Dormand-Prince) that adjusts the time step based on the local truncation error.
+        \item \textbf{Évolution proposée} : remplacer la méthode RK4 à pas fixe par une méthode adaptative (ex. RK45 ou Dormand-Prince) qui ajuste le pas de temps selon l'erreur de troncature locale.
     \end{itemize}
 
-    \item \textbf{Lateral Motion in Bounces}:
+    \item \textbf{Mouvement latéral dans les rebonds} :
     Le modèle de rebond actuel ne tient pas compte du mouvement latéral (\( v_y \)) ni du spin latéral (\( \omega_z \)) pendant le rebond. Cela limite la capacité du modèle à simuler précisément les slices et les hooks.
     \begin{itemize}
-        \item \textbf{Proposed Evolution}: Extend the bounce model to include lateral components, using a 3D restitution model that accounts for both vertical and horizontal velocities, as well as spin.
+        \item \textbf{Évolution proposée} : étendre le modèle de rebond pour inclure les composantes latérales, via un modèle de restitution 3D tenant compte des vitesses verticale et horizontale, ainsi que du spin.
     \end{itemize}
 
     \item \textbf{Terrain-Specific Parameters}:
     Les coefficients de frottement (\( \mu \)) et la résistance au roulement (\( \rho_g \)) sont actuellement constants. En réalité, ces paramètres dépendent du type de terrain (ex. green, fairway, rough).
     \begin{itemize}
-        \item \textbf{Proposed Evolution}: Introduce terrain-specific parameters and allow the user to select the terrain type for each simulation.
+        \item \textbf{Évolution proposée} : introduire des paramètres selon le terrain et permettre à l'utilisateur de choisir le type de terrain pour chaque simulation.
     \end{itemize}
 \end{itemize}
 
@@ -833,7 +833,7 @@ L'angle d'impact $\theta_{\text{impact}}$ est défini comme l'angle entre le vec
 \[
 \theta_{\text{impact}} = \arctan\left(\frac{|v_{ix}|}{|v_{iy}|}\right),
 \]
-where:
+où :
 \begin{itemize}
     \item $v_{ix} = \sqrt{v_x^2 + v_z^2}$ est la composante horizontale de la vitesse (dans le plan du sol).
     \item $v_{iy}$ est la composante verticale de la vitesse.
@@ -843,7 +843,7 @@ Le \textbf{coefficient de restitution} $e_{\text{ball}}$ détermine le rapport e
 \[
 e_{\text{ball}} =
 \begin{cases}
-0.510 - 0.0375 \cdot |v_{iy}'| + 0.000903 \cdot |v_{iy}'|^2 & \text{if } |v_{iy}'| < 20 \, \text{m/s}, \\
+0.510 - 0.0375 \cdot |v_{iy}'| + 0.000903 \cdot |v_{iy}'|^2 & \text{si } |v_{iy}'| < 20 \, \text{m/s}, \\
 0.120 & \text{otherwise}.
 \end{cases}
 \]
@@ -904,7 +904,7 @@ Pendant le rebond, le frottement entre la balle et le sol affecte à la fois la 
 \[
 \mu_{\text{critic}} = \frac{2 \left(|v_{ix}'| + r |\omega_i|\right)}{7 (1 + e_{\text{ball}}) |v_{iy}'|},
 \]
-where:
+où :
 \begin{itemize}
     \item $r$ est le rayon de la balle.
     \item $\omega_i$ est le taux de spin initial (backspin ou spin latéral).
@@ -939,9 +939,9 @@ v_{ry}' &= e_{\text{ball}} |v_{iy}'|, \\
     \[
     \mu =
     \begin{cases}
-    0.40 & \text{for green}, \\
-    0.20 & \text{for fairway}, \\
-    0.60 & \text{for rough}.
+    0.40 & \text{pour le green}, \\
+    0.20 & \text{pour le fairway}, \\
+    0.60 & \text{pour le rough}.
     \end{cases}
     \]
     \item \textbf{Spin latéral dans le rebond} : étendre le modèle pour inclure l'effet du spin latéral sur le mouvement latéral. Par exemple, la vitesse latérale après rebond pourrait être mise à jour par :
@@ -963,7 +963,7 @@ La force de résistance au roulement est modélisée comme un terme de \textbf{f
 \[
 \mathbf{F}_{\text{roll}} = -\frac{5}{7} \rho_g g \mathbf{v},
 \]
-where:
+où :
 \begin{itemize}
     \item $\rho_g = 0{,}131$ est le coefficient de résistance au roulement pour un green.
     \item $g$ est l'accélération de la pesanteur.
@@ -999,14 +999,14 @@ v_z \\
     \[
     \rho_g =
     \begin{cases}
-    0.131 & \text{for green}, \\
-    0.10 & \text{for fairway}, \\
-    0.30 & \text{for rough}.
+    0.131 & \text{pour le green}, \\
+    0.10 & \text{pour le fairway}, \\
+    0.30 & \text{pour le rough}.
     \end{cases}
     \]
     \item \textbf{Roulement sans glissement} : ajouter une condition de transition vers le roulement sans glissement quand la force de frottement équilibre la résistance au roulement. Par exemple :
     \[
-    \text{If } |\mathbf{v}| < v_{\text{roll}}, \text{ then } \frac{d\mathbf{v}}{dt} = 0,
+    \text{Si } |\mathbf{v}| < v_{\text{roll}}, \text{ alors } \frac{d\mathbf{v}}{dt} = 0,
     \]
     où $v_{\text{roll}}$ est le seuil de vitesse pour le roulement sans glissement (ex. $0{,}1 \, \text{m/s}$).
 \end{itemize}
@@ -1264,7 +1264,7 @@ La fonction \texttt{rolling} suit ces étapes :
 
     \item \textbf{Calcul des dérivées temporelles} :
     \begin{itemize}
-        \item The derivatives of the positions are the velocities:
+        \item Les dérivées des positions sont les vitesses :
         \[
         \frac{dx}{dt} = v_x, \quad \frac{dy}{dt} = v_y, \quad \frac{dz}{dt} = v_z
         \]
@@ -1538,8 +1538,8 @@ L(t) = L_0 + \int_{t_0}^{t} V_x(\tau)\,d\tau }
 
 \begin{figure}[H]\centering
 \begin{tikzpicture}[scale=1.3, >=Stealth, font=\small]
-  \draw[->] (0,0) -- (6.4,0) node[right] {$x$ (shot direction)};
-  \draw[->] (3,-1.6) -- (3,2.4) node[above] {$z$ (lateral)};
+  \draw[->] (0,0) -- (6.4,0) node[right] {$x$ (direction du tir)};
+  \draw[->] (3,-1.6) -- (3,2.4) node[above] {$z$ (latéral)};
   \fill (3,-1) circle (2pt) node[below] {R1};
   \fill (3,1)  circle (2pt) node[above] {R2};
   \draw[<->] (3.18,-1) -- (3.18,1) node[right, midway] {$b$};
@@ -1611,11 +1611,11 @@ Les deux estimateurs mesurent le spin \emph{total} $\omega = \sqrt{\omega_{back}
   \draw[thick] (0,0) circle (1.4);
   \fill[gray!60] (0,0) -- (30:1.4) arc[start angle=30, end angle=80, radius=1.4] -- cycle;
   \node at (55:1.05) {patch};
-  \draw[->, very thick] (0,0) -- (0.7,1.9) node[above] {$\vb\omega$ (axis tilted by $\beta$)};
+  \draw[->, very thick] (0,0) -- (0.7,1.9) node[above] {$\vb\omega$ (axe incliné de $\beta$)};
   \draw[dashed, ->] (-3.2,0.6) -- (-1.5,0.25) node[left] {radar};
   \draw[->] (0,0) -- (1.4,0) node[right] {$r$};
-  \node at (0,-1.9) {flash once per turn: $f_{rot}=\omega/2\pi$};
-  \node at (0,-2.4) {excursion: $\Delta f = 2r\omega/\lambda$};
+  \node at (0,-1.9) {flash 1 fois/tour : $f_{rot}=\omega/2\pi$};
+  \node at (0,-2.4) {excursion : $\Delta f = 2r\omega/\lambda$};
 \end{tikzpicture}
 \caption{Le patch aluminium comme diffuseur dominant unique. La périodicité du flash comme l'excursion spectrale mesurent le spin \emph{total} $\omega$ ; aucune des deux ne sépare backspin et sidespin.}
 \label{fig:patch}
@@ -1669,17 +1669,17 @@ Conclusion : la chaîne Scilab est \emph{bonne pour la vitesse et l'impact} (MAE
 
 \begin{figure}[H]\centering
 \begin{tikzpicture}[node distance=5mm and 6mm, box/.style={draw, rounded corners, align=center, font=\footnotesize, inner sep=3pt}, >=Stealth]
-  \node[box] (csv) {CSV 2 channels R1/R2 \\ ($F_s=44100$)};
-  \node[box, below=of csv] (bp) {band-pass 1--6 kHz};
+  \node[box] (csv) {CSV 2 canaux R1/R2 \\ ($F_s=44100$)};
+  \node[box, below=of csv] (bp) {passe-bande 1--6 kHz};
   \node[box, below=of bp] (stft) {STFT Hann 2048, hop 1024 \\ $P_m(k)=|X_m(k)|^2$};
   \node[box, below=of stft] (t0) {$t_0=\arg\max_m\sum_k P_m(k)$ (impact)};
-  \node[box, below left=of t0] (ridge) {ridge $f_{ridge}(m)$ \\ parabolic $\delta$};
-  \node[box, below right=of t0] (pair) {stereo pairing: $f_2$ near $f_1$ \\ $|f_1-f_2|\le30$ Hz};
+  \node[box, below left=of t0] (ridge) {ridge $f_{ridge}(m)$ \\ parabole $\delta$};
+  \node[box, below right=of t0] (pair) {appariement stéréo : $f_2$ près de $f_1$ \\ $|f_1-f_2|\le30$ Hz};
   \node[box, below=of ridge] (v) {$\hat V=\mathrm{median}_{m>t_0} f_{ridge}/19.49$};
   \node[box, below=of pair] (al) {$f_C,f_\Delta\Rightarrow\alpha(t),\alpha_0,\Delta\alpha$};
-  \node[box, below left=of v, xshift=-1cm] (edge) {edges $f_\pm$: $Spin_{edge}$, sym. $\eta$};
-  \node[box, below right=of v, xshift=1cm] (per) {Hilbert 250 ms: $Spin_{period}=60f_{rot}$};
-  \node[box, below=of v, yshift=-1.2cm] (agg) {fusion + quality controls \\ else ``non identifiable''};
+  \node[box, below left=of v, xshift=-1cm] (edge) {bords $f_\pm$ : $Spin_{edge}$, sym. $\eta$};
+  \node[box, below right=of v, xshift=1cm] (per) {Hilbert 250 ms : $Spin_{period}=60f_{rot}$};
+  \node[box, below=of v, yshift=-1.2cm] (agg) {fusion + contrôles qualité \\ sinon « non identifiable »};
   \draw[->] (csv) -- (bp); \draw[->] (bp) -- (stft); \draw[->] (stft) -- (t0);
   \draw[->] (t0) -- (ridge); \draw[->] (t0) -- (pair);
   \draw[->] (ridge) -- (v); \draw[->] (pair) -- (al);
