@@ -2,6 +2,14 @@
 # Golf Ball Simulator in Scilab (java and cpp)
 <img src="sci/img/Pasted image 20250120171635.png"  width="560" height="380">
 
+## Radar setup — geometry, swing line and shot angles
+
+<img src="sci/img/setup_radar.png" width="980">
+
+Vue de dessus : les deux radars Doppler 10,525 GHz (baseline b = 0,30 m) visent la balle patchée (L₀ ≈ 1,50 m).
+`f_C = (f₁+f₂)/2` → vitesse radiale (`V_r = f_D / 19,49` km/h) ; `f_Δ = (f₁−f₂)/2` → azimut `α(t) = arctan[(2L/b)·(f_Δ/f_C)]`.
+Au shoot : l'axe de spin ω est incliné de β → backspin = ω·cos β, sidespin = ω·sin β (draw/slice, courbure Δα).
+
 ## Flight Analyzer captured by little Radars
 <img src="sci/img/Pasted image 20250122082849.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122082902.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122082913.png"  width="280" height="190">
 <img src="sci/img/Pasted image 20250122082924.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122082939.png"  width="280" height="190"><img src="sci/img/Pasted image 20250122082958.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122083320.png"  width="280" height="190">
