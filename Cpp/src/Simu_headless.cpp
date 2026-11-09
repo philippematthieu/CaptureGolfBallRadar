@@ -23,8 +23,8 @@ using namespace std;
 static int run_from_capture(const char* path, const char* clubType, double spinScale) {
     Capture c = load_capture(path);
     EstRadar e = estimate(c);
-    printf("capture %s : vBall=%.1f km/h (radiale), spin=%.0f rpm, alpha0=%+.2f deg, t0=%.3f s, %zu ech/canal\n",
-           path, e.vball_kmh, e.spin_rpm, e.alpha0_deg, e.t0_s, c.r1.size());
+    printf("capture %s : vBall=%.1f km/h radiale (%.1f corr. cos20), spin=%.0f rpm, alpha0=%+.2f deg, dAlpha=%+.2f deg, t0=%.3f s, %zu ech/canal\n",
+           path, e.vball_kmh, e.vball_corr_kmh, e.spin_rpm, e.alpha0_deg, e.dalpha_deg, e.t0_s, c.r1.size());
     // club par défaut F7
     vector<Club> sac(13);
     sac[5] = Club("F7", 0.200, 20.0, 30, 0.83, 380.00, 420.0, 0.54, 122.3, 0.0, 0.0, -6.5);
