@@ -1,7 +1,7 @@
 //============================================================================
 // spectro_png.cpp — génère l'image de la densité spectrale d'une captation radar
 // (CSV 2 lignes ';' ou WAV stéréo), style spectro_F7-*.png du README :
-//   640x500, 2 panneaux R1/R2, fenêtre d'analyse 512 (Hann 11,6 ms, hop 128), zoom Y ±600 Hz autour du ridge,
+//   640x500, 2 panneaux R1/R2, fenêtre d'analyse 512 (Hann 11,6 ms, hop 128), zoom Y ±512 Hz autour de vBall,
 //   axe X = temps (s), axe Y = km/h (f/KV),
 //   colormap 'hot' (fond noir, trace feu), ridge balle cyan (post-impact,
 //   lissé), impact en rouge. Réutilise Capture.h (FFT/STFT) + BmpImg.h
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     const int NFFT = 512, HOP = 128;         // fenêtre d'analyse /4 (11,6 ms) : raies micro-Doppler résolues en temps
     fill_spec(e, c.r1, NFFT, HOP);           // spectrogramme canal R1 (bande 800-6500 Hz)
 
-    // rendu compact : 640x500, 2 panneaux R1 (haut) / R2 (bas), zoom Y ±600 Hz autour du
+    // rendu compact : 640x500, 2 panneaux R1 (haut) / R2 (bas), zoom Y ±512 Hz autour de vBall,
     // ridge post-impact (pour voir les raies micro-Doppler), axe Y km/h, axe X s,
     // colormap 'hot', ridge cyan, impact rouge
     EstRadar e2 = estimate(c);   // canal R2 (e contient déjà R1)
@@ -50,17 +50,18 @@ int main(int argc, char** argv) {
     auto draw_panel = [&](const EstRadar& e, int y0, const char* label) {
         int Wimg = W - ML - 12;
         // zoom Y : filtrage centré sur la VITESSE ESTIMÉE vBall*KV — on prend la médiane
-        // des ridges post-impact situés à ±600 Hz de vBall*KV (rejette les faux pics basse
-        // fréquence), puis zoom ±600 Hz autour de cette médiane. Raies micro-Doppler visibles.
+        // des ridges post-impact situés à ±512 Hz de vBall*KV (rejette les faux pics basse
+        // fréquence), puis zoom ±512 Hz autour de cette médiane. Raies micro-Doppler visibles.
+        const double Z = 512.0;
         double fest = e.vball_kmh * KV;
         std::vector<double> rr;
         for (int fr = e.spec_i0; fr < e.spec_nframe; fr++)
-            if (e.spec_power[fr] > 0.03 && std::fabs(e.spec_ridge[fr] - fest) <= 600.0)
+            if (e.spec_power[fr] > 0.03 && std::fabs(e.spec_ridge[fr] - fest) <= Z)
                 rr.push_back(e.spec_ridge[fr]);
         double fm = fest;
         if (rr.size() >= 3) { std::sort(rr.begin(), rr.end()); fm = rr[rr.size() / 2]; }
-        double fz0 = std::max(e.spec_fmin, fm - 600.0);
-        double fz1 = std::min(e.spec_fmax, fm + 600.0);
+        double fz0 = std::max(e.spec_fmin, fm - Z);
+        double fz1 = std::min(e.spec_fmax, fm + Z);
         fz1 = std::min(fz1, 350.0 * KV);   // une balle de golf ne dépasse pas ~350 km/h
         auto X = [&](int fr){ return ML + (int)((double)fr / e.spec_nframe * Wimg); };
         auto Y = [&](double f){ return y0 + Hpan - (int)((f - fz0) / (fz1 - fz0) * Hpan); };
