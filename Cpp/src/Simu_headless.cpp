@@ -19,6 +19,16 @@
 
 using namespace std;
 
+static std::string kv(const char* k, const std::string& v) {
+    return std::string("<div class='k'>") + k + "</div><div class='v'>" + v + "</div>";
+}
+static std::string fmt1(double x, const char* u) {
+    char b[64]; snprintf(b, sizeof(b), "%.1f %s", x, u); return b;
+}
+static std::string fmt0(double x, const char* u) {
+    char b[64]; snprintf(b, sizeof(b), "%.0f %s", x, u); return b;
+}
+
 // mode captation : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale]
 static int run_from_capture(const char* path, const char* clubType, double spinScale) {
     Capture c = load_capture(path);
@@ -39,7 +49,11 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     auto mf = theBall.getMatriceFlight();
     printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
-    write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation");
+    { std::string inf = kv("vBall", fmt1(e.vball_kmh, "km/h") + "  (" + fmt1(e.vball_corr_kmh, "corr.") + ")")
+  + kv("SpinTotal", fmt0(e.spin_rpm, "rpm")) + kv("alpha0", fmt1(e.alpha0_deg, "deg"))
+  + kv("Delta alpha", fmt1(e.dalpha_deg, "deg")) + kv("Impact t0", fmt1(e.t0_s, "s"))
+  + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Apex", fmt1(theBall.getMaxHeight(), "m"));
+  write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf); }
     printf("HTML 3D ecrit : trajectoire_capture_3d.html\n");
     write_traj_svg("trajectoire_capture.svg", mf, "Trajectoire depuis captation — portée " +
                    std::to_string((int)mf.back()[0]) + " m");
@@ -132,7 +146,12 @@ int main(int argc, char *argv[]) {
     std::string titre3d = "Trajectoire 3D " + sac[j].getType() + " — portée " + std::to_string((int)portee) + " m, apex " + std::to_string((int)apex) + " m";
     char svgname[256];
     snprintf(svgname, sizeof(svgname), "trajectoire_%s.svg", sac[j].getType().c_str());
-    write_traj_3d_html("trajectoire_3d.html", mf, titre3d);
+    { std::string inf = kv("Club", sac[j].getType() + "  " + fmt1(sac[j].getClubV0kmh(), "km/h"))
+  + kv("V0 balle", fmt1(theBall.getV0BallInitms() * 3.6, "km/h"))
+  + kv("Launch", fmt1(theBall.getLaunchAngle() * 180.0 / M_PI, "deg"))
+  + kv("BackSpin", fmt0(theBall.getSpinYOrgrpm(), "rpm")) + kv("SideSpin", fmt0(theBall.getSpinZOrgrpm(), "rpm"))
+  + kv("Portee", fmt1(portee, "m")) + kv("Apex", fmt1(apex, "m")) + kv("z final", fmt1(zfinal, "m"));
+  write_traj_3d_html("trajectoire_3d.html", mf, titre3d, inf); }
     cout << "HTML 3D ecrit : trajectoire_3d.html (ouvrir dans Safari, tourner avec la souris)" << endl;
     #ifdef USE_CIMG
     write_traj_png_cimg("trajectoire_" + sac[j].getType() + ".png", mf, titre3d);
