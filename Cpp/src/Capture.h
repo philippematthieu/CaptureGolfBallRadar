@@ -200,7 +200,15 @@ CAP_UNUSED static void fill_spec(EstRadar& e, const std::vector<double>& sig, in
         e.spec_power.assign(nframes, 0.0);
         std::vector<double> w(NFFT), re(NFFT), im(NFFT);
         for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
-        double gmax = 0;
+        std::vector<double> allp;
+        for (int fr = 0; fr < nframes; fr++) {
+            for (int i = 0; i < NFFT; i++) { re[i] = sig[fr * HOP + i] * w[i]; im[i] = 0; }
+            fft(re, im, false);
+            for (int k = k0; k <= k1; k++) allp.push_back(re[k] * re[k] + im[k] * im[k]);
+        }
+        std::sort(allp.begin(), allp.end());
+        double gmax = allp.empty() ? 1.0 : allp[(size_t)(allp.size() * 0.99)];  // p99 comme matplotlib
+        if (gmax <= 0) gmax = 1;
         for (int fr = 0; fr < nframes; fr++) {
             for (int i = 0; i < NFFT; i++) { re[i] = sig[fr * HOP + i] * w[i]; im[i] = 0; }
             fft(re, im, false);
@@ -208,22 +216,20 @@ CAP_UNUSED static void fill_spec(EstRadar& e, const std::vector<double>& sig, in
             for (int k = k0; k <= k1; k++) {
                 double p = re[k] * re[k] + im[k] * im[k];
                 if (p > pmax) { pmax = p; kb = k; }
-                if (p > gmax) gmax = p;
                     e.spec_ridge[fr] = kb * FS / NFFT;
             e.spec_power[fr] = pmax / gmax;
             for (int k = k0; k <= k1; k++)
                 e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = 0; // rempli après normalisation
         }
-        // normalisation + remplissage (log)
-        if (gmax <= 0) gmax = 1;
+        // normalisation + remplissage (log, fenetre -40 dB sous p99)
         for (int fr = 0; fr < nframes; fr++) {
             for (int i = 0; i < NFFT; i++) { re[i] = sig[fr * HOP + i] * w[i]; im[i] = 0; }
             fft(re, im, false);
             for (int k = k0; k <= k1; k++) {
                 double p = re[k] * re[k] + im[k] * im[k];
                 double db = 10.0 * log10(p / gmax + 1e-12);
-                if (db < -60.0) db = -60.0;
-                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = (unsigned char)(255.0 * (db + 60.0) / 60.0);
+                if (db < -40.0) db = -40.0;
+                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = (unsigned char)(255.0 * (db + 40.0) / 40.0);
             }
         }
         int i0l = 0; for (size_t i = 1; i < e.spec_power.size(); i++) if (e.spec_power[i] > e.spec_power[i0l]) i0l = (int)i;

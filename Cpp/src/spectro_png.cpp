@@ -34,66 +34,77 @@ int main(int argc, char** argv) {
     EstRadar e = estimate(c);
     fill_spec(e, c.r1, 2048, 1024);          // spectrogramme canal R1 (bande 800-6500 Hz)
 
-    // ratio 6:1 comme les spectro Python : largeur(temps) = 6 x hauteur(vitesse km/h)
-    const int ML = 64, MB = 34, MT = 22;
-    const double SY = 0.45;                       // px par km/h en Y
-    double kmhMax = (e.spec_fmax - e.spec_fmin) / KV;
-    int Himg = (int)(kmhMax * SY);                // hauteur zone image (px)
-    int Wimg = 6 * Himg;                          // largeur = 6 x hauteur (ratio 6:1)
-    int W = ML + Wimg + 16, H = MT + Himg + MB;
-    CImg<unsigned char> img(W, H, 1, 3, 0);
-    // colormap viridis
-    const double vir[6][3] = {{68,1,84},{72,35,116},{59,82,139},{33,145,140},{94,201,98},{253,231,37}};
-    auto cmap = [&](double v) {
+    // rendu identique aux spectro_F7-*.png de Python : 990x770, fond blanc, colormap 'hot',
+    // 2 panneaux verticaux R1 (haut) / R2 (bas), axe Y en km/h, axe X en s, ridge cyan, impact rouge
+    EstRadar e2 = estimate(c);   // canal R2 (e contient déjà R1)
+    fill_spec(e2, c.r2, 2048, 1024);
+    const int W = 990, H = 770, ML = 58, MT = 30, MB = 40, GAP = 26;
+    int Hpan = (H - MT - MB - GAP) / 2;          // hauteur d'un panneau
+    CImg<unsigned char> img(W, H, 1, 3, 255);    // fond blanc
+    auto hot = [](double v) {                    // colormap 'hot' de matplotlib
         v = std::max(0.0, std::min(1.0, v));
-        double x = v * 5; int i = std::min(4, (int)x); double f = x - i;
-        return std::vector<unsigned char>{(unsigned char)(vir[i][0]+(vir[i+1][0]-vir[i][0])*f),
-                                          (unsigned char)(vir[i][1]+(vir[i+1][1]-vir[i][1])*f),
-                                          (unsigned char)(vir[i][2]+(vir[i+1][2]-vir[i][2])*f)};
+        unsigned char r = (unsigned char)std::min(255.0, v * 3.0 * 255.0);
+        unsigned char g = (unsigned char)std::min(255.0, std::max(0.0, v * 3.0 - 1.0) * 255.0);
+        unsigned char b = (unsigned char)std::min(255.0, std::max(0.0, v * 3.0 - 2.0) * 255.0);
+        return std::vector<unsigned char>{r, g, b};
     };
-    auto X = [&](int fr){ return ML + (int)((double)fr / (e.spec_nframe - 1) * Wimg); };
-    auto Y = [&](double f){ return MT + (int)((1.0 - (f - e.spec_fmin) / (e.spec_fmax - e.spec_fmin)) * Himg); };
-    // densité transposée : X = temps (frame), Y = fréquence (haut = haut km/h)
-    for (int fr = 0; fr < e.spec_nframe; fr++)
-        for (int b = 0; b < e.spec_nbin; b++) {
-            double v = e.spec[(size_t)fr * e.spec_nbin + b] / 255.0;
-            auto cc = cmap(v);
-            int x = X(fr), y = Y(e.spec_fmin + (b + 0.5) / e.spec_nbin * (e.spec_fmax - e.spec_fmin));
-            if (x < W && y < H) img(x, y, 0, 0) = cc[0], img(x, y, 0, 1) = cc[1], img(x, y, 0, 2) = cc[2];
+    const double cyan[3] = {0, 200, 255}, rouge[3] = {220, 30, 30}, noir[3] = {0, 0, 0};
+    auto draw_panel = [&](const EstRadar& e, int y0, const char* label) {
+        double fmax_kmh = 300.0 * KV;            // 0..300 km/h en Y
+        double fmin = 0.0;
+        int Wimg = W - ML - 14;
+        auto X = [&](int fr){ return ML + (int)((double)fr / (e.spec_nframe - 1) * Wimg); };
+        auto Y = [&](double f){ return y0 + Hpan - (int)((f - fmin) / fmax_kmh * Hpan); };
+        // densité (X=temps, Y=freq, haut = haut km/h)
+        for (int fr = 0; fr < e.spec_nframe; fr++)
+            for (int b = 0; b < e.spec_nbin; b++) {
+                double v = pow(e.spec[(size_t)fr * e.spec_nbin + b] / 255.0, 0.7);
+                auto cc = hot(v);
+                double f = e.spec_fmin + (b + 0.5) / e.spec_nbin * (e.spec_fmax - e.spec_fmin);
+                if (f > fmax_kmh) continue;
+                int x = X(fr), y = Y(f);
+                if (x < W && y >= y0 && y < y0 + Hpan) { img(x, y, 0, 0) = cc[0], img(x, y, 0, 1) = cc[1], img(x, y, 0, 2) = cc[2]; }
+            }
+        // cadre du panneau
+        img.draw_rectangle(ML, y0, ML + Wimg, y0 + Hpan, noir);
+        // ridge cyan post-impact lissé seuillé
+        for (int fr = e.spec_i0; fr < e.spec_nframe; fr++) {
+            if (e.spec_power[fr] < 0.03) continue;
+            double r = e.spec_ridge[fr];
+            if (fr > e.spec_i0 && fr < e.spec_nframe - 1 && e.spec_power[fr-1] > 0.03 && e.spec_power[fr+1] > 0.03)
+                r = (e.spec_ridge[fr-1] + r + e.spec_ridge[fr+1]) / 3;
+            if (r > fmax_kmh) continue;
+            img.draw_circle(X(fr), Y(r), 2, cyan);
         }
-    // ridge balle cyan post-impact, lissé, seuillé
-    const double cyan[3] = {0, 255, 255}, rouge[3] = {255, 40, 40}, blanc[3] = {255, 255, 255};
-    for (int fr = e.spec_i0; fr < e.spec_nframe; fr++) {
-        if (e.spec_power[fr] < 0.03) continue;
-        double r = e.spec_ridge[fr];
-        if (fr > e.spec_i0 && fr < e.spec_nframe - 1 && e.spec_power[fr-1] > 0.03 && e.spec_power[fr+1] > 0.03)
-            r = (e.spec_ridge[fr-1] + r + e.spec_ridge[fr+1]) / 3;
-        img.draw_circle(X(fr), Y(r), 2, cyan);
-    }
-    // shoot / impact : ligne verticale rouge + label
-    int xi = X(e.spec_i0);
-    img.draw_line(xi, MT, xi, MT + Himg, rouge);
-    img.draw_line(xi - 3, MT, xi, MT + 6, rouge); img.draw_line(xi + 3, MT, xi, MT + 6, rouge);
-    char t[96];
-    snprintf(t, sizeof(t), "IMPACT t=%.3f s", e.spec_i0 * 1024.0 / FS);
-    img.draw_text(xi + 6, MT + 10, t, rouge);
-    // axes : Y km/h à gauche, X secondes en bas
-    for (int km = 0; km <= 300; km += 50) {
-        double f = km * KV;
-        if (f < e.spec_fmin || f > e.spec_fmax) continue;
-        int y = Y(f);
-        snprintf(t, sizeof(t), "%d km/h", km);
-        img.draw_text(4, y - 5, t, blanc);
-        img.draw_line(ML - 4, y, ML, y, blanc);
-    }
+        // impact : ligne verticale rouge + label
+        int xi = X(e.spec_i0);
+        img.draw_line(xi, y0, xi, y0 + Hpan, rouge);
+        char t[96];
+        snprintf(t, sizeof(t), "impact t=%.3fs", e.spec_i0 * 1024.0 / FS);
+        img.draw_text(xi + 5, y0 + 12, t, rouge);
+        // label du canal + titre panneau
+        img.draw_text(6, y0 + 4, label, noir);
+        // axe Y km/h à gauche
+        for (int km = 0; km <= 300; km += 50) {
+            int y = Y(km * KV);
+            snprintf(t, sizeof(t), "%d", km);
+            img.draw_text(30, y - 5, t, noir);
+            img.draw_line(ML - 4, y, ML, y, noir);
+        }
+        img.draw_text(4, y0 + Hpan / 2, "km/h", noir);
+    };
+    draw_panel(e, MT, "R1");
+    draw_panel(e2, MT + Hpan + GAP, "R2");
+    // axe X temps en bas
+    char t[64];
     double tmax = e.spec_nframe * 1024.0 / FS;
     for (double s = 0; s <= tmax + 0.001; s += 0.1) {
-        int x = ML + (int)(s / tmax * Wimg);
-        snprintf(t, sizeof(t), "%.1fs", s);
-        img.draw_text(x, MT + Himg + 6, t, blanc);
+        int x = ML + (int)(s / tmax * (W - ML - 14));
+        snprintf(t, sizeof(t), "%.1f s", s);
+        img.draw_text(x, H - MB + 8, t, noir);
     }
-    snprintf(t, sizeof(t), "spectrogramme R1 — %s  (ratio 6:1, Y=km/h)", in.c_str());
-    img.draw_text(ML, 6, t, blanc);
+    snprintf(t, sizeof(t), "Densite spectrale radar — %s", in.c_str());
+    img.draw_text(ML, 8, t, noir);
 
     if (out.size() >= 4 && out.compare(out.size() - 4, 4, ".png") == 0) {
         try {
