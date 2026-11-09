@@ -65,11 +65,39 @@ int main(int argc, char *argv[]) {
     sac[11] = Club("LW",  0.200 , 20.0, 60   , 0.40 ,  500.00 ,       308.0 ,        0.15,  100.0,   0.0,          -3.0,       -12.0);
     sac[12] = Club("Pt",  0.300 , 20.0, 03   , 0.68 ,  550.24 ,       308.0 ,        0.00,   10.00,   0.0,           0.0,         1.0);
 
-    if (argc < 2) {
-        cout << "usage: Simu_headless Type ClubV0kmh AlphaClubPathDeg GamaFacePathDeg ShaftLeanImpDeg [spinScale]" << endl;
-        cout << "       Simu_headless --capture fichier.csv|.wav [club] [spinScale]" << endl;
-        cout << "clubs: Dr B5 H3 F5 F6 F7 F8 F9 PW AW SW LW Pt" << endl;
-        return 1;
+    if (argc < 2 || string(argv[1]) == "--help" || string(argv[1]) == "-h" || string(argv[1]) == "help") {
+        cout << "Simulateur de vol de balle de golf (C++) — vol + 3 rebonds + roulement\n"
+                "\n"
+                "usage:\n"
+                "  simu_headless Type ClubV0kmh AlphaClubPathDeg GamaFacePathDeg ShaftLeanImpDeg [spinScale]\n"
+                "  simu_headless --capture fichier.csv|.wav [club] [spinScale]\n"
+                "  simu_headless --help\n"
+                "\n"
+                "clubs: Dr B5 H3 F5 F6 F7 F8 F9 PW AW SW LW Pt\n"
+                "\n"
+                "options:\n"
+                "  Type            club (liste ci-dessus)\n"
+                "  ClubV0kmh       vitesse club en km/h (ex: 122.3)\n"
+                "  AlphaClubPathDeg  azimut du chemin de club en degres (ex: 0)\n"
+                "  GamaFacePathDeg   angle face/trajectoire en degres -> side spin (ex: 0)\n"
+                "  ShaftLeanImpDeg   shaft lean a l'impact en degres -> loft dynamique\n"
+                "  spinScale       echelle du spin, 1.0 = normal, 0 = pas de spin (test Magnus)\n"
+                "  --capture f     lit une captation radar (CSV 2 lignes ';' ou WAV stereo 44,1 kHz),\n"
+                "                  estime vBall/spin/alpha0, puis simule depuis ces mesures\n"
+                "\n"
+                "sorties (dans le dossier courant):\n"
+                "  console: RESULT portee=... apex=... z_final=... temps=...\n"
+                "  trajectoire_<club>.svg      image 2D (profil + dessus)\n"
+                "  trajectoire_<club>.png/.bmp image 2D CImg (si compile avec -DUSE_CIMG)\n"
+                "  trajectoire_3d.html          scene 3D interactive three.js (souris: tourner/zoom;\n"
+                "                              slider = vitesse anim; projection au sol en pointilles)\n"
+                "\n"
+                "exemples:\n"
+                "  ./simu_headless F7 122.3 0 0 -6.5\n"
+                "  ./simu_headless Dr 170.6 -8 2 6\n"
+                "  ./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav\n"
+                "voir Cpp/README.md pour la compilation\n";
+        return (argc < 2) ? 1 : 0;
     }
     if (string(argv[1]) == "--capture") {
         if (argc < 3) { cout << "il manque le fichier de captation" << endl; return 1; }
