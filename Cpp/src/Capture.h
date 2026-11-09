@@ -178,6 +178,7 @@ struct EstRadar {
     int spec_nbin = 0, spec_nframe = 0;
     double spec_fmin = 0, spec_fmax = 0;
     std::vector<double> spec_ridge;    // Hz par frame
+    std::vector<double> spec_power;    // puissance max par frame (0..1 normalisée)
     int spec_i0 = 0;                   // frame impact
 };
 
@@ -303,6 +304,7 @@ static EstRadar estimate(const Capture& c) {
         e.spec_fmin = FMIN; e.spec_fmax = FMAX;
         e.spec.resize((size_t)nframes * e.spec_nbin);
         e.spec_ridge.assign(nframes, 0.0);
+        e.spec_power.assign(nframes, 0.0);
         std::vector<double> w(NFFT), re(NFFT), im(NFFT);
         for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
         double gmax = 0;
@@ -316,6 +318,7 @@ static EstRadar estimate(const Capture& c) {
                 if (p > gmax) gmax = p;
             }
             e.spec_ridge[fr] = kb * FS / NFFT;
+            e.spec_power[fr] = pmax / gmax;
             for (int k = k0; k <= k1; k++)
                 e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = 0; // rempli après normalisation
         }

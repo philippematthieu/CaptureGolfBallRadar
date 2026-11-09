@@ -24,7 +24,9 @@ static std::string spec_to_json(const EstRadar& e) {
     if (e.spec.empty()) return "";
     std::string s = "{nbin:" + std::to_string(e.spec_nbin) + ",nframe:" + std::to_string(e.spec_nframe)
         + ",fmin:" + std::to_string(e.spec_fmin) + ",fmax:" + std::to_string(e.spec_fmax)
-        + ",i0:" + std::to_string(e.spec_i0) + ",ridge:[";
+        + ",i0:" + std::to_string(e.spec_i0) + ",pow:[";
+    for (size_t i = 0; i < e.spec_power.size(); i++) { char b[32]; snprintf(b, 32, "%.3f,", e.spec_power[i]); s += b; }
+    s += "],ridge:[";
     for (size_t i = 0; i < e.spec_ridge.size(); i++) { char b[32]; snprintf(b, 32, "%.1f,", e.spec_ridge[i]); s += b; }
     s += "],img:[";
     for (size_t i = 0; i < e.spec.size(); i++) { char b[8]; snprintf(b, 8, "%d,", (int)e.spec[i]); s += b; }
