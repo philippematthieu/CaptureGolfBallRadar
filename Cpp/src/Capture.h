@@ -173,6 +173,12 @@ struct EstRadar {
     double alpha0_deg;     // azimut initial (appariement stéréo)
     double dalpha_deg;     // courbure début-fin
     double t0_s;
+    // spectrogramme embarqué pour affichage fixe (densité 0..255, bande FMIN..FMAX Hz, axe Y en km/h via /KV)
+    std::vector<unsigned char> spec;   // [nframes * nbin], ligne = frame temporelle
+    int spec_nbin = 0, spec_nframe = 0;
+    double spec_fmin = 0, spec_fmax = 0;
+    std::vector<double> spec_ridge;    // Hz par frame
+    int spec_i0 = 0;                   // frame impact
 };
 
 static EstRadar estimate(const Capture& c) {
@@ -285,6 +291,47 @@ static EstRadar estimate(const Capture& c) {
         double L = L0 + v_ms / cos(THETA_RADAR) * (tg[i] - tg[i0]);  // L(t) évolutif
         tt.push_back(tg[i]);
         al.push_back(atan((2.0 * L / B_BASE) * (fd / fc)) * 180.0 / M_PI);
+    }
+    // --- spectrogramme complet (canal R1) pour affichage fixe en bas du HTML ---
+    {
+        const double FMIN = 800.0, FMAX = 6500.0;
+        int nframes = 1 + ((int)c.r1.size() - NFFT) / HOP;
+        int k0 = (int)(FMIN * NFFT / FS), k1 = (int)(FMAX * NFFT / FS);
+        if (k1 >= NFFT / 2) k1 = NFFT / 2 - 1;
+        e.spec_nbin = k1 - k0 + 1;
+        e.spec_nframe = nframes;
+        e.spec_fmin = FMIN; e.spec_fmax = FMAX;
+        e.spec.resize((size_t)nframes * e.spec_nbin);
+        e.spec_ridge.assign(nframes, 0.0);
+        std::vector<double> w(NFFT), re(NFFT), im(NFFT);
+        for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
+        double gmax = 0;
+        for (int fr = 0; fr < nframes; fr++) {
+            for (int i = 0; i < NFFT; i++) { re[i] = c.r1[fr * HOP + i] * w[i]; im[i] = 0; }
+            fft(re, im, false);
+            int kb = k0; double pmax = 0;
+            for (int k = k0; k <= k1; k++) {
+                double p = re[k] * re[k] + im[k] * im[k];
+                if (p > pmax) { pmax = p; kb = k; }
+                if (p > gmax) gmax = p;
+            }
+            e.spec_ridge[fr] = kb * FS / NFFT;
+            for (int k = k0; k <= k1; k++)
+                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = 0; // rempli après normalisation
+        }
+        // normalisation + remplissage (log)
+        if (gmax <= 0) gmax = 1;
+        for (int fr = 0; fr < nframes; fr++) {
+            for (int i = 0; i < NFFT; i++) { re[i] = c.r1[fr * HOP + i] * w[i]; im[i] = 0; }
+            fft(re, im, false);
+            for (int k = k0; k <= k1; k++) {
+                double p = re[k] * re[k] + im[k] * im[k];
+                double db = 10.0 * log10(p / gmax + 1e-12);
+                if (db < -60.0) db = -60.0;
+                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = (unsigned char)(255.0 * (db + 60.0) / 60.0);
+            }
+        }
+        e.spec_i0 = i0;
     }
     if (al.size() >= 3) {
         // alpha0 = médiane fenêtre initiale 50 ms ; dalpha = médiane(fin 100 ms) - médiane(début)

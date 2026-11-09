@@ -19,6 +19,19 @@
 
 using namespace std;
 
+
+static std::string spec_to_json(const EstRadar& e) {
+    if (e.spec.empty()) return "";
+    std::string s = "{nbin:" + std::to_string(e.spec_nbin) + ",nframe:" + std::to_string(e.spec_nframe)
+        + ",fmin:" + std::to_string(e.spec_fmin) + ",fmax:" + std::to_string(e.spec_fmax)
+        + ",i0:" + std::to_string(e.spec_i0) + ",ridge:[";
+    for (size_t i = 0; i < e.spec_ridge.size(); i++) { char b[32]; snprintf(b, 32, "%.1f,", e.spec_ridge[i]); s += b; }
+    s += "],img:[";
+    for (size_t i = 0; i < e.spec.size(); i++) { char b[8]; snprintf(b, 8, "%d,", (int)e.spec[i]); s += b; }
+    s += "]}";
+    return s;
+}
+
 static std::string kv(const char* k, const std::string& v) {
     return std::string("<div class='k'>") + k + "</div><div class='v'>" + v + "</div>";
 }
@@ -53,7 +66,7 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
   + kv("SpinTotal", fmt0(e.spin_rpm, "rpm")) + kv("alpha0", fmt1(e.alpha0_deg, "deg"))
   + kv("Delta alpha", fmt1(e.dalpha_deg, "deg")) + kv("Impact t0", fmt1(e.t0_s, "s"))
   + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Apex", fmt1(theBall.getMaxHeight(), "m"));
-  write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf); }
+  write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf, spec_to_json(e)); }
     printf("HTML 3D ecrit : trajectoire_capture_3d.html\n");
     write_traj_svg("trajectoire_capture.svg", mf, "Trajectoire depuis captation — portée " +
                    std::to_string((int)mf.back()[0]) + " m");
