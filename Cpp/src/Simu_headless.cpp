@@ -45,7 +45,7 @@ static std::string fmt0(double x, const char* u) {
 }
 
 // mode captation : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale]
-static int run_from_capture(const char* path, const char* clubType, double spinScale) {
+static int run_from_capture(const char* path, const char* clubType, double spinScale, bool openAfter) {
     Capture c = load_capture(path);
     EstRadar e = estimate(c);
     printf("capture %s : vBall=%.1f km/h radiale (%.1f corr. cos20), spin=%.0f rpm, alpha0=%+.2f deg, dAlpha=%+.2f deg, t0=%.3f s, %zu ech/canal\n",
@@ -70,6 +70,13 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
   + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Apex", fmt1(theBall.getMaxHeight(), "m"));
   write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf, spec_to_json(e)); }
     printf("HTML 3D ecrit : trajectoire_capture_3d.html\n");
+    if (openAfter) {
+#ifdef __APPLE__
+        system("open trajectoire_capture_3d.html");
+#else
+        system("xdg-open trajectoire_capture_3d.html");
+#endif
+    }
     write_traj_svg("trajectoire_capture.svg", mf, "Trajectoire depuis captation — portée " +
                    std::to_string((int)mf.back()[0]) + " m");
     printf("SVG écrit : trajectoire_capture.svg\n");
@@ -94,6 +101,8 @@ int main(int argc, char *argv[]) {
     sac[11] = Club("LW",  0.200 , 20.0, 60   , 0.40 ,  500.00 ,       308.0 ,        0.15,  100.0,   0.0,          -3.0,       -12.0);
     sac[12] = Club("Pt",  0.300 , 20.0, 03   , 0.68 ,  550.24 ,       308.0 ,        0.00,   10.00,   0.0,           0.0,         1.0);
 
+    bool openAfter = false;
+    { std::vector<std::string> args2; for (int i = 1; i < argc; i++) { std::string a = argv[i]; if (a == "--open" || a == "-o") openAfter = true; else args2.push_back(a); } argc = (int)args2.size() + 1; for (size_t i = 0; i < args2.size(); i++) argv[i + 1] = strdup(args2[i].c_str()); }
     if (argc < 2 || string(argv[1]) == "--help" || string(argv[1]) == "-h" || string(argv[1]) == "help") {
         cout << "Simulateur de vol de balle de golf (C++) — vol + 3 rebonds + roulement\n"
                 "\n"
@@ -101,6 +110,7 @@ int main(int argc, char *argv[]) {
                 "  simu_headless Type ClubV0kmh AlphaClubPathDeg GamaFacePathDeg ShaftLeanImpDeg [spinScale]\n"
                 "  simu_headless --capture fichier.csv|.wav [club] [spinScale]\n"
                 "  simu_headless --help\n"
+                "  simu_headless F7 122.3 0 0 -6.5 --open   # ouvre Safari directement\n"
                 "\n"
                 "clubs: Dr B5 H3 F5 F6 F7 F8 F9 PW AW SW LW Pt\n"
                 "\n"
@@ -121,16 +131,16 @@ int main(int argc, char *argv[]) {
                 "  trajectoire_3d.html          scene 3D interactive three.js (souris: tourner/zoom;\n"
                 "                              slider = vitesse anim; projection au sol en pointilles)\n"
                 "\n"
-                "exemples:\n"
-                "  ./simu_headless F7 122.3 0 0 -6.5\n"
-                "  ./simu_headless Dr 170.6 -8 2 6\n"
-                "  ./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav\n"
+                "exemples (jaune = avec --open auto):\n"
+                "\033[33m  ./simu_headless F7 122.3 0 0 -6.5 --open\033[0m\n"
+                "\033[33m  ./simu_headless Dr 170.6 -8 2 6\033[0m\n"
+                "\033[33m  ./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav --open\033[0m\n"
                 "voir Cpp/README.md pour la compilation\n";
         return (argc < 2) ? 1 : 0;
     }
     if (string(argv[1]) == "--capture") {
         if (argc < 3) { cout << "il manque le fichier de captation" << endl; return 1; }
-        return run_from_capture(argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0);
+        return run_from_capture(argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0, openAfter);
     }
     for (unsigned i = 0; i < sac.size(); i++)
         if (sac[i].getType() == argv[1]) j = i;
@@ -166,7 +176,9 @@ int main(int argc, char *argv[]) {
   + kv("Launch", fmt1(theBall.getLaunchAngle() * 180.0 / M_PI, "deg"))
   + kv("BackSpin", fmt0(theBall.getSpinYOrgrpm(), "rpm")) + kv("SideSpin", fmt0(theBall.getSpinZOrgrpm(), "rpm"))
   + kv("Portee", fmt1(portee, "m")) + kv("Apex", fmt1(apex, "m")) + kv("z final", fmt1(zfinal, "m"));
-  write_traj_3d_html("trajectoire_3d.html", mf, titre3d, inf); }
+  { EstRadar es; auto sig = gen_signal_simu(mf, sac[j].getClubV0kmh()); fill_spec(es, sig, 2048, 1024);
+  write_traj_3d_html("trajectoire_3d.html", mf, titre3d, inf, spec_to_json(es)); }
+  }
     cout << "HTML 3D ecrit : trajectoire_3d.html (ouvrir dans Safari, tourner avec la souris)" << endl;
     #ifdef USE_CIMG
     write_traj_png_cimg("trajectoire_" + sac[j].getType() + ".png", mf, titre3d);
@@ -176,5 +188,12 @@ int main(int argc, char *argv[]) {
                    "Trajectoire " + sac[j].getType() + " — portée " + std::to_string((int)portee) + " m, apex " +
                    std::to_string((int)apex) + " m");
     cout << "SVG écrit : " << svgname << " (ouvrir avec Safari/Aperçu)" << endl;
+    if (openAfter) { cout << "ouverture de trajectoire_3d.html ..." << endl;
+#ifdef __APPLE__
+        system("open trajectoire_3d.html");
+#else
+        system("xdg-open trajectoire_3d.html");
+#endif
+    }
     return 0;
 }
