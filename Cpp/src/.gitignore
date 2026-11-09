@@ -1,7 +1,6 @@
 Cpp/src/simu_headless
 Cpp/src/simu_headless_cimg
 Cpp/src/*.svg
-Cpp/src/*.html
 Cpp/src/*.png
 Cpp/src/*.bmp
 Cpp/src/*.o
