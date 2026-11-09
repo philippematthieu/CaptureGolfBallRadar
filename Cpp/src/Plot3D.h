@@ -44,7 +44,7 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "<script>\nvar traj=[");
     for (size_t i = 0; i < mf.size(); i += 2)
         fprintf(f, "[%g,%g,%g],", mf[i][0], mf[i][4], -mf[i][2]);  // (x, hauteur z, -latéral y)
-    fprintf(f, "];\nvar PW=250;var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth-PW,innerHeight);document.body.appendChild(renderer.domElement);\n");
+    fprintf(f, "];\nvar PW=250;var SH=0;var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth-PW,innerHeight-SH);document.body.appendChild(renderer.domElement);\n");
     fprintf(f, "var scene=new THREE.Scene();scene.background=new THREE.Color(0xffffff);\n");
     fprintf(f, "var cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,2000);cam.position.set(-30,%.0f,%.0f);\n", zmax*1.2, xmax*0.35);
     fprintf(f, "var ctl=new THREE.OrbitControls(cam,renderer.domElement);ctl.target.set(%.0f,0,0);\n", xmax/2);
@@ -65,20 +65,26 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "var ball=new THREE.Mesh(new THREE.SphereGeometry(0.8),new THREE.MeshLambertMaterial({color:0xffffff}));scene.add(ball);\n");
     fprintf(f, "var k=0;var VIT=8;document.getElementById('vit').oninput=function(){VIT=+this.value;document.getElementById('vitv').textContent=VIT;};\n");
     fprintf(f, "function anim(){ball.position.copy(pts[Math.floor(k)%%pts.length]);k+=0.15*VIT;ctl.update();renderer.render(scene,cam);requestAnimationFrame(anim);}anim();\n");
-    fprintf(f, "addEventListener('resize',function(){cam.aspect=(innerWidth-PW)/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth-PW,innerHeight);});\n");
+    fprintf(f, "addEventListener('resize',function(){cam.aspect=(innerWidth-PW)/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth-PW,innerHeight-SH);});\n");
     // --- frame fixe en bas : densité spectrale (spectrogramme) si fournie ---
     if (!specJson.empty()) {
-        fprintf(f, "var S=%s;\n", specJson.c_str());
-        fprintf(f, "var sc=document.createElement('canvas');sc.id='spec';sc.width=S.nbin*3;sc.height=S.nframe*3;\n"
-                   "sc.style.cssText='position:fixed;bottom:0;left:250px;border-top:2px solid #555;background:#000';document.body.appendChild(sc);\n"
-                   "var g=sc.getContext('2d');var im=g.createImageData(S.nbin,S.nframe);\n"
+        fprintf(f, "var S=%s;SH=180;\n", specJson.c_str());
+        fprintf(f, "var sc=document.createElement('canvas');sc.id='spec';document.body.appendChild(sc);\n"
+                   "sc.style.cssText='position:fixed;bottom:0;left:250px;border-top:2px solid #555;background:#000';\n"
+                   "var off=document.createElement('canvas');off.width=S.nbin;off.height=S.nframe;var og=off.getContext('2d');\n"
+                   "var im=og.createImageData(S.nbin,S.nframe);\n"
                    "for(var y=0;y<S.nframe;y++)for(var x=0;x<S.nbin;x++){var v=S.img[y*S.nbin+x];var i=(y*S.nbin+x)*4;\n"
                    "im.data[i]=v>200?255:v;im.data[i+1]=v>200?255:v*0.6;im.data[i+2]=v;im.data[i+3]=255;}\n"
-                   "g.putImageData(im,0,0);g.imageSmoothingEnabled=false;g.drawImage(sc,0,0,sc.width,sc.height);\n"
-                   "g.strokeStyle='#0ff';g.beginPath();for(var y=0;y<S.nframe;y++){var fx=(S.ridge[y]-S.fmin)/(S.fmax-S.fmin)*S.nbin;if(y==0)g.moveTo(fx*3,y*3);else g.lineTo(fx*3,y*3);}g.stroke();\n"
-                   "g.strokeStyle='#f00';g.beginPath();g.moveTo(0,S.i0*3);g.lineTo(sc.width,S.i0*3);g.stroke();\n"
-                   "g.fillStyle='#fff';g.font='11px Helvetica';g.fillText('spectrogramme R1 (axe Y km/h, impact en rouge)',8,S.nframe*3-6);\n"
-                   "g.fillText((S.fmax/19.49)+' km/h',sc.width-70,12);g.fillText((S.fmin/19.49)+' km/h',sc.width-70,S.nframe*3-6);\n");
+                   "og.putImageData(im,0,0);\n"
+                   "function drawSpec(){var w=innerWidth-250;sc.width=w;sc.height=SH;sc.style.width=w+'px';sc.style.height=SH+'px';\n"
+                   "var g=sc.getContext('2d');g.imageSmoothingEnabled=true;g.drawImage(off,0,0,w,SH);\n"
+                   "g.strokeStyle='#0ff';g.lineWidth=2;g.beginPath();\n"
+                   "for(var y=0;y<S.nframe;y++){var fx=(S.ridge[y]-S.fmin)/(S.fmax-S.fmin)*w;var fy=y/(S.nframe-1)*SH;if(y==0)g.moveTo(fx,SH-fy);else g.lineTo(fx,SH-fy);}g.stroke();\n"
+                   "g.strokeStyle='#f00';g.beginPath();g.moveTo(0,SH-S.i0/(S.nframe-1)*SH);g.lineTo(w,SH-S.i0/(S.nframe-1)*SH);g.stroke();\n"
+                   "g.fillStyle='#fff';g.font='12px Helvetica';\n"
+                   "g.fillText('spectrogramme R1 — axe Y km/h (f/19.49), ridge cyan, impact rouge',8,SH-8);\n"
+                   "g.fillText((S.fmax/19.49).toFixed(0)+' km/h',w-80,14);g.fillText((S.fmin/19.49).toFixed(0)+' km/h',w-80,SH-8);}\n"
+                   "drawSpec();\n");
     }
     fprintf(f, "</script></body></html>\n");
     fclose(f);
