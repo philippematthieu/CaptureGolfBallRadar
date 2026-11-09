@@ -1,7 +1,7 @@
 //============================================================================
 // spectro_png.cpp — génère l'image de la densité spectrale d'une captation radar
 // (CSV 2 lignes ';' ou WAV stéréo), style spectro_F7-*.png du README :
-//   640x500, 2 panneaux R1/R2, zoom Y ±600 Hz autour du ridge, axe X = temps (s), axe Y = km/h (f/KV),
+//   160x125 (fenêtre /4), 2 panneaux R1/R2, zoom Y ±600 Hz autour du ridge, axe X = temps (s), axe Y = km/h (f/KV),
 //   colormap 'hot' (fond noir, trace feu), ridge balle cyan (post-impact,
 //   lissé), impact en rouge. Réutilise Capture.h (FFT/STFT) + BmpImg.h
 //   (writer PNG/BMP maison, zéro dépendance).
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     // colormap 'hot', ridge cyan, impact rouge
     EstRadar e2 = estimate(c);   // canal R2 (e contient déjà R1)
     fill_spec(e2, c.r2, NFFT, HOP);
-    const int W = 640, H = 500, ML = 52, MT = 26, MB = 34, GAP = 22;
+    const int W = 160, H = 125, ML = 30, MT = 14, MB = 18, GAP = 8;   // fenêtre /4
     int Hpan = (H - MT - MB - GAP) / 2;
     BmpImg img(W, H, 255, 255, 255);   // fond blanc
     auto hot = [](double v) {           // colormap 'hot' matplotlib
@@ -94,13 +94,13 @@ int main(int argc, char** argv) {
         int xi = X(e.spec_i0) + (X(e.spec_i0 + 1) - X(e.spec_i0)) / 2;   // impact vertical rouge
         img.line(xi, y0, xi, y0 + Hpan, ROUGE[0], ROUGE[1], ROUGE[2]);
         char t[96];
-        snprintf(t, sizeof(t), "impact t=%.3fs", e.spec_i0 * HOP / FS);
-        img.text(xi + 6, y0 + 10, t, ROUGE[0], ROUGE[1], ROUGE[2]);
+        snprintf(t, sizeof(t), "t=%.3fs", e.spec_i0 * HOP / FS);
+        img.text(xi + 3, y0 + 3, t, ROUGE[0], ROUGE[1], ROUGE[2]);
         img.text(6, y0 + 4, label, NOIR[0], NOIR[1], NOIR[2]);
         for (int km = (int)(fz0 / KV / 20) * 20; km <= (int)(fz1 / KV); km += 20) {  // axe Y km/h (plage zoom)
             int y = Y(km * KV);
             snprintf(t, sizeof(t), "%d", km);
-            img.text(26, y - 3, t, NOIR[0], NOIR[1], NOIR[2]);
+            img.text(8, y - 3, t, NOIR[0], NOIR[1], NOIR[2]);
             img.line(ML - 4, y, ML, y, NOIR[0], NOIR[1], NOIR[2]);
         }
         img.text(2, y0 + Hpan / 2, "km/h", NOIR[0], NOIR[1], NOIR[2]);
@@ -109,13 +109,17 @@ int main(int argc, char** argv) {
     draw_panel(e2, MT + Hpan + GAP, "R2");
     double tmax = e.spec_nframe * HOP / FS;                     // axe X temps
     char t[64];
-    for (double s = 0; s <= tmax + 0.001; s += 0.05) {
-        int x = ML + (int)(s / tmax * (W - ML - 12));
-        snprintf(t, sizeof(t), "%.2fs", s);
-        img.text(x, H - MB + 10, t, NOIR[0], NOIR[1], NOIR[2]);
+    for (double s = 0; s <= tmax + 0.001; s += 0.1) {
+        int x = ML + (int)(s / tmax * (W - ML - 6));
+        snprintf(t, sizeof(t), "%.1fs", s);
+        img.text(x, H - MB + 4, t, NOIR[0], NOIR[1], NOIR[2]);
     }
-    snprintf(t, sizeof(t), "Densite spectrale radar - %s", in.c_str());
-    img.text(ML, 8, t, NOIR[0], NOIR[1], NOIR[2]);
+    {   // titre court : basename tronqué à 18 caractères
+        std::string base = in.substr(in.find_last_of("/\\") + 1);
+        if (base.size() > 18) base = base.substr(0, 18);
+        snprintf(t, sizeof(t), "Spectro - %s", base.c_str());
+        img.text(2, 3, t, NOIR[0], NOIR[1], NOIR[2]);
+    }
     bool ok;
     if (out.size() >= 4 && out.compare(out.size() - 4, 4, ".png") == 0)
         ok = img.save_png(out);          // vrai PNG (zlib stored, zéro dépendance)
