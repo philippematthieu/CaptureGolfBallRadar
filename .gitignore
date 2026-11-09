@@ -6,7 +6,6 @@
 *.dylib
 *.so
 *.class
-*.jar
 *.war
 *.pyc
 __pycache__/
@@ -32,7 +31,4 @@ texput.log
 # binaires produits localement
 Cpp/src/simu_headless
 Cpp/src/simu_headless_cimg
-Cpp/src/*.svg
-Cpp/src/*.png
-Cpp/src/*.bmp
 Python/golf_ball_flight_3d.mp4
