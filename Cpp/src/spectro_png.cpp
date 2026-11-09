@@ -13,12 +13,22 @@
 #include <string>
 #include <algorithm>
 #include "Capture.h"
-#include "PlotCImg.h"
+#if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wchar-subscripts"
+#pragma GCC diagnostic ignored "-Wnontrivial-memcall"
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+#include "CImg.h"
+using namespace cimg_library;
 
 using namespace std;
 
 int main(int argc, char** argv) {
-    if (argc < 2) { fprintf(stderr, "usage: spectro_png <capture.csv|wav> [sortie.png]\n"); return 1; }
+        bool openAfter = false;
+    std::vector<std::string> args2;
+    for (int i = 1; i < argc; i++) { std::string a = argv[i]; if (a == "-o" || a == "--open") openAfter = true; else args2.push_back(a); }
+    if (args2.empty()) { fprintf(stderr, "usage: spectro_png <capture.csv|wav> [sortie.png] [-o|--open]\n"); return 1; }
+    argv = args2.data(); argc = (int)args2.size();
     string out = (argc > 2) ? argv[2] : "spectrogramme.png";
     Capture c = load_capture(argv[1]);
     EstRadar e = estimate(c);
@@ -80,6 +90,13 @@ int main(int argc, char** argv) {
 
     if (out.size() >= 4 && out.compare(out.size() - 4, 4, ".png") == 0) img.save_png(out.c_str());
     else img.save_bmp((out.substr(0, out.size() - 4) + ".bmp").c_str());
+        if (openAfter) {
+#ifdef __APPLE__
+        { std::string cmd = "open " + out; system(cmd.c_str()); }
+#else
+        { std::string cmd = "xdg-open " + out; system(cmd.c_str()); }
+#endif
+    }
     printf("OK -> %s  (vBall=%.1f km/h radiale, spin=%.0f rpm, alpha0=%+.2f deg, t0=frame %d)\n", out.c_str(),
            e.vball_kmh, e.spin_rpm, e.alpha0_deg, e.spec_i0);
     return 0;

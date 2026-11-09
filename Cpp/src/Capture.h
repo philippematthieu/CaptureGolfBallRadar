@@ -6,6 +6,11 @@
 //============================================================================
 #ifndef CAPTURE_H_
 #define CAPTURE_H_
+#if defined(__GNUC__)
+#define CAP_UNUSED __attribute__((unused))
+#else
+#define CAP_UNUSED
+#endif
 
 #include <vector>
 #include <string>
@@ -30,7 +35,7 @@ static const double L0 = 1.50;         // distance initiale balle (m)
 static const double THETA_RADAR = 20.0 * M_PI / 180.0;  // biais géométrique radar (corrigé après)
 
 // interpolation sous-bin parabolique du pic (comme pipe_validation.parabolic_peak)
-static double parabolic_peak(const std::vector<double>& P, int k) {
+CAP_UNUSED static double parabolic_peak(const std::vector<double>& P, int k) {
     if (k <= 0 || k >= (int)P.size() - 1) return (double)k;
     double den = P[k-1] - 2.0*P[k] + P[k+1];
     if (den == 0.0) return (double)k;
@@ -39,7 +44,7 @@ static double parabolic_peak(const std::vector<double>& P, int k) {
 }
 
 // ---------------- FFT itérative radix-2 (longueur = puissance de 2) --------
-static void fft(std::vector<double>& re, std::vector<double>& im, bool inverse) {
+CAP_UNUSED static void fft(std::vector<double>& re, std::vector<double>& im, bool inverse) {
     const int n = (int)re.size();
     for (int i = 1, j = 0; i < n; i++) {          // bit-reversal
         int bit = n >> 1;
@@ -72,7 +77,7 @@ struct Capture {
     double fs = FS;
 };
 
-static Capture load_capture(const std::string& path) {
+CAP_UNUSED static Capture load_capture(const std::string& path) {
     Capture c;
     std::string low = path;
     std::transform(low.begin(), low.end(), low.begin(), ::tolower);
@@ -139,7 +144,7 @@ static Capture load_capture(const std::string& path) {
 }
 
 // ---------------- spectrogramme + ridge --------------------------------------
-static void spectrogram(const std::vector<double>& x, int nfft, int hop,
+CAP_UNUSED static void spectrogram(const std::vector<double>& x, int nfft, int hop,
                         std::vector<double>& ridge, std::vector<double>& power,
                         std::vector<double>& tgrid) {
     int n = (int)x.size();
@@ -182,7 +187,7 @@ struct EstRadar {
     int spec_i0 = 0;                   // frame impact
 };
 
-static void fill_spec(EstRadar& e, const std::vector<double>& sig, int NFFT, int HOP) {
+CAP_UNUSED static void fill_spec(EstRadar& e, const std::vector<double>& sig, int NFFT, int HOP) {
         const double FMIN = 800.0, FMAX = 6500.0;
         int nframes = 1 + ((int)sig.size() - NFFT) / HOP;
         int k0 = (int)(FMIN * NFFT / FS), k1 = (int)(FMAX * NFFT / FS);
@@ -226,7 +231,7 @@ static void fill_spec(EstRadar& e, const std::vector<double>& sig, int NFFT, int
     }
 }
 
-static EstRadar estimate(const Capture& c) {
+CAP_UNUSED static EstRadar estimate(const Capture& c) {
     EstRadar e; e.vball_kmh = 0; e.vball_corr_kmh = 0; e.spin_rpm = 0; e.alpha0_deg = 0; e.dalpha_deg = 0; e.t0_s = 0;
     const int NFFT = 2048, HOP = NFFT / 2;
     std::vector<double> ridge, power, tg;
@@ -356,7 +361,7 @@ static EstRadar estimate(const Capture& c) {
 
 
 // signal Doppler synthetique a partir d'une trajectoire simulee (mode club, pour le spectrogramme en bas)
-static std::vector<double> gen_signal_simu(const std::vector< std::vector<double> >& mf, double vclub_kmh, double fs = FS) {
+CAP_UNUSED static std::vector<double> gen_signal_simu(const std::vector< std::vector<double> >& mf, double vclub_kmh, double fs = FS) {
     const double lam = 299792458.0 / 10.525e9;
     const double r = BALL_D / 2.0;
     int N = (int)(mf.size() * 0.01 * fs) + (int)(0.15 * fs);
