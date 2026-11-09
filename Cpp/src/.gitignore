@@ -1,3 +1,4 @@
 Cpp/src/simu_headless
 Cpp/src/*.svg
+Cpp/src/*.html
 Cpp/src/*.o

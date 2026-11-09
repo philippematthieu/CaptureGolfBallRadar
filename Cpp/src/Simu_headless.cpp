@@ -12,6 +12,7 @@
 #include "Ball.h"
 #include "Capture.h"
 #include "PlotSVG.h"
+#include "Plot3D.h"
 
 using namespace std;
 
@@ -35,6 +36,8 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     auto mf = theBall.getMatriceFlight();
     printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
+    write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation");
+    printf("HTML 3D ecrit : trajectoire_capture_3d.html\n");
     write_traj_svg("trajectoire_capture.svg", mf, "Trajectoire depuis captation — portée " +
                    std::to_string((int)mf.back()[0]) + " m");
     printf("SVG écrit : trajectoire_capture.svg\n");
@@ -95,8 +98,11 @@ int main(int argc, char *argv[]) {
     cout << "RESULT portee=" << portee << " m  apex=" << apex << " m  z_final=" << zfinal
          << " m  temps=" << theBall.getTempsTotal() << " s  chute=" << theBall.getIndexChute() << endl;
     // graphique SVG de la trajectoire (profil + dessus), ouvrable dans un navigateur
+    std::string titre3d = "Trajectoire 3D " + sac[j].getType() + " — portée " + std::to_string((int)portee) + " m, apex " + std::to_string((int)apex) + " m";
     char svgname[256];
     snprintf(svgname, sizeof(svgname), "trajectoire_%s.svg", sac[j].getType().c_str());
+    write_traj_3d_html("trajectoire_3d.html", mf, titre3d);
+    cout << "HTML 3D ecrit : trajectoire_3d.html (ouvrir dans Safari, tourner avec la souris)" << endl;
     write_traj_svg(svgname, mf,
                    "Trajectoire " + sac[j].getType() + " — portée " + std::to_string((int)portee) + " m, apex " +
                    std::to_string((int)apex) + " m");
