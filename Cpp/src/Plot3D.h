@@ -30,7 +30,7 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "<!DOCTYPE html><html><head><meta charset='utf-8'><title>%s</title>\n", titre.c_str());
     fprintf(f, "<script src='lib/three.min.js'></script><script src='lib/OrbitControls.js'></script>\n");
     fprintf(f, "<style>body{margin:0}#info{position:fixed;top:8px;left:10px;font:13px Helvetica;color:#333;background:#fff8;padding:4px 8px;border-radius:6px}</style></head><body>\n");
-    fprintf(f, "<div id='info'>%s — glisser = tourner, molette = zoom, clic droit = deplacer</div>\n", titre.c_str());
+    fprintf(f, "<div id='info'>%s — glisser = tourner, molette = zoom<br>vitesse anim: <input id='vit' type='range' min='1' max='30' value='8' style='width:120px'> <span id='vitv'>8</span>x</div>\n", titre.c_str());
     fprintf(f, "<script>\nvar traj=[");
     for (size_t i = 0; i < mf.size(); i += 2)
         fprintf(f, "[%g,%g,%g],", mf[i][0], mf[i][4], -mf[i][2]);  // (x, hauteur z, -latéral y)
@@ -53,7 +53,8 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "var ap=new THREE.Mesh(new THREE.SphereGeometry(1.2),new THREE.MeshBasicMaterial({color:0xff0000}));ap.position.set(traj[%d][0],traj[%d][1],traj[%d][2]);scene.add(ap);\n", iapex, iapex, iapex);
     // balle animée
     fprintf(f, "var ball=new THREE.Mesh(new THREE.SphereGeometry(0.8),new THREE.MeshLambertMaterial({color:0xffffff}));scene.add(ball);\n");
-    fprintf(f, "var k=0;function anim(){ball.position.copy(pts[Math.floor(k)]);k=(k+0.15)%%pts.length;ctl.update();renderer.render(scene,cam);requestAnimationFrame(anim);}anim();\n");
+    fprintf(f, "var k=0;var VIT=8;document.getElementById('vit').oninput=function(){VIT=+this.value;document.getElementById('vitv').textContent=VIT;};\n");
+    fprintf(f, "function anim(){ball.position.copy(pts[Math.floor(k)%%pts.length]);k+=0.15*VIT;ctl.update();renderer.render(scene,cam);requestAnimationFrame(anim);}anim();\n");
     fprintf(f, "addEventListener('resize',function(){cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});\n");
     fprintf(f, "</script></body></html>\n");
     fclose(f);
