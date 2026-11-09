@@ -38,19 +38,22 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
+VMAX_KMH = 350.0   # une balle de golf ne dépasse pas ~350 km/h : on coupe l'axe Y
+
 def panneau(ax, x, nfft, hop, label):
     t, ridge, power, f, specs = spectrogram(x, nfft, hop)
     S = np.array(specs).T                    # [nbin, nframe] pour imshow
     i0 = int(np.argmax(power))
+    ymax = min(f[-1] / KV, VMAX_KMH)
     db = 10 * np.log10(S / S.max() + 1e-12)
     ax.imshow(db, origin='lower', aspect='auto', cmap='hot', vmin=-80, vmax=0,
-              extent=[t[0], t[-1], f[0] / KV, f[-1] / KV])
+              extent=[t[0], t[-1], f[0] / KV, ymax])
     post = power[i0:] > 0.03 * power[i0]
     ax.plot(t[i0:][post], ridge[i0:][post] / KV, '.c', ms=3, label='ridge balle')
     ax.axvline(t[i0], color='r', lw=1)
-    ax.text(t[i0] + 0.002, f[-1] / KV * 0.92, f'impact t={t[i0]:.3f}s', color='r', fontsize=8)
+    ax.text(t[i0] + 0.002, ymax * 0.92, f'impact t={t[i0]:.3f}s', color='r', fontsize=8)
     ax.set_ylabel('km/h'); ax.set_title(label, fontsize=9, loc='left')
-    ax.set_xlim(t[0], t[-1]); ax.set_ylim(f[0] / KV, f[-1] / KV)
+    ax.set_xlim(t[0], t[-1]); ax.set_ylim(f[0] / KV, ymax)
     return t, ridge, power, f, i0
 
 

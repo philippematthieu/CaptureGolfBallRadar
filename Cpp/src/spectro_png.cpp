@@ -60,6 +60,7 @@ int main(int argc, char** argv) {
             fz0 = std::max(e.spec_fmin, fm - 600.0);
             fz1 = std::min(e.spec_fmax, fm + 600.0);
         }
+        fz1 = std::min(fz1, 350.0 * KV);   // une balle de golf ne dépasse pas ~350 km/h
         auto X = [&](int fr){ return ML + (int)((double)fr / e.spec_nframe * Wimg); };
         auto Y = [&](double f){ return y0 + Hpan - (int)((f - fz0) / (fz1 - fz0) * Hpan); };
         img.rect(ML, y0, ML + Wimg, y0 + Hpan, 0, 0, 0, true);   // fond noir du panneau

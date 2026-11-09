@@ -25,7 +25,7 @@ L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/a
 
 Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendance**, plus de CImg) — style spectro_F7-*.png :
 **640×500**, 2 panneaux R1/R2, **zoom Y ±600 Hz autour du ridge post-impact** (pour voir les raies micro-Doppler),
-axe X = temps (s), axe Y = km/h (f/19.49), colormap `hot` (fond noir, trace « feu »),
+axe X = temps (s), axe Y = km/h (f/19.49, **limité à 350 km/h** — plafond balle de golf), colormap `hot` (fond noir, trace « feu »),
 ridge balle cyan (post-impact, lissé), impact rouge + label. **Fenêtre d'analyse STFT 512 (Hann 11,6 ms), hop 128** :
 fenêtre /4 → raies micro-Doppler bien résolues en temps, bandes de ~7 px.
 Sortie **PNG** (writer maison, zlib stored) si l'extension est `.png`, sinon BMP 24 bits.
