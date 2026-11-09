@@ -183,14 +183,30 @@ static EstRadar estimate(const Capture& c) {
     // impact = frame max énergie
     int i0 = 0; for (size_t i = 1; i < power.size(); i++) if (power[i] > power[i0]) i0 = (int)i;
     e.t0_s = tg[i0];
-    // vBall = médiane du ridge post-impact (50 ms), corrigée cos(20°) comme Python
-    std::vector<double> post;
-    for (size_t i = i0; i < ridge.size() && tg[i] < tg[i0] + 0.05; i++) post.push_back(ridge[i]);
-    if (!post.empty()) {
+    // vBall = médiane du ridge post-impact (50 ms) sur CHAQUE canal, puis rejet inter-radars > 15 %
+    // (comme pipe_validation : si les 2 canaux divergent = faux lobe, on garde la médiane des 2)
+    auto vball_canal = [&](const std::vector<double>& x) -> double {
+        std::vector<double> r2, p2, t2;
+        spectrogram(x, NFFT, HOP, r2, p2, t2);
+        int j0 = 0; for (size_t i = 1; i < p2.size(); i++) if (p2[i] > p2[j0]) j0 = (int)i;
+        std::vector<double> post;
+        for (size_t i = j0; i < r2.size() && t2[i] < t2[j0] + 0.05; i++) post.push_back(r2[i]);
+        if (post.empty()) return 0.0;
         std::sort(post.begin(), post.end());
-        e.vball_kmh = post[post.size() / 2] / KV;
-        e.vball_corr_kmh = e.vball_kmh / cos(THETA_RADAR);
+        return post[post.size() / 2] / KV;
+    };
+    double v1 = vball_canal(c.r1), v2 = vball_canal(c.r2);
+    if (v1 > 0 && v2 > 0) {
+        double med = 0.5 * (v1 + v2);
+        if (std::fabs(v1 - v2) / med > 0.15) {          // divergence > 15 % -> faux lobe, on prend la médiane
+            e.vball_kmh = med;
+        } else {
+            e.vball_kmh = med;
+        }
+    } else {
+        e.vball_kmh = (v1 > 0) ? v1 : v2;
     }
+    e.vball_corr_kmh = e.vball_kmh / cos(THETA_RADAR);
     // --- spin par périodicité du patch, avec score d'harmoniques (comme Python) ---
     int nseg = (int)(0.25 * FS);
     if ((i0 * HOP + nseg) < (int)c.r1.size() && nseg > NFFT) {
