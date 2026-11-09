@@ -32,3 +32,8 @@ texput.log
 Cpp/src/simu_headless
 Cpp/src/simu_headless_cimg
 Python/golf_ball_flight_3d.mp4
+
+# divers locaux
+.vscode/
+sci/FFT_Mat.txt
+Cpp/src/spectro_png

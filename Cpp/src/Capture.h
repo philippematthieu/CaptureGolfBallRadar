@@ -228,8 +228,8 @@ CAP_UNUSED static void fill_spec(EstRadar& e, const std::vector<double>& sig, in
             for (int k = k0; k <= k1; k++) {
                 double p = re[k] * re[k] + im[k] * im[k];
                 double db = 10.0 * log10(p / gmax + 1e-12);
-                if (db < -40.0) db = -40.0;
-                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = (unsigned char)(255.0 * (db + 40.0) / 40.0);
+                if (db < -80.0) db = -80.0;
+                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = (unsigned char)(255.0 * (db + 80.0) / 80.0);
             }
         }
         int i0l = 0; for (size_t i = 1; i < e.spec_power.size(); i++) if (e.spec_power[i] > e.spec_power[i0l]) i0l = (int)i;

@@ -1,11 +1,12 @@
 //============================================================================
-// spectro_png.cpp — génère un PNG de la densité spectrale d'une captation radar
+// spectro_png.cpp — génère l'image de la densité spectrale d'une captation radar
 // (CSV 2 lignes ';' ou WAV stéréo), style spectro_F7-*.png du README :
-//   axe X = temps (s), axe Y = km/h (f/19.49), colormap viridis, ridge balle cyan
-//   (post-impact, lissé), impact en rouge. Réutilise Capture.h (FFT/STFT) et CImg.
-// Compile : g++ -O2 -std=c++11 -Dcimg_display=0 -DUSE_CIMG -I. -o spectro_png \
-//             spectro_png.cpp   (CImg header-only, PNG si libpng sinon BMP)
-// Usage   : ./spectro_png <capture.csv|wav> [sortie.png]
+//   990x770, 2 panneaux R1/R2, axe X = temps (s), axe Y = km/h (f/KV),
+//   colormap 'hot' (fond noir, trace feu), ridge balle cyan (post-impact,
+//   lissé), impact en rouge. Réutilise Capture.h (FFT/STFT) + BmpImg.h (BMP 24 bits
+//   maison, zéro dépendance ; convertir en PNG sur Mac : sips -s format png x.bmp).
+// Compile : g++ -O2 -std=c++11 -I. -o spectro_png spectro_png.cpp
+// Usage   : ./spectro_png <capture.csv|wav> [sortie.bmp] [-o|--open]
 //============================================================================
 #include <cstdio>
 #include <cmath>
@@ -13,13 +14,7 @@
 #include <string>
 #include <algorithm>
 #include "Capture.h"
-#if defined(__GNUC__)
-#pragma GCC diagnostic ignored "-Wchar-subscripts"
-#pragma GCC diagnostic ignored "-Wnontrivial-memcall"
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-#include "CImg.h"
-using namespace cimg_library;
+#include "BmpImg.h"
 
 using namespace std;
 
@@ -39,86 +34,78 @@ int main(int argc, char** argv) {
     EstRadar e2 = estimate(c);   // canal R2 (e contient déjà R1)
     fill_spec(e2, c.r2, 2048, 1024);
     const int W = 990, H = 770, ML = 58, MT = 30, MB = 40, GAP = 26;
-    int Hpan = (H - MT - MB - GAP) / 2;          // hauteur d'un panneau
-    CImg<unsigned char> img(W, H, 1, 3, 255);    // fond blanc
-    auto hot = [](double v) {                    // colormap 'hot' de matplotlib
+    int Hpan = (H - MT - MB - GAP) / 2;
+    BmpImg img(W, H, 255, 255, 255);   // fond blanc
+    auto hot = [](double v) {           // colormap 'hot' matplotlib
         v = std::max(0.0, std::min(1.0, v));
-        unsigned char r = (unsigned char)std::min(255.0, v * 3.0 * 255.0);
-        unsigned char g = (unsigned char)std::min(255.0, std::max(0.0, v * 3.0 - 1.0) * 255.0);
-        unsigned char b = (unsigned char)std::min(255.0, std::max(0.0, v * 3.0 - 2.0) * 255.0);
-        return std::vector<unsigned char>{r, g, b};
+        return std::vector<uint8_t>{(uint8_t)std::min(255.0, v*3.0*255.0),
+                                    (uint8_t)std::min(255.0, std::max(0.0, v*3.0-1.0)*255.0),
+                                    (uint8_t)std::min(255.0, std::max(0.0, v*3.0-2.0)*255.0)};
     };
-    const double cyan[3] = {0, 200, 255}, rouge[3] = {220, 30, 30}, noir[3] = {0, 0, 0};
+    const uint8_t CYAN[3] = {0, 200, 255}, ROUGE[3] = {220, 30, 30}, NOIR[3] = {0, 0, 0};
     auto draw_panel = [&](const EstRadar& e, int y0, const char* label) {
-        double fmax_kmh = 300.0 * KV;            // 0..300 km/h en Y
-        double fmin = 0.0;
         int Wimg = W - ML - 14;
-        auto X = [&](int fr){ return ML + (int)((double)fr / (e.spec_nframe - 1) * Wimg); };
-        auto Y = [&](double f){ return y0 + Hpan - (int)((f - fmin) / fmax_kmh * Hpan); };
-        // densité (X=temps, Y=freq, haut = haut km/h)
-        for (int fr = 0; fr < e.spec_nframe; fr++)
+        auto X = [&](int fr){ return ML + (int)((double)fr / e.spec_nframe * Wimg); };
+        auto Y = [&](double f){ return y0 + Hpan - (int)((f - e.spec_fmin) / (e.spec_fmax - e.spec_fmin) * Hpan); };
+        for (int fr = 0; fr < e.spec_nframe; fr++) {            // bandes verticales par frame (comme imshow)
+            int x0 = X(fr), x1 = X(fr + 1); if (x1 <= x0) x1 = x0 + 1;
             for (int b = 0; b < e.spec_nbin; b++) {
-                double v = pow(e.spec[(size_t)fr * e.spec_nbin + b] / 255.0, 0.7);
-                auto cc = hot(v);
                 double f = e.spec_fmin + (b + 0.5) / e.spec_nbin * (e.spec_fmax - e.spec_fmin);
-                if (f > fmax_kmh) continue;
-                int x = X(fr), y = Y(f);
-                if (x < W && y >= y0 && y < y0 + Hpan) { img(x, y, 0, 0) = cc[0], img(x, y, 0, 1) = cc[1], img(x, y, 0, 2) = cc[2]; }
+                double v = e.spec[(size_t)fr * e.spec_nbin + b] / 255.0;
+                v = v * v * v;   // gamma 3 : fond sombre, trace "feu" comme matplotlib hot
+                auto cc = hot(v);
+                int yb = Y(f), yt = (b + 1 < e.spec_nbin) ? Y(e.spec_fmin + (b + 1.5) / e.spec_nbin * (e.spec_fmax - e.spec_fmin)) : y0;
+                if (yt < y0) yt = y0;
+                for (int x = x0; x < x1; x++) for (int y = yt; y <= yb; y++) img.set(x, y, cc[0], cc[1], cc[2]);
             }
-        // cadre du panneau
-        img.draw_rectangle(ML, y0, ML + Wimg, y0 + Hpan, noir);
-        // ridge cyan post-impact lissé seuillé
+        }
+        img.rect(ML, y0, ML + Wimg, y0 + Hpan, NOIR[0], NOIR[1], NOIR[2]);
+        int prevx = -1, prevy = -1;                             // ridge cyan post-impact, segments relies
         for (int fr = e.spec_i0; fr < e.spec_nframe; fr++) {
-            if (e.spec_power[fr] < 0.03) continue;
+            if (e.spec_power[fr] < 0.03) { prevx = -1; continue; }
             double r = e.spec_ridge[fr];
             if (fr > e.spec_i0 && fr < e.spec_nframe - 1 && e.spec_power[fr-1] > 0.03 && e.spec_power[fr+1] > 0.03)
                 r = (e.spec_ridge[fr-1] + r + e.spec_ridge[fr+1]) / 3;
-            if (r > fmax_kmh) continue;
-            img.draw_circle(X(fr), Y(r), 2, cyan);
+            if (r > e.spec_fmax) { prevx = -1; continue; }
+            int x = X(fr) + (X(fr + 1) - X(fr)) / 2, y = Y(r);
+            if (prevx >= 0)
+                for (int dy = -1; dy <= 1; dy++)
+                    img.line(prevx, prevy + dy, x, y + dy, CYAN[0], CYAN[1], CYAN[2]);
+            else
+                img.circle(x, y, 2, CYAN[0], CYAN[1], CYAN[2]);
+            prevx = x; prevy = y;
         }
-        // impact : ligne verticale rouge + label
-        int xi = X(e.spec_i0);
-        img.draw_line(xi, y0, xi, y0 + Hpan, rouge);
+        int xi = X(e.spec_i0) + (X(e.spec_i0 + 1) - X(e.spec_i0)) / 2;   // impact vertical rouge
+        img.line(xi, y0, xi, y0 + Hpan, ROUGE[0], ROUGE[1], ROUGE[2]);
         char t[96];
         snprintf(t, sizeof(t), "impact t=%.3fs", e.spec_i0 * 1024.0 / FS);
-        img.draw_text(xi + 5, y0 + 12, t, rouge);
-        // label du canal + titre panneau
-        img.draw_text(6, y0 + 4, label, noir);
-        // axe Y km/h à gauche
-        for (int km = 0; km <= 300; km += 50) {
+        img.text(xi + 6, y0 + 10, t, ROUGE[0], ROUGE[1], ROUGE[2]);
+        img.text(6, y0 + 4, label, NOIR[0], NOIR[1], NOIR[2]);
+        for (int km = (int)(e.spec_fmin / KV / 50) * 50; km <= (int)(e.spec_fmax / KV); km += 50) {  // axe Y km/h
             int y = Y(km * KV);
             snprintf(t, sizeof(t), "%d", km);
-            img.draw_text(30, y - 5, t, noir);
-            img.draw_line(ML - 4, y, ML, y, noir);
+            img.text(30, y - 3, t, NOIR[0], NOIR[1], NOIR[2]);
+            img.line(ML - 4, y, ML, y, NOIR[0], NOIR[1], NOIR[2]);
         }
-        img.draw_text(4, y0 + Hpan / 2, "km/h", noir);
+        img.text(4, y0 + Hpan / 2, "km/h", NOIR[0], NOIR[1], NOIR[2]);
     };
     draw_panel(e, MT, "R1");
     draw_panel(e2, MT + Hpan + GAP, "R2");
-    // axe X temps en bas
+    double tmax = e.spec_nframe * 1024.0 / FS;                  // axe X temps
     char t[64];
-    double tmax = e.spec_nframe * 1024.0 / FS;
     for (double s = 0; s <= tmax + 0.001; s += 0.1) {
         int x = ML + (int)(s / tmax * (W - ML - 14));
-        snprintf(t, sizeof(t), "%.1f s", s);
-        img.draw_text(x, H - MB + 8, t, noir);
+        snprintf(t, sizeof(t), "%.1fs", s);
+        img.text(x, H - MB + 10, t, NOIR[0], NOIR[1], NOIR[2]);
     }
-    snprintf(t, sizeof(t), "Densite spectrale radar — %s", in.c_str());
-    img.draw_text(ML, 8, t, noir);
+    snprintf(t, sizeof(t), "Densite spectrale radar - %s", in.c_str());
+    img.text(ML, 8, t, NOIR[0], NOIR[1], NOIR[2]);
+    std::string bmp = out;
+    if (bmp.size() >= 4 && bmp.compare(bmp.size() - 4, 4, ".png") == 0) bmp = bmp.substr(0, bmp.size() - 4) + ".bmp";
+    img.save_bmp(bmp);
+    out = bmp;   // pour le -o et le message
 
-    if (out.size() >= 4 && out.compare(out.size() - 4, 4, ".png") == 0) {
-        try {
-            img.save_png(out.c_str());          // nécessite libpng (brew install libpng)
-        } catch (const cimg_library::CImgException&) {  // CImgIOException en hérite
-            // pas de libpng / pas d'outil externe : fallback BMP propre (pas de plantage)
-            out = out.substr(0, out.size() - 4) + ".bmp";
-            img.save_bmp(out.c_str());
-            fprintf(stderr, "(libpng absent -> BMP écrit à la place: %s ; brew install libpng pour du PNG)\n", out.c_str());
-        }
-    } else {
-        img.save_bmp(out.c_str());
-    }
-        if (openAfter) {
+    if (openAfter) {
 #ifdef __APPLE__
         { std::string cmd = "open " + out; system(cmd.c_str()); }
 #else
