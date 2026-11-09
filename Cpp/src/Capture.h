@@ -182,6 +182,50 @@ struct EstRadar {
     int spec_i0 = 0;                   // frame impact
 };
 
+static void fill_spec(EstRadar& e, const std::vector<double>& sig, int NFFT, int HOP) {
+        const double FMIN = 800.0, FMAX = 6500.0;
+        int nframes = 1 + ((int)sig.size() - NFFT) / HOP;
+        int k0 = (int)(FMIN * NFFT / FS), k1 = (int)(FMAX * NFFT / FS);
+        if (k1 >= NFFT / 2) k1 = NFFT / 2 - 1;
+        e.spec_nbin = k1 - k0 + 1;
+        e.spec_nframe = nframes;
+        e.spec_fmin = FMIN; e.spec_fmax = FMAX;
+        e.spec.resize((size_t)nframes * e.spec_nbin);
+        e.spec_ridge.assign(nframes, 0.0);
+        e.spec_power.assign(nframes, 0.0);
+        std::vector<double> w(NFFT), re(NFFT), im(NFFT);
+        for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
+        double gmax = 0;
+        for (int fr = 0; fr < nframes; fr++) {
+            for (int i = 0; i < NFFT; i++) { re[i] = sig[fr * HOP + i] * w[i]; im[i] = 0; }
+            fft(re, im, false);
+            int kb = k0; double pmax = 0;
+            for (int k = k0; k <= k1; k++) {
+                double p = re[k] * re[k] + im[k] * im[k];
+                if (p > pmax) { pmax = p; kb = k; }
+                if (p > gmax) gmax = p;
+                    e.spec_ridge[fr] = kb * FS / NFFT;
+            e.spec_power[fr] = pmax / gmax;
+            for (int k = k0; k <= k1; k++)
+                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = 0; // rempli après normalisation
+        }
+        // normalisation + remplissage (log)
+        if (gmax <= 0) gmax = 1;
+        for (int fr = 0; fr < nframes; fr++) {
+            for (int i = 0; i < NFFT; i++) { re[i] = sig[fr * HOP + i] * w[i]; im[i] = 0; }
+            fft(re, im, false);
+            for (int k = k0; k <= k1; k++) {
+                double p = re[k] * re[k] + im[k] * im[k];
+                double db = 10.0 * log10(p / gmax + 1e-12);
+                if (db < -60.0) db = -60.0;
+                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = (unsigned char)(255.0 * (db + 60.0) / 60.0);
+            }
+        }
+        int i0l = 0; for (size_t i = 1; i < e.spec_power.size(); i++) if (e.spec_power[i] > e.spec_power[i0l]) i0l = (int)i;
+        e.spec_i0 = i0l;
+    }
+}
+
 static EstRadar estimate(const Capture& c) {
     EstRadar e; e.vball_kmh = 0; e.vball_corr_kmh = 0; e.spin_rpm = 0; e.alpha0_deg = 0; e.dalpha_deg = 0; e.t0_s = 0;
     const int NFFT = 2048, HOP = NFFT / 2;
@@ -293,49 +337,7 @@ static EstRadar estimate(const Capture& c) {
         tt.push_back(tg[i]);
         al.push_back(atan((2.0 * L / B_BASE) * (fd / fc)) * 180.0 / M_PI);
     }
-    // --- spectrogramme complet (canal R1) pour affichage fixe en bas du HTML ---
-    {
-        const double FMIN = 800.0, FMAX = 6500.0;
-        int nframes = 1 + ((int)c.r1.size() - NFFT) / HOP;
-        int k0 = (int)(FMIN * NFFT / FS), k1 = (int)(FMAX * NFFT / FS);
-        if (k1 >= NFFT / 2) k1 = NFFT / 2 - 1;
-        e.spec_nbin = k1 - k0 + 1;
-        e.spec_nframe = nframes;
-        e.spec_fmin = FMIN; e.spec_fmax = FMAX;
-        e.spec.resize((size_t)nframes * e.spec_nbin);
-        e.spec_ridge.assign(nframes, 0.0);
-        e.spec_power.assign(nframes, 0.0);
-        std::vector<double> w(NFFT), re(NFFT), im(NFFT);
-        for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
-        double gmax = 0;
-        for (int fr = 0; fr < nframes; fr++) {
-            for (int i = 0; i < NFFT; i++) { re[i] = c.r1[fr * HOP + i] * w[i]; im[i] = 0; }
-            fft(re, im, false);
-            int kb = k0; double pmax = 0;
-            for (int k = k0; k <= k1; k++) {
-                double p = re[k] * re[k] + im[k] * im[k];
-                if (p > pmax) { pmax = p; kb = k; }
-                if (p > gmax) gmax = p;
-            }
-            e.spec_ridge[fr] = kb * FS / NFFT;
-            e.spec_power[fr] = pmax / gmax;
-            for (int k = k0; k <= k1; k++)
-                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = 0; // rempli après normalisation
-        }
-        // normalisation + remplissage (log)
-        if (gmax <= 0) gmax = 1;
-        for (int fr = 0; fr < nframes; fr++) {
-            for (int i = 0; i < NFFT; i++) { re[i] = c.r1[fr * HOP + i] * w[i]; im[i] = 0; }
-            fft(re, im, false);
-            for (int k = k0; k <= k1; k++) {
-                double p = re[k] * re[k] + im[k] * im[k];
-                double db = 10.0 * log10(p / gmax + 1e-12);
-                if (db < -60.0) db = -60.0;
-                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = (unsigned char)(255.0 * (db + 60.0) / 60.0);
-            }
-        }
-        e.spec_i0 = i0;
-    }
+    fill_spec(e, c.r1, NFFT, HOP);
     if (al.size() >= 3) {
         // alpha0 = médiane fenêtre initiale 50 ms ; dalpha = médiane(fin 100 ms) - médiane(début)
         std::vector<double> a0, af;
@@ -350,6 +352,38 @@ static EstRadar estimate(const Capture& c) {
         }
     }
     return e;
+}
+
+
+// signal Doppler synthetique a partir d'une trajectoire simulee (mode club, pour le spectrogramme en bas)
+static std::vector<double> gen_signal_simu(const std::vector< std::vector<double> >& mf, double vclub_kmh, double fs = FS) {
+    const double lam = 299792458.0 / 10.525e9;
+    const double r = BALL_D / 2.0;
+    int N = (int)(mf.size() * 0.01 * fs) + (int)(0.15 * fs);
+    std::vector<double> s(N, 0.0);
+    double phase = 0.0;
+    int t0i = (int)(0.10 * fs);
+    double spin = 6000.0 * 2.0 * M_PI / 60.0;
+    for (int n = 0; n < N; n++) {
+        double t = n / fs;
+        double fD;
+        if (n < t0i) {
+            double vc = vclub_kmh / 3.6 * pow((double)n / t0i, 2.5);
+            fD = KV * vc * 3.6;
+        } else {
+            int k = (int)((t - 0.10) / 0.01);
+            if (k >= (int)mf.size()) k = (int)mf.size() - 1;
+            if (k < 0) k = 0;
+            double V = sqrt(mf[k][1]*mf[k][1] + mf[k][3]*mf[k][3] + mf[k][5]*mf[k][5]);
+            fD = KV * V * 3.6 * cos(2.0 * M_PI / 180.0);
+        }
+        phase += 2.0 * M_PI * fD / fs;
+        double patch = 0.3 * sin((2.0 * r / lam) * sin(spin * t));
+        double sig = cos(phase) * (1.0 + patch);
+        if (n > t0i - 200 && n < t0i + 200) sig += 3.0 * exp(-pow((n - t0i) / 60.0, 2.0)) * cos(2.0 * M_PI * 2200.0 * t);
+        s[n] = 0.4 * sig + 0.02 * (rand() / (double)RAND_MAX - 0.5) * 2.0;
+    }
+    return s;
 }
 
 #endif // CAPTURE_H_
