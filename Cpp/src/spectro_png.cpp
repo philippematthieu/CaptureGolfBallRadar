@@ -49,17 +49,18 @@ int main(int argc, char** argv) {
     const uint8_t CYAN[3] = {0, 200, 255}, ROUGE[3] = {220, 30, 30}, NOIR[3] = {0, 0, 0};
     auto draw_panel = [&](const EstRadar& e, int y0, const char* label) {
         int Wimg = W - ML - 12;
-        // zoom Y : ±600 Hz autour de la médiane du ridge post-impact (raies visibles)
+        // zoom Y : filtrage centré sur la VITESSE ESTIMÉE vBall*KV — on prend la médiane
+        // des ridges post-impact situés à ±600 Hz de vBall*KV (rejette les faux pics basse
+        // fréquence), puis zoom ±600 Hz autour de cette médiane. Raies micro-Doppler visibles.
+        double fest = e.vball_kmh * KV;
         std::vector<double> rr;
         for (int fr = e.spec_i0; fr < e.spec_nframe; fr++)
-            if (e.spec_power[fr] > 0.03) rr.push_back(e.spec_ridge[fr]);
-        double fz0 = e.spec_fmin, fz1 = e.spec_fmax;
-        if (rr.size() >= 3) {
-            std::sort(rr.begin(), rr.end());
-            double fm = rr[rr.size() / 2];
-            fz0 = std::max(e.spec_fmin, fm - 600.0);
-            fz1 = std::min(e.spec_fmax, fm + 600.0);
-        }
+            if (e.spec_power[fr] > 0.03 && std::fabs(e.spec_ridge[fr] - fest) <= 600.0)
+                rr.push_back(e.spec_ridge[fr]);
+        double fm = fest;
+        if (rr.size() >= 3) { std::sort(rr.begin(), rr.end()); fm = rr[rr.size() / 2]; }
+        double fz0 = std::max(e.spec_fmin, fm - 600.0);
+        double fz1 = std::min(e.spec_fmax, fm + 600.0);
         fz1 = std::min(fz1, 350.0 * KV);   // une balle de golf ne dépasse pas ~350 km/h
         auto X = [&](int fr){ return ML + (int)((double)fr / e.spec_nframe * Wimg); };
         auto Y = [&](double f){ return y0 + Hpan - (int)((f - fz0) / (fz1 - fz0) * Hpan); };
