@@ -50,7 +50,7 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "var ap=new THREE.Mesh(new THREE.SphereGeometry(1.2),new THREE.MeshBasicMaterial({color:0xff0000}));ap.position.set(traj[%d][0],traj[%d][1],traj[%d][2]);scene.add(ap);\n", iapex, iapex, iapex);
     // balle animée
     fprintf(f, "var ball=new THREE.Mesh(new THREE.SphereGeometry(0.8),new THREE.MeshLambertMaterial({color:0xffffff}));scene.add(ball);\n");
-    fprintf(f, "var k=0;function anim(){ball.position.copy(pts[Math.floor(k)]);k=(k+0.15)%pts.length;ctl.update();renderer.render(scene,cam);requestAnimationFrame(anim);}anim();\n");
+    fprintf(f, "var k=0;function anim(){ball.position.copy(pts[Math.floor(k)]);k=(k+0.15)%%pts.length;ctl.update();renderer.render(scene,cam);requestAnimationFrame(anim);}anim();\n");
     fprintf(f, "addEventListener('resize',function(){cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});\n");
     fprintf(f, "</script></body></html>\n");
     fclose(f);
