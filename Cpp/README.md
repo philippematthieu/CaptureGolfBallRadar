@@ -27,7 +27,9 @@ Outil séparé `spectro_png` (réutilise Capture.h + CImg) — style spectro_F7-
 axe X = temps, axe Y = km/h (f/19.49), colormap viridis, ridge balle cyan (post-impact), impact rouge.
 
 ```bash
-g++ -O2 -std=c++11 -Dcimg_display=0 -DUSE_CIMG -I. -o spectro_png spectro_png.cpp   # PNG si brew install libpng, sinon BMP
+g++ -O2 -std=c++11 -Dcimg_display=0 -DUSE_CIMG -I. -o spectro_png spectro_png.cpp
+#   /!\ sur Mac SANS XQuartz, -Dcimg_display=0 est OBLIGATOIRE (sinon CImg cherche X11/Xlib.h -> fatal error)
+#   PNG si brew install libpng, sinon BMP automatique
 ./spectro_png ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv spectro_123.png
 ```
 
