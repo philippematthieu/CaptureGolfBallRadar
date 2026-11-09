@@ -25,13 +25,13 @@ L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/a
 
 Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendance**, plus de CImg) — style spectro_F7-*.png :
 990×770, 2 panneaux R1/R2, axe X = temps (s), axe Y = km/h (f/19.49), colormap `hot` (fond noir, trace « feu »),
-ridge balle cyan (post-impact, lissé), impact rouge + label. Sortie BMP 24 bits.
+ridge balle cyan (post-impact, lissé), impact rouge + label. Sortie **PNG** (writer maison, zlib stored) si l'extension
+est `.png`, sinon BMP 24 bits.
 
 ```bash
 g++ -O2 -std=c++11 -I. -o spectro_png spectro_png.cpp
-./spectro_png ../../sci/2019-02-24-F7-137m-166kmh-4990trm-1312trm-cs118.csv spectro_137.bmp -o
+./spectro_png ../../sci/2019-02-24-F7-137m-166kmh-4990trm-1312trm-cs118.csv spectro_137.png -o
 #   -o / --open : ouvre l'image générée automatiquement (open sur Mac)
-#   conversion PNG sur Mac : sips -s format png spectro_137.bmp
 ```
 
 ## Commandes

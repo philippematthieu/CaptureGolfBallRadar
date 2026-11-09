@@ -3,10 +3,11 @@
 // (CSV 2 lignes ';' ou WAV stéréo), style spectro_F7-*.png du README :
 //   990x770, 2 panneaux R1/R2, axe X = temps (s), axe Y = km/h (f/KV),
 //   colormap 'hot' (fond noir, trace feu), ridge balle cyan (post-impact,
-//   lissé), impact en rouge. Réutilise Capture.h (FFT/STFT) + BmpImg.h (BMP 24 bits
-//   maison, zéro dépendance ; convertir en PNG sur Mac : sips -s format png x.bmp).
+//   lissé), impact en rouge. Réutilise Capture.h (FFT/STFT) + BmpImg.h
+//   (writer PNG/BMP maison, zéro dépendance).
 // Compile : g++ -O2 -std=c++11 -I. -o spectro_png spectro_png.cpp
-// Usage   : ./spectro_png <capture.csv|wav> [sortie.bmp] [-o|--open]
+// Usage   : ./spectro_png <capture.csv|wav> [sortie.png] [-o|--open]
+//           sortie .png = vrai PNG, autre extension = BMP 24 bits
 //============================================================================
 #include <cstdio>
 #include <cmath>
@@ -100,10 +101,12 @@ int main(int argc, char** argv) {
     }
     snprintf(t, sizeof(t), "Densite spectrale radar - %s", in.c_str());
     img.text(ML, 8, t, NOIR[0], NOIR[1], NOIR[2]);
-    std::string bmp = out;
-    if (bmp.size() >= 4 && bmp.compare(bmp.size() - 4, 4, ".png") == 0) bmp = bmp.substr(0, bmp.size() - 4) + ".bmp";
-    img.save_bmp(bmp);
-    out = bmp;   // pour le -o et le message
+    bool ok;
+    if (out.size() >= 4 && out.compare(out.size() - 4, 4, ".png") == 0)
+        ok = img.save_png(out);          // vrai PNG (zlib stored, zéro dépendance)
+    else
+        ok = img.save_bmp(out);          // BMP 24 bits sinon
+    if (!ok) { fprintf(stderr, "ERREUR: ecriture %s impossible\n", out.c_str()); return 2; }
 
     if (openAfter) {
 #ifdef __APPLE__

@@ -1,5 +1,6 @@
 //============================================================================
-// BmpImg.h — image RGB 24 bits + mini fonte 5x7 + writer BMP, zéro dépendance.
+// BmpImg.h — image RGB 24 bits + mini fonte 5x7 + writers BMP et PNG
+// (PNG = zlib en blocs "stored" + CRC32/Adler32 maison), zéro dépendance.
 // Utilisé par spectro_png.cpp (CImg se comportait bizarrement sur le rendu pixel).
 //============================================================================
 #ifndef BMPIMG_H_
@@ -85,6 +86,70 @@ struct BmpImg {
             }
             fwrite(row.data(), 1, rowSize, f);
         }
+        fclose(f);
+        return true;
+    }
+    // ---- PNG 8 bits RGB (zlib stored blocks, pas de compression) ----
+    static uint32_t crc32_update(uint32_t crc, const uint8_t* d, size_t n) {
+        static uint32_t tab[256]; static bool init = false;
+        if (!init) {
+            for (uint32_t i = 0; i < 256; i++) {
+                uint32_t c = i;
+                for (int k = 0; k < 8; k++) c = (c & 1) ? 0xEDB88320u ^ (c >> 1) : c >> 1;
+                tab[i] = c;
+            }
+            init = true;
+        }
+        crc ^= 0xFFFFFFFFu;
+        for (size_t i = 0; i < n; i++) crc = tab[(crc ^ d[i]) & 0xFF] ^ (crc >> 8);
+        return crc ^ 0xFFFFFFFFu;
+    }
+    static void put32(std::vector<uint8_t>& v, uint32_t x) {
+        v.push_back((uint8_t)(x >> 24)); v.push_back((uint8_t)(x >> 16));
+        v.push_back((uint8_t)(x >> 8)); v.push_back((uint8_t)x);
+    }
+    static void png_chunk(std::vector<uint8_t>& out, const char typ[4], const std::vector<uint8_t>& payload) {
+        put32(out, (uint32_t)payload.size());
+        size_t tpos = out.size();
+        for (int i = 0; i < 4; i++) out.push_back((uint8_t)typ[i]);
+        out.insert(out.end(), payload.begin(), payload.end());
+        put32(out, crc32_update(0, out.data() + tpos, 4 + payload.size()));
+    }
+    bool save_png(const std::string& path) {
+        FILE* f = fopen(path.c_str(), "wb");
+        if (!f) return false;
+        std::vector<uint8_t> png = {0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A};
+        std::vector<uint8_t> ihdr;
+        put32(ihdr, (uint32_t)W); put32(ihdr, (uint32_t)H);
+        ihdr.push_back(8); ihdr.push_back(2); ihdr.push_back(0); ihdr.push_back(0); ihdr.push_back(0); // 8 bits, RGB
+        png_chunk(png, "IHDR", ihdr);
+        // données brutes : filtre 0 par ligne
+        std::vector<uint8_t> raw((size_t)H * (1 + (size_t)W * 3));
+        for (int y = 0; y < H; y++) {
+            raw[(size_t)y * (1 + (size_t)W * 3)] = 0;
+            memcpy(raw.data() + (size_t)y * (1 + (size_t)W * 3) + 1, px.data() + (size_t)y * W * 3, (size_t)W * 3);
+        }
+        // zlib : header 0x78 0x01 + deflate stored + adler32
+        std::vector<uint8_t> z;
+        z.push_back(0x78); z.push_back(0x01);
+        size_t p = 0;
+        while (p < raw.size() || (raw.empty() && p == 0)) {
+            size_t n = raw.size() - p; if (n > 65535) n = 65535;
+            bool last = (p + n >= raw.size());
+            z.push_back(last ? 1 : 0);                 // BFINAL, BTYPE=00
+            z.push_back((uint8_t)(n & 0xFF)); z.push_back((uint8_t)(n >> 8));
+            z.push_back((uint8_t)(~n & 0xFF)); z.push_back((uint8_t)((~n >> 8) & 0xFF));
+            z.insert(z.end(), raw.begin() + p, raw.begin() + p + n);
+            p += n;
+            if (raw.empty()) break;
+        }
+        uint32_t ad = 1, a = 1, b = 0;
+        for (uint8_t c : raw) { a = (a + c) % 65521; b = (b + a) % 65521; }
+        ad = (b << 16) | a;
+        put32(z, ad);
+        png_chunk(png, "IDAT", z);
+        png_chunk(png, "IEND", {});
+        fwrite(png.data(), 1, png.size(), f);
         fclose(f);
         return true;
     }
