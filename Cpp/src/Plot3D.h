@@ -46,6 +46,9 @@ static void write_traj_3d_html(const std::string& path,
     // courbe trajectoire
     fprintf(f, "var pts=traj.map(function(p){return new THREE.Vector3(p[0],p[1],p[2]);});\n");
     fprintf(f, "scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0x1a56db})));\n");
+    // projection 2D de la trajectoire sur le sol (fairway) : (x, 0, z lateral), ligne pointillée grise
+    fprintf(f, "var ptsSol=traj.map(function(p){return new THREE.Vector3(p[0],0.05,p[2]);});\n");
+    fprintf(f, "var solLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsSol),new THREE.LineDashedMaterial({color:0x333333,dashSize:1.5,gapSize:1}));solLine.computeLineDistances();scene.add(solLine);\n");
     // apex
     fprintf(f, "var ap=new THREE.Mesh(new THREE.SphereGeometry(1.2),new THREE.MeshBasicMaterial({color:0xff0000}));ap.position.set(traj[%d][0],traj[%d][1],traj[%d][2]);scene.add(ap);\n", iapex, iapex, iapex);
     // balle animée
