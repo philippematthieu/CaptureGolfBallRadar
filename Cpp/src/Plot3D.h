@@ -17,7 +17,8 @@
 static void write_traj_3d_html(const std::string& path,
                                const std::vector< std::vector<double> >& mf,
                                const std::string& titre,
-                               const std::string& infosHtml = "") {
+                               const std::string& infosHtml = "",
+                               const std::string& specJson = "") {
     if (mf.empty()) return;
     double xmax = 1, zmax = 1;
     int iapex = 0;
@@ -65,6 +66,20 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "var k=0;var VIT=8;document.getElementById('vit').oninput=function(){VIT=+this.value;document.getElementById('vitv').textContent=VIT;};\n");
     fprintf(f, "function anim(){ball.position.copy(pts[Math.floor(k)%%pts.length]);k+=0.15*VIT;ctl.update();renderer.render(scene,cam);requestAnimationFrame(anim);}anim();\n");
     fprintf(f, "addEventListener('resize',function(){cam.aspect=(innerWidth-PW)/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth-PW,innerHeight);});\n");
+    // --- frame fixe en bas : densité spectrale (spectrogramme) si fournie ---
+    if (!specJson.empty()) {
+        fprintf(f, "var S=%s;\n", specJson.c_str());
+        fprintf(f, "var sc=document.createElement('canvas');sc.id='spec';sc.width=S.nbin*3;sc.height=S.nframe*3;\n"
+                   "sc.style.cssText='position:fixed;bottom:0;left:250px;border-top:2px solid #555;background:#000';document.body.appendChild(sc);\n"
+                   "var g=sc.getContext('2d');var im=g.createImageData(S.nbin,S.nframe);\n"
+                   "for(var y=0;y<S.nframe;y++)for(var x=0;x<S.nbin;x++){var v=S.img[y*S.nbin+x];var i=(y*S.nbin+x)*4;\n"
+                   "im.data[i]=v>200?255:v;im.data[i+1]=v>200?255:v*0.6;im.data[i+2]=v;im.data[i+3]=255;}\n"
+                   "g.putImageData(im,0,0);g.imageSmoothingEnabled=false;g.drawImage(sc,0,0,sc.width,sc.height);\n"
+                   "g.strokeStyle='#0ff';g.beginPath();for(var y=0;y<S.nframe;y++){var fx=(S.ridge[y]-S.fmin)/(S.fmax-S.fmin)*S.nbin;if(y==0)g.moveTo(fx*3,y*3);else g.lineTo(fx*3,y*3);}g.stroke();\n"
+                   "g.strokeStyle='#f00';g.beginPath();g.moveTo(0,S.i0*3);g.lineTo(sc.width,S.i0*3);g.stroke();\n"
+                   "g.fillStyle='#fff';g.font='11px Helvetica';g.fillText('spectrogramme R1 (axe Y km/h, impact en rouge)',8,S.nframe*3-6);\n"
+                   "g.fillText((S.fmax/19.49)+' km/h',sc.width-70,12);g.fillText((S.fmin/19.49)+' km/h',sc.width-70,S.nframe*3-6);\n");
+    }
     fprintf(f, "</script></body></html>\n");
     fclose(f);
 }
