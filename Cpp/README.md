@@ -23,15 +23,15 @@ L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/a
 
 ## PNG de la densité spectrale d'une captation
 
-Outil séparé `spectro_png` (réutilise Capture.h + CImg) — style spectro_F7-*.png :
-axe X = temps, axe Y = km/h (f/19.49), colormap viridis, ridge balle cyan (post-impact), impact rouge.
+Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendance**, plus de CImg) — style spectro_F7-*.png :
+990×770, 2 panneaux R1/R2, axe X = temps (s), axe Y = km/h (f/19.49), colormap `hot` (fond noir, trace « feu »),
+ridge balle cyan (post-impact, lissé), impact rouge + label. Sortie BMP 24 bits.
 
 ```bash
-g++ -O2 -std=c++11 -Dcimg_display=0 -DUSE_CIMG -I. -o spectro_png spectro_png.cpp
-#   /!\ sur Mac SANS XQuartz, -Dcimg_display=0 est OBLIGATOIRE (sinon CImg cherche X11/Xlib.h -> fatal error)
-#   PNG si brew install libpng, sinon BMP automatique
-./spectro_png ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv spectro_123.png -o
-#   -o / --open : ouvre l image générée automatiquement (open sur Mac)
+g++ -O2 -std=c++11 -I. -o spectro_png spectro_png.cpp
+./spectro_png ../../sci/2019-02-24-F7-137m-166kmh-4990trm-1312trm-cs118.csv spectro_137.bmp -o
+#   -o / --open : ouvre l'image générée automatiquement (open sur Mac)
+#   conversion PNG sur Mac : sips -s format png spectro_137.bmp
 ```
 
 ## Commandes
