@@ -27,6 +27,8 @@
 #endif
 
 static const double KV = 19.49;        // Hz / (km/h) radar 10.525 GHz (f_D = KV * V_kmh)
+static const double HP_KMH = 50.0;     // passe-haut avant spectrogramme d'affichage (km/h) : rejette le lobe du club (comme plot_spectro.py --hp 50)
+static const double VMAX_KMH = 250.0;  // vue pleine spectrogramme : axe Y 0..250 km/h
 static const double KS = 0.1567;       // Hz / RPM (excursion micro-Doppler, d = 0.04267 m, doc §10)
 static const double BALL_D = 0.04267;  // diamètre balle (m), doc §10/§2
 static const double FS = 44100.0;
@@ -69,6 +71,24 @@ CAP_UNUSED static void fft(std::vector<double>& re, std::vector<double>& im, boo
         }
     }
     if (inverse) for (int i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+}
+
+// ---------------- passe-haut FFT (brique) : zero les bins |f| < fcut ----------
+CAP_UNUSED static std::vector<double> highpass(const std::vector<double>& x, double fcut) {
+    int n = (int)x.size();
+    int N = 1; while (N < n) N <<= 1;                 // FFT radix-2 : zero-pad
+    std::vector<double> re(N, 0.0), im(N, 0.0);
+    double m = 0; for (int i = 0; i < n; i++) m += x[i]; m /= n;
+    for (int i = 0; i < n; i++) re[i] = x[i] - m;
+    fft(re, im, false);
+    for (int k = 0; k < N; k++) {
+        double f = (k <= N / 2) ? k * FS / N : (k - N) * FS / N;
+        if (std::fabs(f) < fcut) { re[k] = 0.0; im[k] = 0.0; }
+    }
+    fft(re, im, true);
+    std::vector<double> y(n);
+    for (int i = 0; i < n; i++) y[i] = re[i];
+    return y;
 }
 
 // ---------------- chargement ------------------------------------------------
@@ -180,7 +200,7 @@ struct EstRadar {
     double t0_s;
     // spectrogramme embarqué pour affichage fixe (densité 0..255, bande FMIN..FMAX Hz, axe Y en km/h via /KV)
     std::vector<unsigned char> spec;   // [nframes * nbin], ligne = frame temporelle
-    int spec_nbin = 0, spec_nframe = 0;
+    int spec_nbin = 0, spec_nframe = 0, spec_hop = 0;
     double spec_fmin = 0, spec_fmax = 0;
     std::vector<double> spec_ridge;    // Hz par frame
     std::vector<double> spec_power;    // puissance max par frame (0..1 normalisée)
@@ -188,53 +208,49 @@ struct EstRadar {
 };
 
 CAP_UNUSED static void fill_spec(EstRadar& e, const std::vector<double>& sig, int NFFT, int HOP) {
-        const double FMIN = 800.0, FMAX = 6500.0;
-        int nframes = 1 + ((int)sig.size() - NFFT) / HOP;
+        // conforme plot_spectro.py : passe-haut 50 km/h, vue pleine 0..250 km/h,
+        // ridge = crête pleine bande par frame (interpolation parabolique, comme Python)
+        const double FMIN = 0.0, FMAX = VMAX_KMH * KV;      // 0..4872,5 Hz
+        std::vector<double> s = highpass(sig, HP_KMH * KV); // passe-haut 974,5 Hz (50 km/h)
+        int nframes = 1 + ((int)s.size() - NFFT) / HOP;
         int k0 = (int)(FMIN * NFFT / FS), k1 = (int)(FMAX * NFFT / FS);
         if (k1 >= NFFT / 2) k1 = NFFT / 2 - 1;
         e.spec_nbin = k1 - k0 + 1;
         e.spec_nframe = nframes;
+        e.spec_hop = HOP;
         e.spec_fmin = FMIN; e.spec_fmax = FMAX;
         e.spec.resize((size_t)nframes * e.spec_nbin);
         e.spec_ridge.assign(nframes, 0.0);
         e.spec_power.assign(nframes, 0.0);
-        std::vector<double> w(NFFT), re(NFFT), im(NFFT);
+        std::vector<double> w(NFFT), re(NFFT), im(NFFT), P(NFFT / 2);
         for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
+        // passe 1 : p99 pour la normalisation dB
         std::vector<double> allp;
         for (int fr = 0; fr < nframes; fr++) {
-            for (int i = 0; i < NFFT; i++) { re[i] = sig[fr * HOP + i] * w[i]; im[i] = 0; }
+            for (int i = 0; i < NFFT; i++) { re[i] = s[fr * HOP + i] * w[i]; im[i] = 0; }
             fft(re, im, false);
             for (int k = k0; k <= k1; k++) allp.push_back(re[k] * re[k] + im[k] * im[k]);
         }
         std::sort(allp.begin(), allp.end());
         double gmax = allp.empty() ? 1.0 : allp[(size_t)(allp.size() * 0.99)];  // p99 comme matplotlib
         if (gmax <= 0) gmax = 1;
+        // passe 2 : image dB [-80..0] + ridge pleine bande + puissance
         for (int fr = 0; fr < nframes; fr++) {
-            for (int i = 0; i < NFFT; i++) { re[i] = sig[fr * HOP + i] * w[i]; im[i] = 0; }
+            for (int i = 0; i < NFFT; i++) { re[i] = s[fr * HOP + i] * w[i]; im[i] = 0; }
             fft(re, im, false);
-            int kb = k0; double pmax = 0;
-            for (int k = k0; k <= k1; k++) {
-                double p = re[k] * re[k] + im[k] * im[k];
-                if (p > pmax) { pmax = p; kb = k; }
-                    e.spec_ridge[fr] = kb * FS / NFFT;
+            for (int k = 0; k < NFFT / 2; k++) P[k] = re[k] * re[k] + im[k] * im[k];
+            int kb = 1; double pmax = 0;
+            for (int k = 1; k < NFFT / 2; k++) if (P[k] > pmax) { pmax = P[k]; kb = k; }
+            e.spec_ridge[fr] = parabolic_peak(P, kb) * FS / NFFT;
             e.spec_power[fr] = pmax / gmax;
-            for (int k = k0; k <= k1; k++)
-                e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = 0; // rempli après normalisation
-        }
-        // normalisation + remplissage (log, fenetre -40 dB sous p99)
-        for (int fr = 0; fr < nframes; fr++) {
-            for (int i = 0; i < NFFT; i++) { re[i] = sig[fr * HOP + i] * w[i]; im[i] = 0; }
-            fft(re, im, false);
             for (int k = k0; k <= k1; k++) {
-                double p = re[k] * re[k] + im[k] * im[k];
-                double db = 10.0 * log10(p / gmax + 1e-12);
+                double db = 10.0 * log10(P[k] / gmax + 1e-12);
                 if (db < -80.0) db = -80.0;
                 e.spec[(size_t)fr * e.spec_nbin + (k - k0)] = (unsigned char)(255.0 * (db + 80.0) / 80.0);
             }
         }
         int i0l = 0; for (size_t i = 1; i < e.spec_power.size(); i++) if (e.spec_power[i] > e.spec_power[i0l]) i0l = (int)i;
         e.spec_i0 = i0l;
-    }
 }
 
 CAP_UNUSED static EstRadar estimate(const Capture& c) {
@@ -348,7 +364,7 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
         tt.push_back(tg[i]);
         al.push_back(atan((2.0 * L / B_BASE) * (fd / fc)) * 180.0 / M_PI);
     }
-    fill_spec(e, c.r1, NFFT, HOP);
+    fill_spec(e, c.r1, 512, 128);   // fenêtre 11,6 ms comme plot_spectro.py (ridge bien résolu en temps)
     if (al.size() >= 3) {
         // alpha0 = médiane fenêtre initiale 50 ms ; dalpha = médiane(fin 100 ms) - médiane(début)
         std::vector<double> a0, af;

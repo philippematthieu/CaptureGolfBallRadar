@@ -24,6 +24,7 @@ static std::string spec_to_json(const EstRadar& e) {
     if (e.spec.empty()) return "";
     std::string s = "{nbin:" + std::to_string(e.spec_nbin) + ",nframe:" + std::to_string(e.spec_nframe)
         + ",fmin:" + std::to_string(e.spec_fmin) + ",fmax:" + std::to_string(e.spec_fmax)
+        + ",hop:" + std::to_string(e.spec_hop)
         + ",i0:" + std::to_string(e.spec_i0) + ",pow:[";
     for (size_t i = 0; i < e.spec_power.size(); i++) { char b[32]; snprintf(b, 32, "%.3f,", e.spec_power[i]); s += b; }
     s += "],ridge:[";
@@ -176,7 +177,7 @@ int main(int argc, char *argv[]) {
   + kv("Launch", fmt1(theBall.getLaunchAngle() * 180.0 / M_PI, "deg"))
   + kv("BackSpin", fmt0(theBall.getSpinYOrgrpm(), "rpm")) + kv("SideSpin", fmt0(theBall.getSpinZOrgrpm(), "rpm"))
   + kv("Portee", fmt1(portee, "m")) + kv("Apex", fmt1(apex, "m")) + kv("z final", fmt1(zfinal, "m"));
-  { EstRadar es; auto sig = gen_signal_simu(mf, sac[j].getClubV0kmh()); fill_spec(es, sig, 2048, 1024);
+  { EstRadar es; auto sig = gen_signal_simu(mf, sac[j].getClubV0kmh()); fill_spec(es, sig, 512, 128);
   write_traj_3d_html("trajectoire_3d.html", mf, titre3d, inf, spec_to_json(es)); }
   }
     cout << "HTML 3D ecrit : trajectoire_3d.html (ouvrir dans Safari, tourner avec la souris)" << endl;

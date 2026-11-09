@@ -16,7 +16,7 @@ Au shoot : l'axe de spin ω est incliné de β → backspin = ω·cos β, sidesp
 <img src="sci/img/Pasted image 20250122083456.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122083851.png"  width="280" height="190">
 
 ### Densités spectrales régénérées en Python — 2 voies R1/R2, axe Y en km/h (f/19,49), ridge balle en cyan
-Commande : `python3 sci/plot_spectro.py sci/<capture.csv|wav> [sortie.png] [--nfft 512 --hop 128] [--open]`
+Commande : `python3 sci/plot_spectro.py sci/<capture.csv|wav> [sortie.png] [--nfft 512 --hop 128] [--hp 50] [--zoom 256] [--open]` — vue pleine 0–250 km/h par défaut (fenêtre STFT 512 = 11,6 ms, ridge cyan bien résolu en temps, impact pointillé, passe-haut 50 km/h qui rejette le lobe du club), `--hp 0` sans filtrage, `--zoom N` pour zoomer ±N Hz autour de vBall
 (ex. `sci/img/spectro_F7-*.png` ci-dessous, régénérés avec `pipe_validation.py` ; équivalent C++ sans dépendance : `Cpp/src/spectro_png.cpp`, image `sci/img/spectro_CPP_F7-137m-*.png`)
 <img src="sci/img/spectro_F7-113m-156kmh-11624trm-999trmcs-136.png"  width="300" height="236">
 <img src="sci/img/spectro_F7-123m-150kmh-5274trm-210trm-cs111.png"  width="300" height="236">

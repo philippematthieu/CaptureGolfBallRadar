@@ -83,16 +83,16 @@ og.putImageData(im,0,0);
 function drawSpec(){var w=innerWidth-250-ML;if(w<100)w=100;sc.width=w;sc.height=SH;sc.style.width=w+'px';sc.style.height=SH+'px';
 var g=sc.getContext('2d');g.imageSmoothingEnabled=true;g.drawImage(off,0,0,w,SH);
 g.strokeStyle='#00ffff';g.lineWidth=2;g.beginPath();var started=false;
-for(var fr=0;fr<S.nframe;fr++){if(fr<S.i0||S.pow[fr]<0.03)continue;
-var r=S.ridge[fr];if(fr>0&&fr<S.nframe-1&&S.pow[fr-1]>0.03&&S.pow[fr+1]>0.03)r=(S.ridge[fr-1]+r+S.ridge[fr+1])/3;
+for(var fr=0;fr<S.nframe;fr++){var r=S.ridge[fr];
+if(fr>0&&fr<S.nframe-1)r=(S.ridge[fr-1]+r+S.ridge[fr+1])/3;
 var fx=fr/(S.nframe-1)*w;var fy=(1-(r-S.fmin)/(S.fmax-S.fmin))*SH;
 if(!started){g.moveTo(fx,fy);started=true;}else g.lineTo(fx,fy);}g.stroke();
-g.strokeStyle='#ff2222';g.lineWidth=2;g.beginPath();var xi=S.i0/(S.nframe-1)*w;g.moveTo(xi,0);g.lineTo(xi,SH);g.stroke();
-g.fillStyle='#fff';g.font='11px Helvetica';
-for(var km=0;km<=300;km+=50){var fy=(1-((km*19.49)-S.fmin)/(S.fmax-S.fmin))*SH;if(fy<0||fy>SH)continue;
+g.strokeStyle='#ffffff';g.setLineDash([4,3]);g.lineWidth=1.5;g.beginPath();var xi=S.i0/(S.nframe-1)*w;g.moveTo(xi,0);g.lineTo(xi,SH);g.stroke();g.setLineDash([]);
+g.fillStyle='#fff';g.font='11px Helvetica';g.fillText('impact',xi+4,24);
+for(var km=0;km<=250;km+=50){var fy=(1-((km*19.49)-S.fmin)/(S.fmax-S.fmin))*SH;if(fy<0||fy>SH)continue;
 g.fillText(km+' km/h',-ML+2,fy+3);g.strokeStyle='#666';g.beginPath();g.moveTo(0,fy);g.lineTo(w,fy);g.stroke();}
-var tmax=S.nframe*1024/44100;for(var t=0;t<=tmax+0.001;t+=0.1){var tx=t/tmax*w;g.fillText(t.toFixed(1)+'s',tx+2,SH-4);}
-g.fillText('spectrogramme R1 (densite, ridge balle cyan post-impact, impact rouge)',4,14);}
+var tmax=(S.nframe-1)*(S.hop||1024)/44100;for(var t=0;t<=tmax+0.001;t+=0.1){var tx=t/tmax*w;g.fillText(t.toFixed(1)+'s',tx+2,SH-4);}
+g.fillText('spectrogramme R1 — 0..250 km/h, passe-haut 50 km/h, ridge cyan, impact pointille',4,14);}
 drawSpec();
 )JS", f);
     }
