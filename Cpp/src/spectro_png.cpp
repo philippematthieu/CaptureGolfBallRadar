@@ -1,7 +1,7 @@
 //============================================================================
 // spectro_png.cpp — génère l'image de la densité spectrale d'une captation radar
 // (CSV 2 lignes ';' ou WAV stéréo), style spectro_F7-*.png du README :
-//   990x770, 2 panneaux R1/R2, axe X = temps (s), axe Y = km/h (f/KV),
+//   640x500, 2 panneaux R1/R2, zoom Y ±600 Hz autour du ridge, axe X = temps (s), axe Y = km/h (f/KV),
 //   colormap 'hot' (fond noir, trace feu), ridge balle cyan (post-impact,
 //   lissé), impact en rouge. Réutilise Capture.h (FFT/STFT) + BmpImg.h
 //   (writer PNG/BMP maison, zéro dépendance).
@@ -28,13 +28,15 @@ int main(int argc, char** argv) {
     string out = (args2.size() > 1) ? args2[1] : "spectrogramme.png";
     Capture c = load_capture(in);
     EstRadar e = estimate(c);
-    fill_spec(e, c.r1, 2048, 1024);          // spectrogramme canal R1 (bande 800-6500 Hz)
+    const int NFFT = 2048, HOP = 256;        // hop 256 : 4x plus de frames, bandes fines
+    fill_spec(e, c.r1, NFFT, HOP);           // spectrogramme canal R1 (bande 800-6500 Hz)
 
-    // rendu identique aux spectro_F7-*.png de Python : 990x770, fond blanc, colormap 'hot',
-    // 2 panneaux verticaux R1 (haut) / R2 (bas), axe Y en km/h, axe X en s, ridge cyan, impact rouge
+    // rendu compact : 640x500, 2 panneaux R1 (haut) / R2 (bas), zoom Y ±600 Hz autour du
+    // ridge post-impact (pour voir les raies micro-Doppler), axe Y km/h, axe X s,
+    // colormap 'hot', ridge cyan, impact rouge
     EstRadar e2 = estimate(c);   // canal R2 (e contient déjà R1)
-    fill_spec(e2, c.r2, 2048, 1024);
-    const int W = 990, H = 770, ML = 58, MT = 30, MB = 40, GAP = 26;
+    fill_spec(e2, c.r2, NFFT, HOP);
+    const int W = 640, H = 500, ML = 52, MT = 26, MB = 34, GAP = 22;
     int Hpan = (H - MT - MB - GAP) / 2;
     BmpImg img(W, H, 255, 255, 255);   // fond blanc
     auto hot = [](double v) {           // colormap 'hot' matplotlib
@@ -45,13 +47,26 @@ int main(int argc, char** argv) {
     };
     const uint8_t CYAN[3] = {0, 200, 255}, ROUGE[3] = {220, 30, 30}, NOIR[3] = {0, 0, 0};
     auto draw_panel = [&](const EstRadar& e, int y0, const char* label) {
-        int Wimg = W - ML - 14;
+        int Wimg = W - ML - 12;
+        // zoom Y : ±600 Hz autour de la médiane du ridge post-impact (raies visibles)
+        std::vector<double> rr;
+        for (int fr = e.spec_i0; fr < e.spec_nframe; fr++)
+            if (e.spec_power[fr] > 0.03) rr.push_back(e.spec_ridge[fr]);
+        double fz0 = e.spec_fmin, fz1 = e.spec_fmax;
+        if (rr.size() >= 3) {
+            std::sort(rr.begin(), rr.end());
+            double fm = rr[rr.size() / 2];
+            fz0 = std::max(e.spec_fmin, fm - 600.0);
+            fz1 = std::min(e.spec_fmax, fm + 600.0);
+        }
         auto X = [&](int fr){ return ML + (int)((double)fr / e.spec_nframe * Wimg); };
-        auto Y = [&](double f){ return y0 + Hpan - (int)((f - e.spec_fmin) / (e.spec_fmax - e.spec_fmin) * Hpan); };
+        auto Y = [&](double f){ return y0 + Hpan - (int)((f - fz0) / (fz1 - fz0) * Hpan); };
+        img.rect(ML, y0, ML + Wimg, y0 + Hpan, 0, 0, 0, true);   // fond noir du panneau
         for (int fr = 0; fr < e.spec_nframe; fr++) {            // bandes verticales par frame (comme imshow)
             int x0 = X(fr), x1 = X(fr + 1); if (x1 <= x0) x1 = x0 + 1;
             for (int b = 0; b < e.spec_nbin; b++) {
                 double f = e.spec_fmin + (b + 0.5) / e.spec_nbin * (e.spec_fmax - e.spec_fmin);
+                if (f < fz0 || f > fz1) continue;
                 double v = e.spec[(size_t)fr * e.spec_nbin + b] / 255.0;
                 v = v * v * v;   // gamma 3 : fond sombre, trace "feu" comme matplotlib hot
                 auto cc = hot(v);
@@ -67,7 +82,7 @@ int main(int argc, char** argv) {
             double r = e.spec_ridge[fr];
             if (fr > e.spec_i0 && fr < e.spec_nframe - 1 && e.spec_power[fr-1] > 0.03 && e.spec_power[fr+1] > 0.03)
                 r = (e.spec_ridge[fr-1] + r + e.spec_ridge[fr+1]) / 3;
-            if (r > e.spec_fmax) { prevx = -1; continue; }
+            if (r < fz0 || r > fz1) { prevx = -1; continue; }
             int x = X(fr) + (X(fr + 1) - X(fr)) / 2, y = Y(r);
             if (prevx >= 0)
                 for (int dy = -1; dy <= 1; dy++)
@@ -79,24 +94,24 @@ int main(int argc, char** argv) {
         int xi = X(e.spec_i0) + (X(e.spec_i0 + 1) - X(e.spec_i0)) / 2;   // impact vertical rouge
         img.line(xi, y0, xi, y0 + Hpan, ROUGE[0], ROUGE[1], ROUGE[2]);
         char t[96];
-        snprintf(t, sizeof(t), "impact t=%.3fs", e.spec_i0 * 1024.0 / FS);
+        snprintf(t, sizeof(t), "impact t=%.3fs", e.spec_i0 * HOP / FS);
         img.text(xi + 6, y0 + 10, t, ROUGE[0], ROUGE[1], ROUGE[2]);
         img.text(6, y0 + 4, label, NOIR[0], NOIR[1], NOIR[2]);
-        for (int km = (int)(e.spec_fmin / KV / 50) * 50; km <= (int)(e.spec_fmax / KV); km += 50) {  // axe Y km/h
+        for (int km = (int)(fz0 / KV / 20) * 20; km <= (int)(fz1 / KV); km += 20) {  // axe Y km/h (plage zoom)
             int y = Y(km * KV);
             snprintf(t, sizeof(t), "%d", km);
-            img.text(30, y - 3, t, NOIR[0], NOIR[1], NOIR[2]);
+            img.text(26, y - 3, t, NOIR[0], NOIR[1], NOIR[2]);
             img.line(ML - 4, y, ML, y, NOIR[0], NOIR[1], NOIR[2]);
         }
-        img.text(4, y0 + Hpan / 2, "km/h", NOIR[0], NOIR[1], NOIR[2]);
+        img.text(2, y0 + Hpan / 2, "km/h", NOIR[0], NOIR[1], NOIR[2]);
     };
     draw_panel(e, MT, "R1");
     draw_panel(e2, MT + Hpan + GAP, "R2");
-    double tmax = e.spec_nframe * 1024.0 / FS;                  // axe X temps
+    double tmax = e.spec_nframe * HOP / FS;                     // axe X temps
     char t[64];
-    for (double s = 0; s <= tmax + 0.001; s += 0.1) {
-        int x = ML + (int)(s / tmax * (W - ML - 14));
-        snprintf(t, sizeof(t), "%.1fs", s);
+    for (double s = 0; s <= tmax + 0.001; s += 0.05) {
+        int x = ML + (int)(s / tmax * (W - ML - 12));
+        snprintf(t, sizeof(t), "%.2fs", s);
         img.text(x, H - MB + 10, t, NOIR[0], NOIR[1], NOIR[2]);
     }
     snprintf(t, sizeof(t), "Densite spectrale radar - %s", in.c_str());
