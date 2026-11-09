@@ -21,11 +21,22 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-static const double KV = 19.49;        // Hz / (km/h) radar 10.525 GHz
+static const double KV = 19.49;        // Hz / (km/h) radar 10.525 GHz (f_D = KV * V_kmh)
+static const double KS = 0.1567;       // Hz / RPM (excursion micro-Doppler, d = 0.04267 m, doc §10)
+static const double BALL_D = 0.04267;  // diamètre balle (m), doc §10/§2
 static const double FS = 44100.0;
 static const double B_BASE = 0.30;     // baseline radars (m)
 static const double L0 = 1.50;         // distance initiale balle (m)
-static const double THETA_RADAR = 20.0 * M_PI / 180.0;
+static const double THETA_RADAR = 20.0 * M_PI / 180.0;  // biais géométrique radar (corrigé après)
+
+// interpolation sous-bin parabolique du pic (comme pipe_validation.parabolic_peak)
+static double parabolic_peak(const std::vector<double>& P, int k) {
+    if (k <= 0 || k >= (int)P.size() - 1) return (double)k;
+    double den = P[k-1] - 2.0*P[k] + P[k+1];
+    if (den == 0.0) return (double)k;
+    double d = 0.5 * (P[k-1] - P[k+1]) / den;
+    return k + (std::fabs(d) <= 1.0 ? d : 0.0);
+}
 
 // ---------------- FFT itérative radix-2 (longueur = puissance de 2) --------
 static void fft(std::vector<double>& re, std::vector<double>& im, bool inverse) {
@@ -140,93 +151,138 @@ static void spectrogram(const std::vector<double>& x, int nfft, int hop,
     for (int fr = 0; fr < nframes; fr++) {
         for (int i = 0; i < nfft; i++) { re[i] = x[fr * hop + i] * w[i]; im[i] = 0.0; }
         fft(re, im, false);
+        std::vector<double> P(nfft / 2);
         int kmax = 1; double pmax = 0.0;
         for (int k = 1; k < nfft / 2; k++) {
             double f = k * FS / nfft;
-            if (f < 1000.0 || f > 6000.0) continue;   // passe-bande vitesse balle
-            double p = re[k] * re[k] + im[k] * im[k];
-            if (p > pmax) { pmax = p; kmax = k; }
+            P[k] = re[k] * re[k] + im[k] * im[k];
+            if (f < 1000.0 || f > 6000.0) { P[k] = -1.0; continue; }  // passe-bande vitesse balle
+            if (P[k] > pmax) { pmax = P[k]; kmax = k; }
         }
-        ridge[fr] = kmax * FS / nfft;
+        ridge[fr] = parabolic_peak(P, kmax) * FS / nfft;   // sous-bin (comme Python)
         power[fr] = pmax;
         tgrid[fr] = (fr * hop + nfft / 2.0) / FS;
     }
 }
 
-// ---------------- estimation ------------------------------------------------
+// ---------------- estimation (conforme pipe_validation.py) -------------------
 struct EstRadar {
-    double vball_kmh;    // radiale
-    double spin_rpm;
-    double alpha0_deg;
+    double vball_kmh;      // radiale
+    double vball_corr_kmh; // corrigée cos(20°)
+    double spin_rpm;       // périodicité du patch
+    double alpha0_deg;     // azimut initial (appariement stéréo)
+    double dalpha_deg;     // courbure début-fin
     double t0_s;
 };
 
 static EstRadar estimate(const Capture& c) {
-    EstRadar e; e.vball_kmh = 0; e.spin_rpm = 0; e.alpha0_deg = 0; e.t0_s = 0;
-    const int NFFT = 2048, HOP = 1024;
+    EstRadar e; e.vball_kmh = 0; e.vball_corr_kmh = 0; e.spin_rpm = 0; e.alpha0_deg = 0; e.dalpha_deg = 0; e.t0_s = 0;
+    const int NFFT = 2048, HOP = NFFT / 2;
     std::vector<double> ridge, power, tg;
     spectrogram(c.r1, NFFT, HOP, ridge, power, tg);
     // impact = frame max énergie
     int i0 = 0; for (size_t i = 1; i < power.size(); i++) if (power[i] > power[i0]) i0 = (int)i;
     e.t0_s = tg[i0];
-    // vBall = médiane du ridge post-impact (50 ms)
+    // vBall = médiane du ridge post-impact (50 ms), corrigée cos(20°) comme Python
     std::vector<double> post;
     for (size_t i = i0; i < ridge.size() && tg[i] < tg[i0] + 0.05; i++) post.push_back(ridge[i]);
     if (!post.empty()) {
         std::sort(post.begin(), post.end());
         e.vball_kmh = post[post.size() / 2] / KV;
+        e.vball_corr_kmh = e.vball_kmh / cos(THETA_RADAR);
     }
-    // spin par périodicité du patch : enveloppe de Hilbert 250 ms post-impact
+    // --- spin par périodicité du patch, avec score d'harmoniques (comme Python) ---
     int nseg = (int)(0.25 * FS);
     if ((i0 * HOP + nseg) < (int)c.r1.size() && nseg > NFFT) {
         int N = 1; while (N < nseg) N <<= 1;
         std::vector<double> re(N, 0.0), im(N, 0.0);
         for (int i = 0; i < nseg; i++) re[i] = c.r1[i0 * HOP + i];
         fft(re, im, false);
-        // signal analytique : h[0]=1, h[1..N/2-1]=2, h[N/2]=1
         std::vector<double> h(N, 0.0);
         h[0] = 1.0; for (int k = 1; k < N / 2; k++) h[k] = 2.0; h[N / 2] = 1.0;
         for (int k = 0; k < N; k++) { re[k] *= h[k]; im[k] *= h[k]; }
-        fft(re, im, true);
-        // enveloppe
+        fft(re, im, true);                                   // signal analytique
         std::vector<double> env(N);
         for (int i = 0; i < N; i++) env[i] = sqrt(re[i] * re[i] + im[i] * im[i]);
         double m = 0; for (int i = 0; i < N; i++) m += env[i]; m /= N;
-        for (int i = 0; i < N; i++) { re[i] = (env[i] - m); im[i] = 0; re[i] *= 0.5 - 0.5 * cos(2.0 * M_PI * i / (N - 1)); }
+        for (int i = 0; i < N; i++) { re[i] = (env[i] - m) * (0.5 - 0.5 * cos(2.0 * M_PI * i / (N - 1))); im[i] = 0; }
         fft(re, im, false);
-        // pic spectre enveloppe dans 50..200 Hz (3000..12000 rpm)
-        int kbest = -1; double pbest = 0;
+        std::vector<double> Pe(N / 2);
+        std::vector<int> loc;
+        double pmax = 0;
         for (int k = 1; k < N / 2; k++) {
             double f = k * FS / N;
-            if (f < 50.0 || f > 200.0) continue;
-            double p = re[k] * re[k] + im[k] * im[k];
-            if (p > pbest) { pbest = p; kbest = k; }
+            Pe[k] = re[k] * re[k] + im[k] * im[k];
+            if (f >= 50.0 && f <= 200.0 && Pe[k] > 0.1 * 0 + 0) {} // bande f_rot 3000..12000 rpm
+            if (f >= 50.0 && f <= 200.0 && Pe[k] > pmax) pmax = Pe[k];
+            if (f >= 50.0 && f <= 200.0 && k > 0 && k < N / 2 - 1 && Pe[k] >= Pe[k-1] && Pe[k] >= Pe[k+1] && Pe[k] > 0.1 * pmax)
+                loc.push_back(k);
         }
-        if (kbest > 0) e.spin_rpm = 60.0 * kbest * FS / N;
+        if (loc.empty() && pmax > 0) { int k = 1; for (int j = 1; j < N / 2; j++) if (Pe[j] > Pe[k]) k = j; loc.push_back(k); }
+        // score d'harmoniques : le fondamental explique le plus de pics (évite f_rot/2)
+        double df = FS / N;
+        int best = loc.empty() ? -1 : loc[0]; double bestscore = -1;
+        for (int p : loc) {
+            double f0 = p * df, score = Pe[p];
+            for (int q : loc) {
+                if (q == p) continue;
+                int k = (int)lround(q * df / f0);
+                if (k >= 1 && std::fabs(q * df - k * f0) < 2 * df) score += Pe[q];
+            }
+            if (score > bestscore) { bestscore = score; best = p; }
+        }
+        if (best < 0 && !loc.empty()) best = loc[0];              // fallback : 1er pic local
+        if (best < 0) { int k = 1; for (int j = 1; j < N / 2; j++) if (Pe[j] > Pe[k]) k = j; if (Pe[k] > 0) best = k; } // fallback : max global
+        if (best > 0) e.spin_rpm = 60.0 * parabolic_peak(Pe, best) * df;
     }
-    // alpha0 : pics moyens post-impact des 2 canaux (moyenne des spectres des frames post-impact)
-    auto mean_peak = [&](const std::vector<double>& x) -> double {
-        int nframes = 1 + ((int)x.size() - NFFT) / HOP;
-        std::vector<double> acc(NFFT / 2, 0.0);
-        std::vector<double> w(NFFT), re(NFFT), im(NFFT);
-        for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
-        int cnt = 0;
-        for (int fr = i0; fr < nframes && cnt < 20; fr++, cnt++) {
-            for (int i = 0; i < NFFT; i++) { re[i] = x[fr * HOP + i] * w[i]; im[i] = 0; }
-            fft(re, im, false);
-            for (int k = 1; k < NFFT / 2; k++) acc[k] += re[k] * re[k] + im[k] * im[k];
-        }
-        int kbest = 1; double pbest = 0;
+    // --- alpha(t) par appariement stéréo : f2 cherché au voisinage de f1 (±300 Hz), |f1-f2|<=30 Hz ---
+    // spectrogrammes des 2 canaux
+    std::vector<double> ridge2, power2, tg2;
+    spectrogram(c.r2, NFFT, HOP, ridge2, power2, tg2);
+    std::vector<double> tt, al;
+    double v_ms = e.vball_kmh / KV * 1000.0 / 3600.0;
+    for (size_t i = i0; i < ridge.size(); i++) {
+        if (power[i] < 0.02 * power[i0]) continue;
+        double f1 = ridge[i];
+        // chercher le pic de R2 dans ±300 Hz autour de f1
+        int nframes2 = (int)ridge2.size();
+        if ((int)i >= nframes2) continue;
+        // spectre de la frame i du canal 2
+        std::vector<double> re(NFFT), im(NFFT);
+        std::vector<double> w(NFFT);
+        for (int j = 0; j < NFFT; j++) w[j] = 0.5 - 0.5 * cos(2.0 * M_PI * j / (NFFT - 1));
+        for (int j = 0; j < NFFT; j++) { re[j] = c.r2[i * HOP + j] * w[j]; im[j] = 0; }
+        fft(re, im, false);
+        std::vector<double> P2(NFFT / 2);
+        for (int k = 1; k < NFFT / 2; k++) P2[k] = re[k] * re[k] + im[k] * im[k];
+        int kbest = -1; double pbest = 0;
         for (int k = 1; k < NFFT / 2; k++) {
             double f = k * FS / NFFT;
-            if (f < 1000.0 || f > 6000.0) continue;
-            if (acc[k] > pbest) { pbest = acc[k]; kbest = k; }
+            if (f < f1 - 300 || f > f1 + 300) continue;
+            if (P2[k] > pbest) { pbest = P2[k]; kbest = k; }
         }
-        return kbest * FS / NFFT;
-    };
-    double f1 = mean_peak(c.r1), f2 = mean_peak(c.r2);
-    double fc = (f1 + f2) / 2.0, fd = (f1 - f2) / 2.0;
-    if (fc > 0) e.alpha0_deg = atan((2.0 * L0 / B_BASE) * (fd / fc)) * 180.0 / M_PI;
+        if (kbest < 0 || pbest < 0.01 * power2[i0]) continue;
+        double f2 = parabolic_peak(P2, kbest) * FS / NFFT;
+        if (std::fabs(f1 - f2) > 30.0) continue;              // cohérence géométrique
+        double fc = (f1 + f2) / 2.0, fd = (f1 - f2) / 2.0;
+        if (fc <= 0) continue;
+        double L = L0 + v_ms / cos(THETA_RADAR) * (tg[i] - tg[i0]);  // L(t) évolutif
+        tt.push_back(tg[i]);
+        al.push_back(atan((2.0 * L / B_BASE) * (fd / fc)) * 180.0 / M_PI);
+    }
+    if (al.size() >= 3) {
+        // alpha0 = médiane fenêtre initiale 50 ms ; dalpha = médiane(fin 100 ms) - médiane(début)
+        std::vector<double> a0, af;
+        for (size_t i = 0; i < tt.size(); i++) {
+            if (tt[i] <= tg[i0] + 0.05) a0.push_back(al[i]);
+            if (tt[i] >= tt.back() - 0.10) af.push_back(al[i]);
+        }
+        if (!a0.empty() && !af.empty()) {
+            std::sort(a0.begin(), a0.end()); std::sort(af.begin(), af.end());
+            e.alpha0_deg = a0[a0.size() / 2];
+            e.dalpha_deg = af[af.size() / 2] - a0[a0.size() / 2];
+        }
+    }
     return e;
 }
 
