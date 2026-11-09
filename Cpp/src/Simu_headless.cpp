@@ -13,6 +13,9 @@
 #include "Capture.h"
 #include "PlotSVG.h"
 #include "Plot3D.h"
+#ifdef USE_CIMG
+#include "PlotCImg.h"
+#endif
 
 using namespace std;
 
@@ -103,6 +106,10 @@ int main(int argc, char *argv[]) {
     snprintf(svgname, sizeof(svgname), "trajectoire_%s.svg", sac[j].getType().c_str());
     write_traj_3d_html("trajectoire_3d.html", mf, titre3d);
     cout << "HTML 3D ecrit : trajectoire_3d.html (ouvrir dans Safari, tourner avec la souris)" << endl;
+    #ifdef USE_CIMG
+    write_traj_png_cimg("trajectoire_" + sac[j].getType() + ".png", mf, titre3d);
+    cout << "PNG CImg ecrit : trajectoire_" << sac[j].getType() << ".png" << endl;
+#endif
     write_traj_svg(svgname, mf,
                    "Trajectoire " + sac[j].getType() + " — portée " + std::to_string((int)portee) + " m, apex " +
                    std::to_string((int)apex) + " m");
