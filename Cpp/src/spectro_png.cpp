@@ -34,58 +34,65 @@ int main(int argc, char** argv) {
     EstRadar e = estimate(c);
     fill_spec(e, c.r1, 2048, 1024);          // spectrogramme canal R1 (bande 800-6500 Hz)
 
-    const int ML = 64, MB = 34, W = e.spec_nframe * 14 + ML, H = e.spec_nbin * 3 + MB;
+    // ratio 6:1 comme les spectro Python : largeur(temps) = 6 x hauteur(vitesse km/h)
+    const int ML = 64, MB = 34, MT = 22;
+    const double SY = 0.45;                       // px par km/h en Y
+    double kmhMax = (e.spec_fmax - e.spec_fmin) / KV;
+    int Himg = (int)(kmhMax * SY);                // hauteur zone image (px)
+    int Wimg = 6 * Himg;                          // largeur = 6 x hauteur (ratio 6:1)
+    int W = ML + Wimg + 16, H = MT + Himg + MB;
     CImg<unsigned char> img(W, H, 1, 3, 0);
     // colormap viridis
     const double vir[6][3] = {{68,1,84},{72,35,116},{59,82,139},{33,145,140},{94,201,98},{253,231,37}};
     auto cmap = [&](double v) {
         v = std::max(0.0, std::min(1.0, v));
         double x = v * 5; int i = std::min(4, (int)x); double f = x - i;
-        unsigned char r = (unsigned char)(vir[i][0] + (vir[i+1][0]-vir[i][0])*f);
-        unsigned char g = (unsigned char)(vir[i][1] + (vir[i+1][1]-vir[i][1])*f);
-        unsigned char b = (unsigned char)(vir[i][2] + (vir[i+1][2]-vir[i][2])*f);
-        return std::vector<unsigned char>{r, g, b};
+        return std::vector<unsigned char>{(unsigned char)(vir[i][0]+(vir[i+1][0]-vir[i][0])*f),
+                                          (unsigned char)(vir[i][1]+(vir[i+1][1]-vir[i][1])*f),
+                                          (unsigned char)(vir[i][2]+(vir[i+1][2]-vir[i][2])*f)};
     };
-    // transposé : X = frame (temps), Y = bin freq (haut = haute freq)
+    auto X = [&](int fr){ return ML + (int)((double)fr / (e.spec_nframe - 1) * Wimg); };
+    auto Y = [&](double f){ return MT + (int)((1.0 - (f - e.spec_fmin) / (e.spec_fmax - e.spec_fmin)) * Himg); };
+    // densité transposée : X = temps (frame), Y = fréquence (haut = haut km/h)
     for (int fr = 0; fr < e.spec_nframe; fr++)
         for (int b = 0; b < e.spec_nbin; b++) {
             double v = e.spec[(size_t)fr * e.spec_nbin + b] / 255.0;
             auto cc = cmap(v);
-            int x0 = ML + fr * 14, y0 = MB + (e.spec_nbin - 1 - b) * 3;
-            for (int dy = 0; dy < 3; dy++) for (int dx = 0; dx < 14; dx++)
-                if (x0 + dx < W && y0 + dy < H) img(x0 + dx, y0 + dy, 0, 0) = cc[0], img(x0 + dx, y0 + dy, 0, 1) = cc[1], img(x0 + dx, y0 + dy, 0, 2) = cc[2];
+            int x = X(fr), y = Y(e.spec_fmin + (b + 0.5) / e.spec_nbin * (e.spec_fmax - e.spec_fmin));
+            if (x < W && y < H) img(x, y, 0, 0) = cc[0], img(x, y, 0, 1) = cc[1], img(x, y, 0, 2) = cc[2];
         }
-    // ridge cyan post-impact, lissé, seuillé
-    const double noir[3] = {0, 255, 255}, rouge[3] = {255, 40, 40}, blanc[3] = {255, 255, 255};
+    // ridge balle cyan post-impact, lissé, seuillé
+    const double cyan[3] = {0, 255, 255}, rouge[3] = {255, 40, 40}, blanc[3] = {255, 255, 255};
     for (int fr = e.spec_i0; fr < e.spec_nframe; fr++) {
         if (e.spec_power[fr] < 0.03) continue;
         double r = e.spec_ridge[fr];
         if (fr > e.spec_i0 && fr < e.spec_nframe - 1 && e.spec_power[fr-1] > 0.03 && e.spec_power[fr+1] > 0.03)
             r = (e.spec_ridge[fr-1] + r + e.spec_ridge[fr+1]) / 3;
-        int x = ML + fr * 14 + 7;
-        int y = MB + (int)((1.0 - (r - e.spec_fmin) / (e.spec_fmax - e.spec_fmin)) * (e.spec_nbin - 1) * 3);
-        if (x >= 0 && x < W && y >= 0 && y < H) img.draw_circle(x, y, 2, noir);
+        img.draw_circle(X(fr), Y(r), 2, cyan);
     }
-    // impact : ligne verticale rouge
-    int xi = ML + e.spec_i0 * 14;
-    img.draw_line(xi, MB, xi, H - MB, rouge);
-    // axes : labels Y km/h à gauche, X secondes en bas
-    char t[64];
+    // shoot / impact : ligne verticale rouge + label
+    int xi = X(e.spec_i0);
+    img.draw_line(xi, MT, xi, MT + Himg, rouge);
+    img.draw_line(xi - 3, MT, xi, MT + 6, rouge); img.draw_line(xi + 3, MT, xi, MT + 6, rouge);
+    char t[96];
+    snprintf(t, sizeof(t), "IMPACT t=%.3f s", e.spec_i0 * 1024.0 / FS);
+    img.draw_text(xi + 6, MT + 10, t, rouge);
+    // axes : Y km/h à gauche, X secondes en bas
     for (int km = 0; km <= 300; km += 50) {
         double f = km * KV;
         if (f < e.spec_fmin || f > e.spec_fmax) continue;
-        int y = MB + (int)((1.0 - (f - e.spec_fmin) / (e.spec_fmax - e.spec_fmin)) * (e.spec_nbin - 1) * 3);
+        int y = Y(f);
         snprintf(t, sizeof(t), "%d km/h", km);
         img.draw_text(4, y - 5, t, blanc);
         img.draw_line(ML - 4, y, ML, y, blanc);
     }
     double tmax = e.spec_nframe * 1024.0 / FS;
     for (double s = 0; s <= tmax + 0.001; s += 0.1) {
-        int x = ML + (int)(s / tmax * (e.spec_nframe - 1) * 14);
+        int x = ML + (int)(s / tmax * Wimg);
         snprintf(t, sizeof(t), "%.1fs", s);
-        img.draw_text(x, H - MB + 6, t, blanc);
+        img.draw_text(x, MT + Himg + 6, t, blanc);
     }
-    snprintf(t, sizeof(t), "spectrogramme R1 — %s", in.c_str());
+    snprintf(t, sizeof(t), "spectrogramme R1 — %s  (ratio 6:1, Y=km/h)", in.c_str());
     img.draw_text(ML, 6, t, blanc);
 
     if (out.size() >= 4 && out.compare(out.size() - 4, 4, ".png") == 0) {
