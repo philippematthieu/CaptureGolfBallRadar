@@ -1,0 +1,32 @@
+# binaires / exécutables : jamais sur GitHub
+*.o
+*.obj
+*.exe
+*.dll
+*.dylib
+*.so
+*.class
+*.jar
+*.war
+*.pyc
+__pycache__/
+.DS_Store
+# artefacts de compilation LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.dvi
+*.bbl
+*.blg
+*.synctex.gz
+# binaires produits localement
+Cpp/src/simu_headless
+Cpp/src/simu_headless_cimg
+Cpp/src/*.svg
+Cpp/src/*.html
+Cpp/src/*.png
+Cpp/src/*.bmp
+Python/golf_ball_flight_3d.mp4
