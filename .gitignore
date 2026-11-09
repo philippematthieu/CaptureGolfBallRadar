@@ -22,6 +22,13 @@ __pycache__/
 *.bbl
 *.blg
 *.synctex.gz
+*.def
+*.equ
+*.lol
+*.rmk
+*.fls
+*.fdb_latexmk
+texput.log
 # binaires produits localement
 Cpp/src/simu_headless
 Cpp/src/simu_headless_cimg
