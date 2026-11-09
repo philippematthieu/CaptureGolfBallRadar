@@ -23,6 +23,8 @@ L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/a
 
 ## Commandes
 
+
+
 ```bash
 # simulation "club" : Type ClubV0(km/h) AlphaClubPath(deg) GamaFacePath(deg) ShaftLean(deg) [spinScale]
 ./simu_headless F7 122.3 0 0 -6.5          # fer 7 à 122,3 km/h
