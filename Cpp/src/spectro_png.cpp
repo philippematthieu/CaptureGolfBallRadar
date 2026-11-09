@@ -28,9 +28,9 @@ int main(int argc, char** argv) {
     std::vector<std::string> args2;
     for (int i = 1; i < argc; i++) { std::string a = argv[i]; if (a == "-o" || a == "--open") openAfter = true; else args2.push_back(a); }
     if (args2.empty()) { fprintf(stderr, "usage: spectro_png <capture.csv|wav> [sortie.png] [-o|--open]\n"); return 1; }
-    argv = args2.data(); argc = (int)args2.size();
-    string out = (argc > 2) ? argv[2] : "spectrogramme.png";
-    Capture c = load_capture(argv[1]);
+    string in = args2[0];
+    string out = (args2.size() > 1) ? args2[1] : "spectrogramme.png";
+    Capture c = load_capture(in);
     EstRadar e = estimate(c);
     fill_spec(e, c.r1, 2048, 1024);          // spectrogramme canal R1 (bande 800-6500 Hz)
 
@@ -85,11 +85,21 @@ int main(int argc, char** argv) {
         snprintf(t, sizeof(t), "%.1fs", s);
         img.draw_text(x, H - MB + 6, t, blanc);
     }
-    snprintf(t, sizeof(t), "spectrogramme R1 — %s", argv[1]);
+    snprintf(t, sizeof(t), "spectrogramme R1 — %s", in.c_str());
     img.draw_text(ML, 6, t, blanc);
 
-    if (out.size() >= 4 && out.compare(out.size() - 4, 4, ".png") == 0) img.save_png(out.c_str());
-    else img.save_bmp((out.substr(0, out.size() - 4) + ".bmp").c_str());
+    if (out.size() >= 4 && out.compare(out.size() - 4, 4, ".png") == 0) {
+        try {
+            img.save_png(out.c_str());          // nécessite libpng (brew install libpng)
+        } catch (const cimg_library::CImgException&) {  // CImgIOException en hérite
+            // pas de libpng / pas d'outil externe : fallback BMP propre (pas de plantage)
+            out = out.substr(0, out.size() - 4) + ".bmp";
+            img.save_bmp(out.c_str());
+            fprintf(stderr, "(libpng absent -> BMP écrit à la place: %s ; brew install libpng pour du PNG)\n", out.c_str());
+        }
+    } else {
+        img.save_bmp(out.c_str());
+    }
         if (openAfter) {
 #ifdef __APPLE__
         { std::string cmd = "open " + out; system(cmd.c_str()); }
