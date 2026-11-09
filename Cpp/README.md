@@ -24,7 +24,11 @@ L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/a
 ## Commandes
 
 ```bash
-./simu_headless --help        # aide complète : usage, options, sorties, exemples
+./simu_headless --help        # aide complète : usage, options, sorties, exemples (en couleur)
+
+# --open / -o (n'importe où) : ouvre automatiquement le HTML 3D après les calculs
+./simu_headless F7 122.3 0 0 -6.5 --open
+./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav --open
 
 # simulation "club" : Type ClubV0(km/h) AlphaClubPath(deg) GamaFacePath(deg) ShaftLean(deg) [spinScale]
 ./simu_headless F7 122.3 0 0 -6.5          # fer 7 à 122,3 km/h
@@ -48,14 +52,15 @@ Clubs disponibles : `Dr B5 H3 F5 F6 F7 F8 F9 PW AW SW LW Pt`.
 | `GamaFacePath` | 0 | angle face/trajectoire (deg) → side spin |
 | `ShaftLeanImp` | config | shaft lean à l'impact (deg) → loft dynamique |
 | `spinScale` | 1.0 | échelle du spin (0 = pas de spin) |
-| `--capture f.csv\|f.wav [club] [spinScale]` | — | mesure vBall/spin/α₀ sur la captation (Capture.h : FFT maison) puis simule |
+| `--capture f.csv\|f.wav [club] [spinScale]` | — | mesure vBall/spin/α₀/Δα sur la captation (Capture.h : FFT, Hilbert, appariement stéréo) puis simule |
+| `--open` / `-o` | non | ouvre automatiquement le HTML 3D après les calculs (`open` sur Mac) |
 
 ## Sorties produites (dans `Cpp/src/`)
 
 - console : `RESULT portee=... m  apex=... m  z_final=... m  temps=... s`
 - `trajectoire_<club>.svg` — image 2D vectorielle (profil + dessus) → `open ...svg`
 - `trajectoire_<club>.png` / `.bmp` — image 2D raster (CImg, compile `-DUSE_CIMG`) → `open ...png`
-- `trajectoire_3d.html` — **scène 3D interactive** (three.js embarqué dans `lib/`) → `open trajectoire_3d.html` ; souris : glisser = tourner, molette = zoom ; slider = vitesse de l'animation ; projection de la trajectoire au sol en pointillés
+- `trajectoire_3d.html` — **scène 3D interactive** (three.js embarqué dans `lib/`) → `open trajectoire_3d.html` (ou `--open` auto) ; layout HMI : panneau infos fixe à gauche (club/vBall/spin/α₀/Δα/portée/apex), scène 3D au centre (souris : glisser = tourner, molette = zoom, slider = vitesse anim, projection au sol en pointillés), **spectrogramme fixe en bas** (densité, axe km/h, ridge cyan post-impact, impact rouge) ; en mode club le spectrogramme est généré depuis la trajectoire simulée
 - en mode `--capture` : `trajectoire_capture.svg`, `trajectoire_capture_3d.html`, etc.
 
 ## Fichiers clés
