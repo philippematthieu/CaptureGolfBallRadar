@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
     sac[12] = Club("Pt",  0.300 , 20.0, 03   , 0.68 ,  550.24 ,       308.0 ,        0.00,   10.00,   0.0,           0.0,         1.0);
 
     bool openAfter = false;
-    std::string mode = "standard";
+    std::string mode = "fusion";   // défaut : patch + phase + peigne fusionnés
     { std::vector<std::string> args2; for (int i = 1; i < argc; i++) { std::string a = argv[i];
         if (a == "--open" || a == "-o") openAfter = true;
         else if (a == "--mode" && i + 1 < argc) mode = argv[++i];
@@ -192,9 +192,9 @@ int main(int argc, char *argv[]) {
                 "  spinScale       echelle du spin, 1.0 = normal, 0 = pas de spin (test Magnus)\n"
                 "  --capture f     lit une captation radar (CSV 2 lignes ';' ou WAV stereo 44,1 kHz),\n"
                 "                  estime vBall/spin/alpha0, puis simule depuis ces mesures\n"
-                "  --mode m        analyse du spin : 'standard' (patch Hilbert seul, défaut) ou\n"
-                "                  'fusion' (patch + peigne de raies micro-Doppler par autocorrélation\n"
-                "                  du spectre autour de f_D, fusionné si cohérents à ±15 %)\n"
+                "  --mode m        analyse du spin : 'fusion' (défaut : patch Hilbert + fréquence\n"
+                "                  instantanée + peigne de raies micro-Doppler, fusionnés) ou\n"
+                "                  'standard' (patch Hilbert seul)\n"
                 "\n"
                 "sorties (dans le dossier courant):\n"
                 "  console: RESULT portee=... apex=... z_final=... temps=...\n"
