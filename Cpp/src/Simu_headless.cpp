@@ -53,10 +53,18 @@ static std::string fmt0nan(double x, const char* u) {
     return fmt0(x, u);
 }
 
-// mode captation : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale]
-static int run_from_capture(const char* path, const char* clubType, double spinScale, bool openAfter) {
+// mode captation : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale] [--mode standard|fusion]
+static int run_from_capture(const char* path, const char* clubType, double spinScale, bool openAfter, const std::string& mode) {
     Capture c = load_capture(path);
     EstRadar e = estimate(c);
+    if (mode == "fusion") {
+        e.spin_peigne_rpm = estimate_spin_peigne(c, e);
+        e.spin_phase_rpm = estimate_spin_phase(c, e);
+        double sf = fusion_spin(e.spin_rpm, e.spin_phase_rpm, e.spin_peigne_rpm);
+        printf("mode fusion : patch=%.0f, phase=%.0f, peigne=%.0f rpm -> spin retenu=%.0f rpm\n",
+               e.spin_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, sf);
+        e.spin_rpm = sf;
+    }
     printf("capture %s : vBall=%.1f km/h radiale (%.1f corr. cos20), spin=%.0f rpm, alpha0=%+.2f deg, dAlpha=%+.2f deg, t0=%.3f s, %zu ech/canal\n",
            path, e.vball_kmh, e.vball_corr_kmh, e.spin_rpm, e.alpha0_deg, e.dalpha_deg, e.t0_s, c.r1.size());
     // club par défaut F7
@@ -114,7 +122,9 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
   + kv("V club radar (passe-bande)", fmt1nan(vclub_radar, "km/h") + (std::isnan(vclub_radar) ? "  — lobe club non détecté" : ""))
   + kv("V club modèle (vBall/1.35)", fmt1(vclub_model, "km/h"))
   + kv("Smash mesuré (vBall/Vclub)", std::isnan(vclub_radar) ? std::string("NaN") : fmt1(e.vball_kmh / vclub_radar, ""))
-  + kv("Spin total radar", fmt0(e.spin_rpm, "rpm"))
+  + kv("Spin total radar", fmt0(e.spin_rpm, "rpm") + (mode == "fusion" ? "  (fusion)" : "  (patch)"))
+  + kv("Spin phase (f inst)", fmt0(e.spin_phase_rpm, "rpm"))
+  + kv("Spin peigne (raies)", fmt0(e.spin_peigne_rpm, "rpm"))
   + kv("BackSpin estimé", fmt0nan(backspin_est, "rpm") + (std::isnan(backspin_est) ? "  — spin nul, non décomposable" : "  (vecteur modèle rescalé à spin total radar)"))
   + kv("SideSpin estimé", fmt0nan(sidespin_est, "rpm"))
   + kv("GamaFacePath estimé", fmt1nan(gfp_est, "deg") + (std::isnan(gfp_est) ? "" : "  (ajusté sur courbure dAlpha=" + fmt1(da_est, "deg") + ")"))
@@ -156,7 +166,12 @@ int main(int argc, char *argv[]) {
     sac[12] = Club("Pt",  0.300 , 20.0, 03   , 0.68 ,  550.24 ,       308.0 ,        0.00,   10.00,   0.0,           0.0,         1.0);
 
     bool openAfter = false;
-    { std::vector<std::string> args2; for (int i = 1; i < argc; i++) { std::string a = argv[i]; if (a == "--open" || a == "-o") openAfter = true; else args2.push_back(a); } argc = (int)args2.size() + 1; for (size_t i = 0; i < args2.size(); i++) argv[i + 1] = strdup(args2[i].c_str()); }
+    std::string mode = "standard";
+    { std::vector<std::string> args2; for (int i = 1; i < argc; i++) { std::string a = argv[i];
+        if (a == "--open" || a == "-o") openAfter = true;
+        else if (a == "--mode" && i + 1 < argc) mode = argv[++i];
+        else if (a.rfind("--mode=", 0) == 0) mode = a.substr(7);
+        else args2.push_back(a); } argc = (int)args2.size() + 1; for (size_t i = 0; i < args2.size(); i++) argv[i + 1] = strdup(args2[i].c_str()); }
     if (argc < 2 || string(argv[1]) == "--help" || string(argv[1]) == "-h" || string(argv[1]) == "help") {
         cout << "Simulateur de vol de balle de golf (C++) — vol + 3 rebonds + roulement\n"
                 "\n"
@@ -177,6 +192,9 @@ int main(int argc, char *argv[]) {
                 "  spinScale       echelle du spin, 1.0 = normal, 0 = pas de spin (test Magnus)\n"
                 "  --capture f     lit une captation radar (CSV 2 lignes ';' ou WAV stereo 44,1 kHz),\n"
                 "                  estime vBall/spin/alpha0, puis simule depuis ces mesures\n"
+                "  --mode m        analyse du spin : 'standard' (patch Hilbert seul, défaut) ou\n"
+                "                  'fusion' (patch + peigne de raies micro-Doppler par autocorrélation\n"
+                "                  du spectre autour de f_D, fusionné si cohérents à ±15 %)\n"
                 "\n"
                 "sorties (dans le dossier courant):\n"
                 "  console: RESULT portee=... apex=... z_final=... temps=...\n"
@@ -194,7 +212,7 @@ int main(int argc, char *argv[]) {
     }
     if (string(argv[1]) == "--capture") {
         if (argc < 3) { cout << "il manque le fichier de captation" << endl; return 1; }
-        return run_from_capture(argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0, openAfter);
+        return run_from_capture(argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0, openAfter, mode);
     }
     for (unsigned i = 0; i < sac.size(); i++)
         if (sac[i].getType() == argv[1]) j = i;

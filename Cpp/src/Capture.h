@@ -195,6 +195,8 @@ struct EstRadar {
     double vball_kmh;      // radiale
     double vball_corr_kmh; // corrigée cos(20°)
     double spin_rpm;       // périodicité du patch
+    double spin_peigne_rpm = 0; // peigne de raies micro-Doppler (autocorrélation du spectre autour de f_D)
+    double spin_phase_rpm = 0;  // fréquence instantanée du signal analytique du lobe balle
     double alpha0_deg;     // azimut initial (appariement stéréo)
     double dalpha_deg;     // courbure début-fin
     double t0_s;
@@ -437,6 +439,161 @@ CAP_UNUSED static double estimate_club_speed(const Capture& c, const EstRadar& e
     if (good.size() < 3) return NAN;
     std::sort(good.begin(), good.end());
     return good[(size_t)(good.size() * 0.9)];   // quantile 90 % ~ vitesse juste avant l'impact
+}
+
+
+// ---------------- spin par peigne de raies micro-Doppler ---------------------
+// Spectre de puissance moyen (Welch, NFFT 8192) post-impact dans la bande
+// f_D ± 2 kHz, puis AUTOCORRÉLATION en fréquence : le pic au lag f_rot donne
+// le spin. Robuste même quand les raies individuelles sont sous le fond (β petit),
+// car tout le peigne contribue en cohérence. Retourne 0 si rien trouvé.
+CAP_UNUSED static double estimate_spin_peigne(const Capture& c, const EstRadar& e) {
+    if (e.vball_kmh <= 0) return 0.0;
+    double fD = e.vball_kmh * KV;
+    int i0 = (int)(e.t0_s * FS);
+    int n1 = std::min((int)c.r1.size(), i0 + (int)(0.5 * FS));
+    if (n1 - i0 < 8192) return 0.0;
+    const int NFFT = 8192, HOP = 4096;
+    int k0 = std::max(1, (int)((fD - 2000.0) * NFFT / FS));
+    int k1 = std::min(NFFT / 2 - 1, (int)((fD + 2000.0) * NFFT / FS));
+    int nb = k1 - k0 + 1;
+    if (nb < 100) return 0.0;
+    std::vector<double> acc(nb, 0.0), w(NFFT), re(NFFT), im(NFFT);
+    for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
+    int cnt = 0;
+    for (int st = i0; st + NFFT <= n1; st += HOP) {
+        for (int i = 0; i < NFFT; i++) { re[i] = c.r1[st + i] * w[i]; im[i] = 0; }
+        fft(re, im, false);
+        for (int k = k0; k <= k1; k++) acc[k - k0] += re[k] * re[k] + im[k] * im[k];
+        cnt++;
+    }
+    if (cnt == 0) return 0.0;
+    for (int i = 0; i < nb; i++) acc[i] /= cnt;
+    // detrend par moyenne glissante (~200 Hz) : enlève le lobe porteuse large
+    int win = std::max(3, (int)(200.0 / (FS / NFFT)) / 2);
+    std::vector<double> tr(nb);
+    for (int i = 0; i < nb; i++) {
+        double s = 0; int c = 0;
+        for (int j = std::max(0, i - win); j <= std::min(nb - 1, i + win); j++) { s += acc[j]; c++; }
+        tr[i] = acc[i] - s / c;
+    }
+    double df = FS / NFFT;
+    int lag0 = std::max(2, (int)(45.0 / df));           // 2700 rpm min (au-delà du lobe porteuse)
+    int lag1 = std::min(nb - 2, (int)(200.0 / df));      // 12000 rpm max
+    if (lag1 <= lag0 + 2) return 0.0;
+    std::vector<double> ac(lag1 + 1, 0.0);
+    for (int lag = 0; lag <= lag1; lag++) {
+        double s = 0;
+        for (int i = 0; i + lag < nb; i++) s += tr[i] * tr[i + lag];
+        ac[lag] = s / (nb - lag);                        // normalisée (sinon pic artificiel à lag~0)
+    }
+    // score de fondamental : le lag f_rot explique aussi ses harmoniques k*f_rot
+    int best = lag0; double bscore = -1e18;
+    for (int lag = lag0; lag <= lag1; lag++) {
+        double score = 0;
+        for (int k = 1; k <= 4 && k * lag <= lag1; k++) score += ac[k * lag] / k;
+        if (score > bscore) { bscore = score; best = lag; }
+    }
+    if (bscore <= 0) return 0.0;
+    double lagf = parabolic_peak(ac, best);
+    return 60.0 * lagf * df;                            // f_rot (Hz) -> rpm
+}
+
+// ---------------- passe-bande FFT : garde |f-f0| <= bw/2 ----------------
+CAP_UNUSED static std::vector<double> bandpass(const std::vector<double>& x, double f0, double bw) {
+    int n = (int)x.size();
+    int N = 1; while (N < n) N <<= 1;
+    std::vector<double> re(N, 0.0), im(N, 0.0);
+    double m = 0; for (int i = 0; i < n; i++) m += x[i]; m /= n;
+    for (int i = 0; i < n; i++) re[i] = x[i] - m;
+    fft(re, im, false);
+    for (int k = 0; k < N; k++) {
+        double f = (k <= N / 2) ? k * FS / N : (k - N) * FS / N;
+        if (std::fabs(f - f0) > bw / 2.0) { re[k] = 0.0; im[k] = 0.0; }
+    }
+    fft(re, im, true);
+    std::vector<double> y(n);
+    for (int i = 0; i < n; i++) y[i] = re[i];
+    return y;
+}
+
+// ---------------- spin par fréquence instantanée (phase) ---------------------
+// Le lobe balle filtré passe-bande autour de f_D, mis en signal analytique (Hilbert),
+// a pour phase φ(t) = 2π f_D t + β sin(2π f_rot t). La fréquence instantanée
+// dφ/dt - tendance = β f_rot cos(2π f_rot t) : le pic de son spectre à f_rot donne
+// le spin — plus propre que l'enveloppe d'amplitude (patch).
+CAP_UNUSED static double estimate_spin_phase(const Capture& c, const EstRadar& e) {
+    if (e.vball_kmh <= 0) return 0.0;
+    double fD = e.vball_kmh * KV;
+    int i0 = (int)(e.t0_s * FS);
+    int n = std::min((int)(0.5 * FS), (int)c.r1.size() - i0);
+    if (n < 8192) return 0.0;
+    std::vector<double> seg(c.r1.begin() + i0, c.r1.begin() + i0 + n);
+    std::vector<double> xf = bandpass(seg, fD, 2000.0);
+    // signal analytique
+    int N = 1; while (N < n) N <<= 1;
+    std::vector<double> re(N, 0.0), im(N, 0.0);
+    for (int i = 0; i < n; i++) re[i] = xf[i];
+    fft(re, im, false);
+    std::vector<double> h(N, 0.0);
+    h[0] = 1.0; for (int k = 1; k < N / 2; k++) h[k] = 2.0; h[N / 2] = 1.0;
+    for (int k = 0; k < N; k++) { re[k] *= h[k]; im[k] *= h[k]; }
+    fft(re, im, true);
+    // fréquence instantanée (dérivée de phase unwrappée)
+    std::vector<double> fi(n - 1);
+    double prev = atan2(im[0], re[0]);
+    for (int i = 1; i < n; i++) {
+        double ph = atan2(im[i], re[i]);
+        double d = ph - prev;
+        while (d > M_PI) d -= 2.0 * M_PI;
+        while (d < -M_PI) d += 2.0 * M_PI;
+        fi[i - 1] = d * FS / (2.0 * M_PI);
+        prev = ph;
+    }
+    // detrend : moyenne glissante 0,1 s (enlève la décélération Doppler f_D(t))
+    int win = (int)(0.1 * FS) / 2;
+    int m = (int)fi.size();
+    std::vector<double> tr(m);
+    for (int i = 0; i < m; i++) {
+        double s = 0; int cc = 0;
+        for (int j = std::max(0, i - win); j <= std::min(m - 1, i + win); j++) { s += fi[j]; cc++; }
+        tr[i] = fi[i] - s / cc;
+    }
+    // spectre de tr, fenêtre Hann, pic 40..200 Hz avec score d'harmoniques
+    int N2 = 1; while (N2 < m) N2 <<= 1;
+    std::vector<double> re2(N2, 0.0), im2(N2, 0.0);
+    for (int i = 0; i < m; i++) re2[i] = tr[i] * (0.5 - 0.5 * cos(2.0 * M_PI * i / (m - 1)));
+    fft(re2, im2, false);
+    std::vector<double> P(N2 / 2);
+    for (int k = 0; k < N2 / 2; k++) P[k] = re2[k] * re2[k] + im2[k] * im2[k];
+    double df = FS / N2;
+    int k0 = std::max(1, (int)(40.0 / df)), k1 = std::min(N2 / 2 - 1, (int)(200.0 / df));
+    if (k1 <= k0 + 2) return 0.0;
+    std::vector<int> loc;
+    double pmax = 0;
+    for (int k = k0; k <= k1; k++) if (P[k] > pmax) pmax = P[k];
+    if (pmax <= 0) return 0.0;
+    for (int k = k0 + 1; k < k1; k++)
+        if (P[k] >= P[k - 1] && P[k] >= P[k + 1] && P[k] > 0.2 * pmax) loc.push_back(k);
+    if (loc.empty()) { int k = k0; for (int j = k0; j <= k1; j++) if (P[j] > P[k]) k = j; loc.push_back(k); }
+    int best = loc[0]; double bs = -1;
+    for (int p : loc) {
+        double f0 = p * df, score = P[p];
+        for (int q : loc) { int k = (int)lround(q * df / f0); if (k >= 1 && std::fabs(q * df - k * f0) < 2 * df) score += P[q]; }
+        if (score > bs) { bs = score; best = p; }
+    }
+    return 60.0 * parabolic_peak(P, best) * df;
+}
+
+// ---------------- fusion patch + phase + peigne ------------------------------
+// priorité au patch (score d'harmoniques), sinon phase, sinon peigne ;
+// si patch et phase cohérents à ±15 % -> moyenne.
+CAP_UNUSED static double fusion_spin(double patch_rpm, double phase_rpm, double peigne_rpm) {
+    if (patch_rpm > 0 && phase_rpm > 0 && std::fabs(patch_rpm - phase_rpm) / std::max(patch_rpm, phase_rpm) < 0.15)
+        return 0.5 * (patch_rpm + phase_rpm);
+    if (patch_rpm > 0) return patch_rpm;
+    if (phase_rpm > 0) return phase_rpm;
+    return peigne_rpm;
 }
 
 
