@@ -18,24 +18,6 @@
 
 using namespace std;
 
-// ---------------- passe-bande FFT : garde |f-f0| <= bw/2 ----------------
-static vector<double> bandpass(const vector<double>& x, double f0, double bw) {
-    int n = (int)x.size();
-    int N = 1; while (N < n) N <<= 1;
-    vector<double> re(N, 0.0), im(N, 0.0);
-    double m = 0; for (int i = 0; i < n; i++) m += x[i]; m /= n;
-    for (int i = 0; i < n; i++) re[i] = x[i] - m;
-    fft(re, im, false);
-    for (int k = 0; k < N; k++) {
-        double f = (k <= N / 2) ? k * FS / N : (k - N) * FS / N;
-        if (std::fabs(f - f0) > bw / 2.0) { re[k] = 0.0; im[k] = 0.0; }
-    }
-    fft(re, im, true);
-    vector<double> y(n);
-    for (int i = 0; i < n; i++) y[i] = re[i];
-    return y;
-}
-
 // ---------------- spectrogramme dans une bande [flo,fhi] Hz ----------------
 struct Spec {
     int nframe = 0, nbin = 0, hop = 0;
@@ -164,8 +146,13 @@ int main(int argc, char** argv) {
     string path = argv[1];
     Capture c = load_capture(path);
     EstRadar e = estimate(c);
+    // analyses spin de Capture.h (avec spectres exposés pour affichage)
+    vector<double> acLag, acVal, pfHz, pfDb;
+    e.spin_peigne_rpm = estimate_spin_peigne_ac(c, e, &acLag, &acVal);
+    e.spin_phase_rpm = estimate_spin_phase_spec(c, e, &pfHz, &pfDb);
+    double spin_fus = fusion_spin(e.spin_rpm, e.spin_phase_rpm, e.spin_peigne_rpm);
     double fD = e.vball_kmh * KV;                 // porteuse balle (Hz)
-    double frot = e.spin_rpm / 60.0;              // fréquence de rotation (Hz)
+    double frot = spin_fus / 60.0;                // fréquence de rotation retenue (fusion)
     int i0 = (int)(e.t0_s * FS);
     double vclub0 = e.vball_kmh / 1.35;
     double fc = vclub0 * KV;
@@ -175,7 +162,7 @@ int main(int argc, char** argv) {
     // panneau 2 : zoom lobe balle
     vector<double> xb = bandpass(c.r1, fD, 5000.0);
     Spec s2 = spectro_band(xb, 2048, 256, fD - 2500, fD + 2500, i0, std::min((int)c.r1.size(), i0 + (int)(0.6 * FS)));
-    // panneau 3 : spectre 1D raies
+    // panneau 3 : spectre 1D raies (marqueurs sur f_rot retenu par fusion)
     vector<double> fq, db;
     mean_spectrum(xb, 8192, 2048, i0, std::min((int)c.r1.size(), i0 + (int)(0.5 * FS)), fD - 2500, fD + 2500, fq, db);
     vector<double> vl;
@@ -231,9 +218,10 @@ int main(int argc, char** argv) {
                "</style></head><body>\n");
     fprintf(f, "<h1>Spectres radar — %s</h1>\n", path.c_str());
     fprintf(f, "<div class='infos'>vBall = <b>%.1f km/h</b> radiale (%.1f corr. cos20) &middot; f_D = %.0f Hz &middot; "
-               "spin patch = <b>%.0f rpm</b> (f_rot = %.2f Hz) &middot; t0 = %.3f s &middot; "
+               "spin patch = <b>%.0f rpm</b> &middot; spin phase = <b>%.0f rpm</b> &middot; spin peigne = <b>%.0f rpm</b> &middot; "
+               "<b>fusion = %.0f rpm</b> (f_rot = %.2f Hz) &middot; t0 = %.3f s &middot; "
                "vClub passe-bande = <b>%s</b> km/h (modèle vBall/1.35 = %.1f) &middot; %zu éch/canal</div>\n",
-            e.vball_kmh, e.vball_corr_kmh, fD, e.spin_rpm, frot, e.t0_s,
+            e.vball_kmh, e.vball_corr_kmh, fD, e.spin_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, spin_fus, frot, e.t0_s,
             std::isnan(vclub_radar) ? "NaN" : (std::to_string(vclub_radar) + "").c_str(), vclub0, c.r1.size());
 
     // panneau 1 : spectre complet (depuis estimate/fill_spec)
@@ -245,14 +233,22 @@ int main(int argc, char** argv) {
     fprintf(f, "<canvas id='p1'></canvas><div class='note'>Le lobe balle isolé du lobe club : on voit les <b>raies micro-Doppler</b> (lignes horizontales espacées de f_rot = %.2f Hz = %.0f rpm) autour de la porteuse f_D = %.0f Hz.</div></div>\n", frot, e.spin_rpm, fD);
     // panneau 3
     fprintf(f, "<div class='panneau'><h2>3. Spectre 1D moyen post-impact (0,5 s), bande f_D ± 2,5 kHz — peigne de raies n·f_rot</h2>\n");
-    fprintf(f, "<canvas id='p2'></canvas><div class='note'>Porteuse f_D en blanc ; raies latérales attendues à f_D ± n·f_rot (cyan, n=1..6, f_rot = %.2f Hz). L'espacement des raies mesurées donne le spin indépendamment de la vitesse.</div></div>\n", frot);
+    fprintf(f, "<canvas id='p2'></canvas><div class='note'>Porteuse f_D en blanc ; raies latérales attendues à f_D ± n·f_rot (cyan, n=1..6, f_rot = %.2f Hz = <b>%.0f rpm</b> retenu par fusion). L'espacement des raies mesurées donne le spin indépendamment de la vitesse.</div></div>\n", frot, spin_fus);
     // panneau 4
     fprintf(f, "<div class='panneau'><h2>4. Lobe club — fenêtre [t0−0,35 s, t0], passe-bande vClub₀=%.1f km/h (%.0f Hz) ± 15 %%</h2>\n", vclub0, fc);
     fprintf(f, "<canvas id='p3'></canvas><div class='note'>Vitesse de la tête de club montante avant l'impact ; la crête (ridge cyan) au quantile 90 %% donne <b>vClub = %s km/h</b> (ligne rouge si mesurée).</div></div>\n",
             std::isnan(vclub_radar) ? "NaN" : (std::to_string((int)(vclub_radar + 0.5)) + "").c_str());
     // panneau 5
     fprintf(f, "<div class='panneau'><h2>5. Patch micro-Doppler — enveloppe de Hilbert post-impact (250 ms) et son spectre 40..220 Hz</h2>\n");
-    fprintf(f, "<canvas id='p4'></canvas><canvas id='p5'></canvas><div class='note'>L'enveloppe bat à f_rot = spin/60 ; le pic du spectre (ligne rouge à %.2f Hz) donne le <b>spin = %.0f rpm</b>.</div></div>\n", frot, e.spin_rpm);
+    fprintf(f, "<canvas id='p4'></canvas><canvas id='p5'></canvas><div class='note'>L'enveloppe bat à f_rot ; le pic du spectre (ligne rouge à %.2f Hz) donne le <b>spin patch = %.0f rpm</b>.</div></div>\n", e.spin_rpm / 60.0, e.spin_rpm);
+    // panneau 6 : autocorrélation du spectre (peigne) — sortie de estimate_spin_peigne_ac
+    fprintf(f, "<div class='panneau'><h2>6. Autocorrélation du spectre Welch autour de f_D (peigne) — lag en Hz</h2>\n");
+    fprintf(f, "<canvas id='p6'></canvas><div class='note'>Pic au lag f_rot = %.2f Hz -> <b>spin peigne = %.0f rpm</b> (normalisé par ac[0]).</div></div>\n",
+            e.spin_peigne_rpm / 60.0, e.spin_peigne_rpm);
+    // panneau 7 : spectre de la fréquence instantanée (phase) — sortie de estimate_spin_phase_spec
+    fprintf(f, "<div class='panneau'><h2>7. Spectre de la fréquence instantanée du lobe balle (dérivée de phase, detrend 0,1 s) 40..200 Hz</h2>\n");
+    fprintf(f, "<canvas id='p7'></canvas><div class='note'>Pic à f_rot = %.2f Hz -> <b>spin phase = %.0f rpm</b>.</div></div>\n",
+            e.spin_phase_rpm / 60.0, e.spin_phase_rpm);
 
     fprintf(f, "<script>\nvar P=[\n");
     // p0 : spectre complet depuis e.spec
@@ -266,7 +262,9 @@ int main(int argc, char** argv) {
     json_curve(f, "spectre 1D post-impact (dB), axe X = Hz, labels km/h en haut", fD - 2500, fD + 2500, fq, db, vl, "Hz"); fprintf(f, ",\n");
     json_spec(f, s4, e.t0_s); fprintf(f, ",\n");
     json_curve(f, "enveloppe de Hilbert post-impact", 0, (double)env.size() / FS, tenv, yen, {0.0}, "s"); fprintf(f, ",\n");
-    json_curve(f, "spectre de l enveloppe 40..220 Hz (dB)", 40, 220, fp, dp, {frot}, "Hz"); fprintf(f, "\n];\n");
+    json_curve(f, "spectre de l enveloppe 40..220 Hz (dB)", 40, 220, fp, dp, {e.spin_rpm / 60.0}, "Hz"); fprintf(f, ",\n");
+    json_curve(f, "autocorrelation du spectre autour de f_D (peigne), ac/ac0", 0, 200, acLag, acVal, {e.spin_peigne_rpm / 60.0}, "Hz"); fprintf(f, ",\n");
+    json_curve(f, "spectre de la frequence instantanee 40..200 Hz (dB)", 40, 200, pfHz, pfDb, {e.spin_phase_rpm / 60.0}, "Hz"); fprintf(f, "\n];\n");
 
     fputs(R"JS(
 var FS=44100.0;
@@ -327,8 +325,8 @@ addEventListener('resize',render);
     fprintf(f, "</script></body></html>\n");
     fclose(f);
     printf("HTML écrit : %s\n", out.c_str());
-    printf("vBall=%.1f km/h (f_D=%.0f Hz), spin=%.0f rpm (f_rot=%.2f Hz), t0=%.3f s, vClub=%s km/h\n",
-           e.vball_kmh, fD, e.spin_rpm, frot, e.t0_s,
+    printf("vBall=%.1f km/h (f_D=%.0f Hz), spin patch=%.0f / phase=%.0f / peigne=%.0f -> fusion=%.0f rpm (f_rot=%.2f Hz), t0=%.3f s, vClub=%s km/h\n",
+           e.vball_kmh, fD, e.spin_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, spin_fus, frot, e.t0_s,
            std::isnan(vclub_radar) ? "NaN" : (std::to_string((int)(vclub_radar + 0.5)) + "").c_str());
     if (openAfter) {
 #ifdef __APPLE__
