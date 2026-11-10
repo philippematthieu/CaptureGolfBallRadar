@@ -1,6 +1,6 @@
 # Simulateur de vol de balle de golf — C++ (`Cpp/src/`)
 
-Simulation complète : vol (traînée de White, Magnus/Smits & Smith, gravité) + 3 rebonds (Penner/Roh & Lee) + roulement, avec sorties texte, image 2D (SVG / PNG-CImg) et **scène 3D interactive HTML** (three.js, rotation souris).
+Simulation complète : vol (traînée de White, Magnus/Smits & Smith, gravité) + 3 rebonds (Penner/Roh & Lee) + roulement, avec sorties texte, image 2D (SVG / PNG-CImg), **scène 3D interactive HTML** (three.js, rotation souris) et **analyse radar avancée** des captations (vitesse club, spin multi-voies, décomposition back/side spin).
 
 ## Compilation (Mac / Linux, g++ ou clang++)
 
@@ -12,8 +12,13 @@ g++ -O2 -std=c++11 -o simu_headless \
     Simu_headless.cpp Ball.cpp Club.cpp EquationODE.cpp EquationODEFlight.cpp \
     EquationODERoll.cpp EquationODEEventFlight.cpp EquationODEEventRoll.cpp SolverODE.cpp
 
+# outil de visualisation multi-spectres d'une captation (HTML autonome, pur canvas 2D)
+g++ -O2 -std=c++11 -I. -o spectres_html spectres_html.cpp
+
+# PNG de densité spectrale (voir plus bas)
+g++ -O2 -std=c++11 -I. -o spectro_png spectro_png.cpp
+
 # version avec image PNG via CImg (headless : -Dcimg_display=0 ; PNG si libpng, sinon BMP)
-# optionnel : brew install libpng   (pour le PNG),  brew install --cask xquartz (pour display_graph en fenêtre)
 g++ -O2 -std=c++11 -Dcimg_display=0 -DUSE_CIMG -I. -o simu_headless_cimg \
     Simu_headless.cpp Ball.cpp Club.cpp EquationODE.cpp EquationODEFlight.cpp \
     EquationODERoll.cpp EquationODEEventFlight.cpp EquationODEEventRoll.cpp SolverODE.cpp
@@ -21,41 +26,27 @@ g++ -O2 -std=c++11 -Dcimg_display=0 -DUSE_CIMG -I. -o simu_headless_cimg \
 
 L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/avec XQuartz : remplacer `Simu_headless.cpp` par `Simu.cpp` et ajouter `-Dcimg_display=1` + les libs d'affichage.
 
-## PNG de la densité spectrale d'une captation
-
-Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendance**, plus de CImg) — style spectro_F7-*.png :
-**640×500**, 2 panneaux R1/R2, **zoom Y ±512 Hz autour de vBall post-impact** (pour voir les raies micro-Doppler),
-axe X = temps (s), axe Y = km/h (f/19.49, **limité à 350 km/h** — plafond balle de golf), colormap `hot` (fond noir, trace « feu »),
-ridge balle cyan (post-impact, lissé), impact rouge + label. **Fenêtre d'analyse STFT 512 (Hann 11,6 ms), hop 128** :
-fenêtre /4 → raies micro-Doppler bien résolues en temps, bandes de ~7 px.
-Sortie **PNG** (writer maison, zlib stored) si l'extension est `.png`, sinon BMP 24 bits.
-
-```bash
-g++ -O2 -std=c++11 -I. -o spectro_png spectro_png.cpp
-./spectro_png ../../sci/2019-02-24-F7-137m-166kmh-4990trm-1312trm-cs118.csv spectro_137.png -o
-#   -o / --open : ouvre l'image générée automatiquement (open sur Mac)
-```
-
 ## Commandes
 
 ```bash
 ./simu_headless --help        # aide complète : usage, options, sorties, exemples (en couleur)
 
-# --open / -o (n'importe où) : ouvre automatiquement le HTML 3D après les calculs
-./simu_headless F7 122.3 0 0 -6.5 --open
-./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav --open
-
 # simulation "club" : Type ClubV0(km/h) AlphaClubPath(deg) GamaFacePath(deg) ShaftLean(deg) [spinScale]
-./simu_headless F7 122.3 0 0 -6.5          # fer 7 à 122,3 km/h
-./simu_headless Dr 170.6 -8 2 6            # driver 170,6 km/h
-./simu_headless F7 122.3 0 0 -6.5 0        # spin nul (test Magnus : apex baisse)
+./simu_headless F7 122.3 0 0 -6.5 --open     # fer 7 à 122,3 km/h, ouvre le HTML 3D
+./simu_headless Dr 170.6 -8 2 6              # driver
+./simu_headless F7 122.3 0 0 -6.5 0          # spin nul (test Magnus)
 
-# depuis une captation radar (CSV 2 lignes ';' ou WAV stéréo 44,1 kHz)
-./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav
-./simu_headless --capture ../../sci/2025-11-08-F7-131m-162kmh-9418trm-7102trm-cs124.csv F7
+# depuis une captation radar (CSV 2 lignes ';' ou WAV stéréo 44,1 kHz) — analyse fusion par défaut
+./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav --open
+./simu_headless --capture ../../sci/2025-11-08-F7-131m-162kmh-9418trm-7102trm-cs124.csv F7 1.0
+./simu_headless --capture <fichier> --mode standard     # ancien : patch Hilbert seul
+
+# spectres multi-panneaux d'une captation (8 panneaux, voir plus bas)
+./spectres_html ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv -o
+for f in ../../sci/*.csv; do ./spectres_html "$f"; done   # tous les spectres + index
 ```
 
-Clubs disponibles : `Dr B5 H3 F5 F6 F7 F8 F9 PW AW SW LW Pt`.
+Clubs disponibles : `Dr B5 H3 F5 F6 F7 F8 F9 PW AW SW LW Pt`. `-o` / `--open` ouvre le HTML généré automatiquement (`open` sur Mac).
 
 ## Options
 
@@ -67,18 +58,107 @@ Clubs disponibles : `Dr B5 H3 F5 F6 F7 F8 F9 PW AW SW LW Pt`.
 | `GamaFacePath` | 0 | angle face/trajectoire (deg) → side spin |
 | `ShaftLeanImp` | config | shaft lean à l'impact (deg) → loft dynamique |
 | `spinScale` | 1.0 | échelle du spin (0 = pas de spin) |
-| `--capture f.csv\|f.wav [club] [spinScale]` | — | mesure vBall/spin/α₀/Δα sur la captation (Capture.h : FFT, Hilbert, appariement stéréo) puis simule |
-| `--open` / `-o` | non | ouvre automatiquement le HTML 3D après les calculs (`open` sur Mac) |
+| `--capture f.csv\|f.wav [club] [spinScale]` | — | analyse la captation radar puis simule depuis les mesures |
+| `--mode fusion\|standard` | `fusion` | analyse du spin : 3 voies fusionnées (défaut) ou patch seul |
+| `--open` / `-o` | non | ouvre automatiquement le HTML 3D |
+
+## Analyse radar d'une captation (`--capture`) — ce qui est estimé et comment
+
+Toutes les briques sont dans `Capture.h` (header-only, FFT radix-2 maison) :
+
+| Mesure | Méthode | Fonction |
+|---|---|---|
+| **vBall** | ridge STFT (2048/1024) post-impact, médiane 50 ms, 2 canaux, correction cos20° | `estimate()` |
+| **t0 (impact)** | frame d'énergie max | `estimate()` |
+| **V club** | **passe-bande FFT autour de vBall/1.35** sur la fenêtre [t0−0,3 s, t0] (le lobe Doppler de la tête de club est dans le signal avant l'impact), crête au quantile 90 % | `estimate_club_speed()` |
+| **smash** | vBall / Vclub mesuré | (dans `Simu_headless.cpp`) |
+| **spin — 3 voies** | ① patch : enveloppe de Hilbert 250 ms, spectre 50–200 Hz, score d'harmoniques · ② **phase** : signal analytique du lobe balle filtré autour de f_D, fréquence instantanée detrendée, pic à f_rot · ③ **peigne** : autocorrélation du spectre Welch autour de f_D ± 2 kHz (lag = f_rot) | `estimate()`, `estimate_spin_phase_spec()`, `estimate_spin_peigne_ac()` |
+| **spin retenu** | `fusion_spin()` : moyenne patch+phase si cohérents à ±15 %, sinon patch, sinon phase, sinon peigne | `fusion_spin()` |
+| **α₀, Δα** | appariement stéréo R1/R2 (Δf ≤ 30 Hz), α = atan((2L/B)·fd/fc), médianes début/fin | `estimate()` |
+| **back/side spin** | modèle inverse : balayage de `GamaFacePath` (−15°..+15°) avec `runSimu`, courbure azimutale sur ~150 ms post-impact ajustée au **Δα stéréo**, vecteur spin rescalé au spin total radar (donc `hypot(back,side) = spin_radar`) | `Simu_headless.cpp` |
+
+Le mode `--capture` enchaîne : mesures radar → V club (passe-bande, sinon modèle vBall/1.35) → spin fusion → ajustement GamaFacePath par courbure → `Ball::runSimu()` → HTML 3D + SVG. Le shaft lean reste au cas idéal du club (non identifiable au radar).
+
+## Visualisation HTML 3D (`trajectoire_3d.html` / `trajectoire_capture_3d.html`)
+
+Layout HMI produit par `Plot3D.h` :
+
+- **panneau infos fixe à gauche** (250 px) : club, V club (radar/modèle), smash, vBall, spins (total/phase/peigne), back/side estimés, GamaFacePath estimé, α₀, Δα, t0, portée, hauteur max, z final
+- **scène 3D three.js au centre** : souris = tourner/zoom, slider = vitesse de l'animation de la balle, projection au sol en pointillés, apex en rouge ; **fairway toujours carré** : côté = max(1,1 × portée, 50 m), grille ~10 m
+- **spectrogramme docké en bas** : collé au panneau gauche et au bord droit (`left:250px; right:0`), **redimensionnable** (barre de drag en haut, double-clic = reset), **zoom interactif** : drag = zoom sur une zone, molette = zoom au curseur, double-clic / clic droit = reset ; ridge cyan, impact pointillé, axes km/h et temps
+
+## `spectres_html` — les 8 panneaux de spectres d'une captation
+
+HTML autonome (pur canvas 2D, aucune lib), produit `spectres_<nom>.html` :
+
+1. spectrogramme complet R1 (passe-haut 50 km/h, 0..250 km/h, ridge, impact)
+2. zoom lobe balle : passe-bande f_D ± 2,5 kHz post-impact (raies micro-Doppler)
+3. spectre 1D moyen post-impact autour de f_D — peigne de raies, marqueurs f_D ± n·f_rot (f_rot retenu par fusion)
+4. lobe club : fenêtre [t0−0,35 s, t0], passe-bande vClub₀ ± 15 %
+5. patch : enveloppe de Hilbert 250 ms + spectre 40..220 Hz (marqueur f_rot patch)
+6. autocorrélation du spectre Welch autour de f_D (sortie de `estimate_spin_peigne_ac`)
+7. spectre de la fréquence instantanée du lobe balle 40..200 Hz (sortie de `estimate_spin_phase_spec`)
+8. barre d'infos : vBall, f_D, patch/phase/peigne/**fusion**, vClub, t0
+
+Les panneaux 3, 6, 7 utilisent directement les analyseurs de `Capture.h` (pas de recalcul parallèle).
+
+## PNG de la densité spectrale d'une captation
+
+Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendance**) — style spectro_F7-*.png : **640×500**, 2 panneaux R1/R2, zoom Y ±512 Hz autour de vBall post-impact, axe X = temps (s), axe Y = km/h (f/19.49, limité à 350 km/h), colormap `hot`, ridge cyan, impact rouge. STFT 512 (Hann 11,6 ms), hop 128. Sortie PNG (writer maison, zlib stored) ou BMP 24 bits.
+
+```bash
+./spectro_png ../../sci/2019-02-24-F7-137m-166kmh-4990trm-1312trm-cs118.csv spectro_137.png -o
+```
 
 ## Sorties produites (dans `Cpp/src/`)
 
 - console : `RESULT portee=... m  apex=... m  z_final=... m  temps=... s`
-- `trajectoire_<club>.svg` — image 2D vectorielle (profil + dessus) → `open ...svg`
-- `trajectoire_<club>.png` / `.bmp` — image 2D raster (CImg, compile `-DUSE_CIMG`) → `open ...png`
-- `trajectoire_3d.html` — **scène 3D interactive** (three.js embarqué dans `lib/`) → `open trajectoire_3d.html` (ou `--open` auto) ; layout HMI : panneau infos fixe à gauche (club/vBall/spin/α₀/Δα/portée/apex), scène 3D au centre (souris : glisser = tourner, molette = zoom, slider = vitesse anim, projection au sol en pointillés), **spectrogramme fixe en bas** (densité, axe km/h, ridge cyan post-impact, impact rouge) ; en mode club le spectrogramme est généré depuis la trajectoire simulée
-- en mode `--capture` : `trajectoire_capture.svg`, `trajectoire_capture_3d.html`, etc.
+- `trajectoire_<club>.svg` — image 2D vectorielle (profil + dessus)
+- `trajectoire_<club>.png` / `.bmp` — image 2D raster (CImg, compile `-DUSE_CIMG`)
+- `trajectoire_3d.html` / `trajectoire_capture_3d.html` — scène 3D interactive + panneau infos + spectrogramme docké/zoomable
+- `spectres_*.html` + `spectres_index.html` — panneaux de spectres (outil `spectres_html`)
 
 ## Fichiers clés
 
-- `Ball.{h,cpp}` modèle balle + rebonds/roulement, `Club.{h,cpp}` club, `EquationODE*.{h,cpp}` EDO vol/roulement/événements, `SolverODE.{h,cpp}` RK4 + zero-crossing
-- `Simu_headless.cpp` main console, `Capture.h` lecture CSV/WAV + estimation radar, `PlotSVG.h`/`PlotCImg.h`/`Plot3D.h` sorties graphiques, `lib/` three.js local
+- `Ball.{h,cpp}` modèle balle + rebonds/roulement, `Club.{h,cpp}` club, `EquationODE*.{h,cpp}` EDO, `SolverODE.{h,cpp}` RK4 + zero-crossing
+- `Simu_headless.cpp` main console (simu + mode `--capture` + génération HTML)
+- `Capture.h` lecture CSV/WAV, FFT, filtres passe-haut/passe-bande, estimation radar (vBall, V club, spin 3 voies, α₀/Δα, spectrogramme)
+- `PlotSVG.h` / `PlotCImg.h` / `Plot3D.h` sorties graphiques (SVG, PNG, HTML 3D), `spectres_html.cpp` visualisation multi-spectres, `lib/` three.js local
+
+---
+
+## Genèse — discussions, théorie et étapes qui ont conduit à ce code
+
+Cette section retrace la démarche : les idées de départ, la théorie physique sous-jacente, les itérations de test, et comment chaque idée a été consolidée en code.
+
+### 1. Point de départ : le radar voit plus que la balle
+
+L'estimation initiale (`estimate()`) ne lisait que le lobe balle post-impact (vBall, spin par patch, α₀/Δα stéréo). L'idée novatrice : **le signal contient aussi le lobe de la tête de club avant l'impact** (saut de vitesse caractéristique), donc la vitesse du club y est mesurable. Consolidé en `estimate_club_speed()` : passe-bande FFT autour de vBall/1.35 sur [t0−0,3 s, t0], crête au quantile 90 % → **V club mesurée** (ex. 117 km/h sur cs111), d'où le **smash mesuré** = vBall/Vclub ≈ 1,2–1,4, très stable sur les 12 captures. C'est ce smash qui, via le modèle inverse, contraint ensuite la décomposition du spin.
+
+### 2. Théorie du signal réfléchi par une balle en rotation
+
+Une balle de diamètre d = 42,67 mm à 10,525 GHz (λ = 28,5 mm) tournant à ω module la phase de l'écho : `s(t) = cos(2π f_D t + β sin(2π f_rot t))` avec **β = 4πr/λ ≈ 0,036**. Par les fonctions de Bessel, le spectre est un **peigne de raies** à `f_D ± n·f_rot` (f_rot = spin/60, excursion ±KS·rpm avec KS = 0,1567 Hz/rpm). Deux conséquences exploitées :
+
+- le **patch** (modulation d'amplitude vue par l'enveloppe de Hilbert) bat à f_rot → spin (voie ①) ;
+- les **raies latérales** autour de f_D portent le même f_rot (voie ③, peigne) ;
+- la **fréquence instantanée** du signal analytique du lobe balle porte `β f_rot cos(2π f_rot t)` après detrend → pic à f_rot (voie ②, la plus robuste quand le patch échoue).
+
+### 3. Du spin total au back/side spin : contraindre par la courbure
+
+Le radar donne le spin **total** (norme), pas sa direction. L'idée : la **courbure de trajectoire Δα** (mesurée par appariement stéréo R1/R2) dépend du side spin. Consolidé en modèle inverse : balayage de `GamaFacePath` avec `runSimu`, courbure azimutale simulée sur la même fenêtre (~150 ms post-impact) que la mesure stéréo, on retient le g qui colle à Δα ; le vecteur spin est ensuite **rescalé au spin total radar** (correction d'une incohérence initiale où le backspin affiché dépassait le spin total). Résultat : side spin détecté quand Δα ≠ 0 (ex. −246 rpm sur cs104, +1241 rpm sur cs124-2025). Limite notée : le signe dépend de la convention Δα/spinZ (à vérifier), et le shaft lean n'est pas identifiable au radar (cas idéal retenu) — le launch angle (pente du ridge post-impact) serait la prochaine contrainte.
+
+### 4. De la mesure à la visualisation
+
+- `Plot3D.h` : spectrogramme d'abord fixe en bas → **docké** (`left:250px; right:0`) et **redimensionnable** (drag), puis **zoom interactif** (drag = zone, molette = zoom au curseur, dblclick = reset) ; fairway passé de rectangle à **carré** (côté ≥ 1,1 × portée).
+- `spectres_html.cpp` : outil de visu des 8 bandes/filtrages, qui réutilise finalement les analyseurs de `Capture.h` (pas de code dupliqué).
+
+### 5. Validation : tableau de cohérence sur les 12 captations
+
+Chaque capture a été relue (`spectres_*.html` + `--capture`) et comparée aux valeurs de référence du nom de fichier. Écarts moyens constatés : vBall ±8 %, smash 1,18–1,40 stable, spin total radar ±64 % (patch seul, avec 4 cas à 0) → le mode **fusion** (patch+phase+peigne) ramène ces cas à une valeur non nulle (ex. cs118 : 0 → 5073 rpm). Bilan : V club et smash fiables ; le spin total reste le maillon faible, d'où les 3 voies ; la portée simulée colle à ±8 m quand le spin est bon.
+
+### 6. Pièges rencontrés (et corrigés)
+
+- backspin estimé > spin total (incohérent) → rescale du vecteur spin au total mesuré ;
+- HTML à canvas blancs → apostrophe dans une chaîne JS + `FS` non défini côté JS (corrigés, `json_escape`, `var FS=44100`) ;
+- peigne par autocorrélation : pic artificiel à lag~0 → normalisation par (nb−lag) + detrend glissant + score de fondamental (comme le patch) ;
+- `head` en pipe tuait le process avant l'écriture du HTML (SIGPIPE) lors des tests.
