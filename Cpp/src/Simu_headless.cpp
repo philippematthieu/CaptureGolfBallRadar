@@ -71,19 +71,25 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     // vitesse club estimée = vBall / 1.35 (smash typique)
     sac[j].setClubV0Kmh(vclub);
     sac[j].setAlphaClubPathDegre(e.alpha0_deg);
-    // décomposition back/side spin : smash mesuré + spin total radar contraignent GamaFacePath
-    // via le modèle — on balaie GamaFacePath pour |spinY,spinZ| = spin_radar
+    // décomposition back/side spin : le modèle (vClub mesuré) donne la direction du vecteur
+    // spin en fonction de GamaFacePath ; on rescale ensuite au spin total radar mesuré,
+    // donc hypot(backspin_est, sidespin_est) == spin_radar (backspin <= spin total).
     double gfp_est = 0.0, backspin_est = NAN, sidespin_est = NAN;
     if (e.spin_rpm > 0) {
-        double best = 1e18;
+        double best = 1e18, gbest = 0.0, syb = 0.0, szb = 0.0, stb = 1.0;
         for (double g = -15.0; g <= 15.0001; g += 0.25) {
             sac[j].setGamaFacePathDegre(g);
             Ball probe("Decathlon", 320, 3, sac[j], 18.0, 0.01);
-            double st = std::hypot(probe.getSpinYOrgrpm(), probe.getSpinZOrgrpm());
+            double sy = probe.getSpinYOrgrpm(), sz = probe.getSpinZOrgrpm();
+            double st = std::hypot(sy, sz);
             double err = std::fabs(st - e.spin_rpm);
-            if (err < best) { best = err; gfp_est = g; backspin_est = probe.getSpinYOrgrpm(); sidespin_est = probe.getSpinZOrgrpm(); }
+            if (err < best) { best = err; gbest = g; syb = sy; szb = sz; stb = st; }
         }
-        sac[j].setGamaFacePathDegre(gfp_est);
+        sac[j].setGamaFacePathDegre(gbest);
+        gfp_est = gbest;
+        double k = e.spin_rpm / std::max(stb, 1.0);   // rescale au spin total mesuré
+        backspin_est = syb * k;
+        sidespin_est = szb * k;
     }
     Ball theBall("Decathlon", 320, 3, sac[j], 18.0, 0.01);
     if (e.spin_rpm > 0)
@@ -99,7 +105,7 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
   + kv("V club modèle (vBall/1.35)", fmt1(vclub_model, "km/h"))
   + kv("Smash mesuré (vBall/Vclub)", std::isnan(vclub_radar) ? std::string("NaN") : fmt1(e.vball_kmh / vclub_radar, ""))
   + kv("Spin total radar", fmt0(e.spin_rpm, "rpm"))
-  + kv("BackSpin estimé", fmt0nan(backspin_est, "rpm") + (std::isnan(backspin_est) ? "  — spin nul, non décomposable" : "  (modèle contraint par smash + spin total)"))
+  + kv("BackSpin estimé", fmt0nan(backspin_est, "rpm") + (std::isnan(backspin_est) ? "  — spin nul, non décomposable" : "  (vecteur modèle rescalé à spin total radar)"))
   + kv("SideSpin estimé", fmt0nan(sidespin_est, "rpm"))
   + kv("GamaFacePath estimé", fmt1nan(gfp_est, "deg"))
   + kv("alpha0", fmt1(e.alpha0_deg, "deg"))
