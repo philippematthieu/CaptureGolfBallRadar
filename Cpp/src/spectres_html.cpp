@@ -138,10 +138,18 @@ static void json_spec(FILE* f, const Spec& s, double t0mark) {
     for (size_t i = 0; i < s.img.size(); i++) fprintf(f, "%d,", (int)s.img[i]);
     fprintf(f, "]}");
 }
+static void json_escape(FILE* f, const char* s) {
+    for (const char* p = s; *p; p++) {
+        if (*p == '\'' || *p == '\\') fputc('\\', f);
+        fputc(*p, f);
+    }
+}
 static void json_curve(FILE* f, const char* titre, double x0, double x1,
                        const vector<double>& xs, const vector<double>& ys,
                        const vector<double>& vlines, const char* xunit) {
-    fprintf(f, "{type:'curve',titre:'%s',x0:%.4g,x1:%.4g,xunit:'%s',xs:[", titre, x0, x1, xunit);
+    fprintf(f, "{type:'curve',titre:'");
+    json_escape(f, titre);
+    fprintf(f, "',x0:%.6g,x1:%.6g,xunit:'%s',xs:[", x0, x1, xunit);
     for (size_t i = 0; i < xs.size(); i++) fprintf(f, "%.6g,", xs[i]);
     fprintf(f, "],ys:[");
     for (size_t i = 0; i < ys.size(); i++) fprintf(f, "%.6g,", ys[i]);
@@ -258,15 +266,16 @@ int main(int argc, char** argv) {
     json_curve(f, "spectre 1D post-impact (dB), axe X = Hz, labels km/h en haut", fD - 2500, fD + 2500, fq, db, vl, "Hz"); fprintf(f, ",\n");
     json_spec(f, s4, e.t0_s); fprintf(f, ",\n");
     json_curve(f, "enveloppe de Hilbert post-impact", 0, (double)env.size() / FS, tenv, yen, {0.0}, "s"); fprintf(f, ",\n");
-    json_curve(f, "spectre de l'enveloppe 40..220 Hz (dB)", 40, 220, fp, dp, {frot}, "Hz"); fprintf(f, "\n];\n");
+    json_curve(f, "spectre de l enveloppe 40..220 Hz (dB)", 40, 220, fp, dp, {frot}, "Hz"); fprintf(f, "\n];\n");
 
     fputs(R"JS(
+var FS=44100.0;
 var VIR=[[68,1,84],[72,35,116],[59,82,139],[33,145,140],[94,201,98],[253,231,37]];
 function cmap(v){v=Math.max(0,Math.min(1,v));var x=v*5,i=Math.floor(x),f=x-i;if(i>4)i=4;
 return [VIR[i][0]+(VIR[i+1][0]-VIR[i][0])*f,VIR[i][1]+(VIR[i+1][1]-VIR[i][1])*f,VIR[i][2]+(VIR[i+1][2]-VIR[i][2])*f];}
 var ML=64,MR=70,MT=22,MB=26;
 function drawSpec(p,cv){
-var W=cv.clientWidth,H=260;cv.width=W;cv.height=H;
+var W=cv.clientWidth;if(W<100)W=900;var H=260;cv.width=W;cv.height=H;
 var off=document.createElement('canvas');off.width=p.nframe;off.height=p.nbin;var og=off.getContext('2d');
 var im=og.createImageData(p.nframe,p.nbin);
 for(var fr=0;fr<p.nframe;fr++)for(var b=0;b<p.nbin;b++){var v=p.img[fr*p.nbin+b]/255.0;var cc=cmap(v);
@@ -293,7 +302,7 @@ for(var t=Math.ceil(p.tstart*10)/10;t<=tmax+0.001;t+=0.1){var x=ML+(t-p.tstart)/
 g.fillStyle='#888';g.fillText('Hz',ML+w+6,MT+10);g.fillText('km/h ->',ML+w+6,MT+22);
 }
 function drawCurve(p,cv){
-var W=cv.clientWidth,H=220;cv.width=W;cv.height=H;var g=cv.getContext('2d');
+var W=cv.clientWidth;if(W<100)W=900;var H=220;cv.width=W;cv.height=H;var g=cv.getContext('2d');
 var w=W-ML-MR,h=H-MT-MB;
 var ymin=Math.min.apply(null,p.ys),ymax=Math.max.apply(null,p.ys);if(ymax-ymin<1e-9){ymax=ymin+1;}
 g.fillStyle='#000';g.fillRect(0,0,W,H);
@@ -310,9 +319,10 @@ for(var v=0;v<=4;v++){var y=MT+h-v*h/4;g.fillText((ymin+(ymax-ymin)*v/4).toFixed
 if(p.xunit=='Hz'){g.fillStyle='#8ab4ff';for(var km=Math.ceil(p.x0/19.49/25)*25;km*19.49<=p.x1;km+=25){var x=ML+(km*19.49-p.x0)/(p.x1-p.x0)*w;if(x<ML||x>ML+w)continue;g.fillText(km+' km/h',x-12,MT+10);}}
 g.fillStyle='#888';g.fillText(p.titre,ML+4,MT-8>10?MT-8:12);
 }
-for(var i=0;i<P.length;i++){var cv=document.getElementById('p'+i);if(!cv)continue;
-if(P[i].type=='spec')drawSpec(P[i],cv);else drawCurve(P[i],cv);}
-addEventListener('resize',function(){for(var i=0;i<P.length;i++){var cv=document.getElementById('p'+i);if(!cv)continue;if(P[i].type=='spec')drawSpec(P[i],cv);else drawCurve(P[i],cv);}});
+function render(){for(var i=0;i<P.length;i++){var cv=document.getElementById('p'+i);if(!cv)continue;
+if(P[i].type=='spec')drawSpec(P[i],cv);else drawCurve(P[i],cv);}}
+render();addEventListener('load',render);
+addEventListener('resize',render);
 )JS", f);
     fprintf(f, "</script></body></html>\n");
     fclose(f);
