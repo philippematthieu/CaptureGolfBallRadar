@@ -44,8 +44,9 @@ static void write_traj_3d_html(const std::string& path,
                "#specHandle:hover{background:rgba(138,180,255,0.25)}\n"
                "#spec{display:block;width:100%%;height:100%%}\n"
                "</style></head><body>\n");
-    fprintf(f, "<div id='panel'><h1>%s</h1>%s<div class='hint'>glisser=turn &middot; molette=zoom<br>vitesse anim: <input id='vit' type='range' min='1' max='30' value='8' style='width:110px'> <span id='vitv'>8</span>x</div></div>\n",
-            titre.c_str(), infosHtml.c_str());
+    fprintf(f, "<div id='panel'><h1>%s</h1>%s<div class='hint'>glisser=turn &middot; molette=zoom<br>vitesse anim: <input id='vit' type='range' min='1' max='30' value='8' style='width:110px'> <span id='vitv'>8</span>x%s</div></div>\n",
+            titre.c_str(), infosHtml.c_str(),
+            specJson.empty() ? "" : "<br>spectro: drag=zoom &middot; molette=zoom &middot; dblclick=clic-droit=reset");
     fprintf(f, "<script>\nvar traj=[");
     for (size_t i = 0; i < mf.size(); i += 2)
         fprintf(f, "[%g,%g,%g],", mf[i][0], mf[i][4], -mf[i][2]);  // (x, hauteur z, -latéral y)
@@ -93,21 +94,65 @@ return [vir[i][0]+(vir[i+1][0]-vir[i][0])*f, vir[i][1]+(vir[i+1][1]-vir[i][1])*f
 for(var fr=0;fr<S.nframe;fr++)for(var b=0;b<S.nbin;b++){var v=S.img[fr*S.nbin+b]/255.0;var cc=cmap(v);
 var i=((S.nbin-1-b)*S.nframe+fr)*4;im.data[i]=cc[0];im.data[i+1]=cc[1];im.data[i+2]=cc[2];im.data[i+3]=255;}
 og.putImageData(im,0,0);
-function drawSpec(){var w=wrap.clientWidth-ML;if(w<100)w=100;sc.width=w;sc.height=SH;sc.style.width=w+'px';sc.style.height=SH+'px';
-var g=sc.getContext('2d');g.imageSmoothingEnabled=true;g.clearRect(0,0,w,SH);g.drawImage(off,ML,0,w,SH);
-g.save();g.translate(ML,0);
+// --- état du zoom : plage visible en frames [vx0,vx1] et en fréquence [vy0,vy1] ---
+var vx0=0,vx1=S.nframe-1,vy0=S.fmin,vy1=S.fmax;
+function resetZoom(){vx0=0;vx1=S.nframe-1;vy0=S.fmin;vy1=S.fmax;drawSpec();}
+function drawSpec(){
+var cw=wrap.clientWidth;if(cw<ML+100)cw=ML+100;var w=cw-ML;sc.width=cw;sc.height=SH;sc.style.width=cw+'px';sc.style.height=SH+'px';
+var g=sc.getContext('2d');g.imageSmoothingEnabled=true;g.fillStyle='#000';g.fillRect(0,0,cw,SH);
+var f0=Math.max(0,Math.round(vx0)),f1=Math.min(S.nframe-1,Math.round(vx1));if(f1<=f0)f1=f0+1;
+var b0=Math.max(0,Math.round((vy0-S.fmin)/(S.fmax-S.fmin)*(S.nbin-1)));
+var b1=Math.min(S.nbin-1,Math.round((vy1-S.fmin)/(S.fmax-S.fmin)*(S.nbin-1)));if(b1<=b0)b1=b0+1;
+// offscreen: ligne 0 = bin nbin-1 (haut) -> source y = nbin-1-b1, hauteur = b1-b0+1
+g.drawImage(off,f0,S.nbin-1-b1,f1-f0+1,b1-b0+1,ML,0,w,SH);
+// ridge cyan (lissé), limité à la plage visible
 g.strokeStyle='#00ffff';g.lineWidth=2;g.beginPath();var started=false;
-for(var fr=0;fr<S.nframe;fr++){var r=S.ridge[fr];
+for(var fr=f0;fr<=f1;fr++){var r=S.ridge[fr];
 if(fr>0&&fr<S.nframe-1)r=(S.ridge[fr-1]+r+S.ridge[fr+1])/3;
-var fx=fr/(S.nframe-1)*w;var fy=(1-(r-S.fmin)/(S.fmax-S.fmin))*SH;
+var fx=ML+(fr-vx0)/(vx1-vx0)*w;var fy=(1-(r-vy0)/(vy1-vy0))*SH;
 if(!started){g.moveTo(fx,fy);started=true;}else g.lineTo(fx,fy);}g.stroke();
-g.strokeStyle='#ffffff';g.setLineDash([4,3]);g.lineWidth=1.5;g.beginPath();var xi=S.i0/(S.nframe-1)*w;g.moveTo(xi,0);g.lineTo(xi,SH);g.stroke();g.setLineDash([]);
-g.fillStyle='#fff';g.font='11px Helvetica';g.fillText('impact',xi+4,24);
-for(var km=0;km<=250;km+=50){var fy=(1-((km*19.49)-S.fmin)/(S.fmax-S.fmin))*SH;if(fy<0||fy>SH)continue;
-g.fillText(km+' km/h',-ML+2,fy+3);g.strokeStyle='#666';g.beginPath();g.moveTo(0,fy);g.lineTo(w,fy);g.stroke();}
-var tmax=(S.nframe-1)*(S.hop||1024)/44100;for(var t=0;t<=tmax+0.001;t+=0.1){var tx=t/tmax*w;g.fillText(t.toFixed(1)+'s',tx+2,SH-4);}
-g.fillText('spectrogramme R1 — 0..250 km/h, passe-haut 50 km/h, ridge cyan, impact pointillé',4,14);
-g.restore();}
+// impact (pointillé blanc) si visible
+if(S.i0>=vx0&&S.i0<=vx1){var xi=ML+(S.i0-vx0)/(vx1-vx0)*w;
+g.strokeStyle='#ffffff';g.setLineDash([4,3]);g.lineWidth=1.5;g.beginPath();g.moveTo(xi,0);g.lineTo(xi,SH);g.stroke();g.setLineDash([]);
+g.fillStyle='#fff';g.font='11px Helvetica';g.fillText('impact',xi+4,24);}
+// grille + labels km/h (axe Y = fréquence -> km/h via f/19.49)
+g.font='11px Helvetica';
+for(var km=0;km<=350;km+=25){var f=km*19.49;if(f<vy0||f>vy1)continue;
+var fy=(1-(f-vy0)/(vy1-vy0))*SH;
+g.fillStyle='#aaa';g.fillText(km+'',2,fy+3);
+g.strokeStyle='#444';g.lineWidth=1;g.beginPath();g.moveTo(ML,fy);g.lineTo(ML+w,fy);g.stroke();}
+// labels temps (axe X)
+var t0f=f0*(S.hop||1024)/44100,t1f=f1*(S.hop||1024)/44100;
+var step=Math.max(1,Math.ceil((f1-f0)/8));
+for(var fr=f0;fr<=f1;fr+=step){var tx=ML+(fr-vx0)/(vx1-vx0)*w;var t=fr*(S.hop||1024)/44100;
+g.fillStyle='#aaa';g.fillText(t.toFixed(2)+'s',tx+2,SH-4);}
+// titre + plage courante
+g.fillStyle='#fff';
+var zoomed=(vx0>0||vx1<S.nframe-1||vy0>S.fmin+0.001||vy1<S.fmax-0.001);
+g.fillText('spectrogramme R1 — '+(vy0/19.49).toFixed(0)+'..'+(vy1/19.49).toFixed(0)+' km/h, t '+t0f.toFixed(2)+'..'+t1f.toFixed(2)+' s'+(zoomed?'  [ZOOM] drag=zoomer · molette=zoom · dblclick=clic-droit=reset':'  (drag=zoomer · molette=zoom · dblclick=reset)'),ML+4,14);
+// rectangle de sélection en cours
+if(sel){g.strokeStyle='#fff';g.setLineDash([3,3]);g.lineWidth=1;
+g.strokeRect(Math.min(sel.x0,sel.x1),Math.min(sel.y0,sel.y1),Math.abs(sel.x1-sel.x0),Math.abs(sel.y1-sel.y0));g.setLineDash([]);}
+}
+// --- interactions zoom sur le canvas spectrogramme ---
+var sel=null;
+sc.addEventListener('mousedown',function(e){if(e.button!==0)return;var r=sc.getBoundingClientRect();sel={x0:e.clientX-r.left,y0:e.clientY-r.top,x1:e.clientX-r.left,y1:e.clientY-r.top};e.preventDefault();});
+addEventListener('mousemove',function(e){if(!sel)return;var r=sc.getBoundingClientRect();sel.x1=e.clientX-r.left;sel.y1=e.clientY-r.top;drawSpec();});
+addEventListener('mouseup',function(e){if(!sel)return;var r=sc.getBoundingClientRect();var x1=e.clientX-r.left,y1=e.clientY-r.top;
+var w=sc.width-ML,x0=Math.min(sel.x0,x1)-ML,x2=Math.max(sel.x0,x1)-ML,y0=Math.min(sel.y0,y1),yy=Math.max(sel.y0,y1);sel=null;
+if(w>0&&x2-x0>15&&yy-y0>10){
+var nf0=vx0+(x0/w)*(vx1-vx0),nf1=vx0+(x2/w)*(vx1-vx0);
+var ny0=vy0+(1-yy/SH)*(vy1-vy0),ny1=vy0+(1-y0/SH)*(vy1-vy0);
+vx0=Math.round(nf0);vx1=Math.round(nf1);vy0=ny0;vy1=ny1;
+if(vx1<=vx0)vx1=vx0+1;if(vy1<=vy0)vy1=vy0+(S.fmax-S.fmin)/100;}
+drawSpec();});
+sc.addEventListener('dblclick',function(e){e.preventDefault();resetZoom();});
+sc.addEventListener('contextmenu',function(e){e.preventDefault();resetZoom();});
+sc.addEventListener('wheel',function(e){e.preventDefault();var r=sc.getBoundingClientRect();var mx=e.clientX-r.left-ML,my=e.clientY-r.top;var w=sc.width-ML;if(w<=0||mx<0)return;
+var fx=vx0+(mx/w)*(vx1-vx0),fy=vy0+(1-my/SH)*(vy1-vy0),z=e.deltaY>0?1.25:0.8;
+var a=fx-(fx-vx0)*z,b=fx+(vx1-fx)*z,c=fy-(fy-vy0)*z,d=fy+(vy1-fy)*z;
+if(b-a<2){a=fx-1;b=fx+1;}if(d-c<(S.fmax-S.fmin)/100){var m=(c+d)/2,dd=(S.fmax-S.fmin)/100;c=m-dd/2;d=m+dd/2;}
+vx0=Math.round(a);vx1=Math.round(b);vy0=c;vy1=d;drawSpec();},{passive:false});
 drawSpec();resize3D();
 )JS", f);
     }
