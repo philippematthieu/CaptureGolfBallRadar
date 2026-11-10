@@ -27,6 +27,9 @@ static void write_traj_3d_html(const std::string& path,
         if (mf[i][4] > mf[iapex][4]) iapex = (int)i;
         zmax = std::max(zmax, mf[i][4]);
     }
+    // fairway toujours carré : côté >= distance parcourue par la balle (marge 10%, min 50 m)
+    double side = std::max(xmax * 1.1, 50.0);
+    int gdiv = (int)std::max(2.0, std::round(side / 10.0)); // carreaux de ~10 m
     FILE* f = fopen(path.c_str(), "w");
     if (!f) return;
     fprintf(f, "<!DOCTYPE html><html><head><meta charset='utf-8'><title>%s</title>\n", titre.c_str());
@@ -52,11 +55,11 @@ static void write_traj_3d_html(const std::string& path,
         fprintf(f, "[%g,%g,%g],", mf[i][0], mf[i][4], -mf[i][2]);  // (x, hauteur z, -latéral y)
     fprintf(f, "];\nvar PW=250;var SH=0;var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth-PW,innerHeight-SH);renderer.domElement.id='gl';document.body.appendChild(renderer.domElement);\n");
     fprintf(f, "var scene=new THREE.Scene();scene.background=new THREE.Color(0xffffff);\n");
-    fprintf(f, "var cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,2000);cam.position.set(-30,%.0f,%.0f);\n", zmax*1.2, xmax*0.35);
-    fprintf(f, "var ctl=new THREE.OrbitControls(cam,renderer.domElement);ctl.target.set(%.0f,0,0);\n", xmax/2);
-    // sol vert
-    fprintf(f, "var sol=new THREE.Mesh(new THREE.PlaneGeometry(%.0f,200),new THREE.MeshLambertMaterial({color:0x3a9d3a}));sol.rotation.x=-Math.PI/2;sol.position.set(%.0f,0,0);scene.add(sol);\n", xmax*1.1, xmax/2);
-    fprintf(f, "var grid=new THREE.GridHelper(%.0f,20,0x888888,0xcccccc);grid.position.set(%.0f,0.01,0);scene.add(grid);\n", xmax*1.1, xmax/2);
+    fprintf(f, "var cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,2000);cam.position.set(-30,%.0f,%.0f);\n", zmax*1.2, side*0.4);
+    fprintf(f, "var ctl=new THREE.OrbitControls(cam,renderer.domElement);ctl.target.set(%.0f,0,0);\n", side/2);
+    // sol vert carré (côté = side, centré sur la trajectoire en X, centré en Z)
+    fprintf(f, "var sol=new THREE.Mesh(new THREE.PlaneGeometry(%.0f,%.0f),new THREE.MeshLambertMaterial({color:0x3a9d3a}));sol.rotation.x=-Math.PI/2;sol.position.set(%.0f,0,0);scene.add(sol);\n", side, side, side/2);
+    fprintf(f, "var grid=new THREE.GridHelper(%.0f,%d,0x888888,0xcccccc);grid.position.set(%.0f,0.01,0);scene.add(grid);\n", side, gdiv, side/2);
     // lumiere
     fprintf(f, "scene.add(new THREE.AmbientLight(0xffffff,0.7));var d=new THREE.DirectionalLight(0xffffff,0.8);d.position.set(-50,80,30);scene.add(d);\n");
     // courbe trajectoire
