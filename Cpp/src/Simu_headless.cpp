@@ -96,11 +96,15 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
             probe.rescaleSpin(e.spin_rpm / st);          // spin total = spin radar
             probe.runSimu();
             auto mf = probe.getMatriceFlight();
-            int k1 = (int)mf.size() - 1, k2 = std::min(15, k1);   // ~150 ms post-impact (dt=0.01)
+            // courbure azimutale sur toute la phase de vol (jusqu'à la chute)
+            int k1 = (int)mf.size() - 1, k2 = std::min((int)probe.getIndexChute(), k1);
+            if (k2 < 2) k2 = std::min(15, k1);
             double a0 = atan2(mf[k1 > 1 ? 1 : 0][3], mf[k1 > 1 ? 1 : 0][1]) * 180.0 / M_PI;
             double a1 = atan2(mf[k2][3], mf[k2][1]) * 180.0 / M_PI;
             double da = a1 - a0;                          // courbure azimutale simulée (deg)
-            double err = std::fabs(da - e.dalpha_deg);    // colle à la courbure stéréo mesurée
+            // signe : mesure stéréo et repère simu sont opposés (vérifié sur cs119/cs124) ;
+            // si |dAlpha| < 0,3° (bruit) on ne contraint pas la courbure -> g = 0
+            double err = (std::fabs(e.dalpha_deg) > 0.3) ? std::fabs(da + e.dalpha_deg) : std::fabs(da);
             if (err < best) { best = err; gbest = g; syb = sy; szb = sz; stb = st; dabest = da; }
         }
         sac[j].setGamaFacePathDegre(gbest);
