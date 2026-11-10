@@ -382,6 +382,64 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
 }
 
 
+// ---------------- vitesse du club à l'impact ---------------------------------
+// Le lobe Doppler de la tête de club juste avant l'impact (t < t0) contient vClub.
+// 1) estimation modèle inverse : vguess = vBall / 1.35 (smash typique)
+// 2) filtrage passe-bande du signal autour de fguess = vguess * KV (±15 %)
+// 3) crête du spectrogramme dans cette bande sur [t0-0.30 s, t0] -> vClub à l'impact
+// Retourne NaN si le lobe club n'est pas détectable.
+CAP_UNUSED static double estimate_club_speed(const Capture& c, const EstRadar& e) {
+    if (e.vball_kmh <= 0) return NAN;
+    double vguess = e.vball_kmh / 1.35;
+    double fc = vguess * KV;
+    double bw = std::max(200.0, 0.30 * fc);            // ±15 % autour de l'estimation
+    const int NFFT = 1024, HOP = 128;
+    int i0 = (int)(e.t0_s * FS);
+    int n0 = std::max(0, i0 - (int)(0.30 * FS));
+    int n1 = std::min((int)c.r1.size(), i0 + NFFT);
+    if (n1 - n0 < 2 * NFFT) return NAN;
+    // passe-bande FFT sur la fenêtre [n0, n1)
+    int n = n1 - n0;
+    int N = 1; while (N < n) N <<= 1;
+    std::vector<double> re(N, 0.0), im(N, 0.0);
+    double m = 0; for (int i = 0; i < n; i++) m += c.r1[n0 + i]; m /= n;
+    for (int i = 0; i < n; i++) re[i] = c.r1[n0 + i] - m;
+    fft(re, im, false);
+    for (int k = 0; k < N; k++) {
+        double f = (k <= N / 2) ? k * FS / N : (k - N) * FS / N;
+        if (std::fabs(f - fc) > bw / 2.0) { re[k] = 0.0; im[k] = 0.0; }
+    }
+    fft(re, im, true);
+    std::vector<double> x(n);
+    for (int i = 0; i < n; i++) x[i] = re[i];
+    // spectrogramme, pic restreint à la bande [fc-bw/2, fc+bw/2]
+    int nframes = 1 + (n - NFFT) / HOP;
+    if (nframes < 4) return NAN;
+    std::vector<double> w(NFFT);
+    for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
+    int k_lo = std::max(1, (int)((fc - bw / 2.0) * NFFT / FS));
+    int k_hi = std::min(NFFT / 2 - 1, (int)((fc + bw / 2.0) * NFFT / FS) + 1);
+    std::vector<double> vals, pw, P(NFFT / 2), re2(NFFT), im2(NFFT);
+    double pmax_all = 0;
+    for (int fr = 0; fr < nframes; fr++) {
+        for (int i = 0; i < NFFT; i++) { re2[i] = x[fr * HOP + i] * w[i]; im2[i] = 0; }
+        fft(re2, im2, false);
+        for (int k = 0; k < NFFT / 2; k++) P[k] = re2[k] * re2[k] + im2[k] * im2[k];
+        int kb = k_lo; double pb = 0;
+        for (int k = k_lo; k <= k_hi; k++) if (P[k] > pb) { pb = P[k]; kb = k; }
+        if (pb > pmax_all) pmax_all = pb;
+        vals.push_back(parabolic_peak(P, kb) * FS / NFFT);
+        pw.push_back(pb);
+    }
+    // frames où le lobe club est présent (puissance significative)
+    std::vector<double> good;
+    for (size_t i = 0; i < vals.size(); i++) if (pw[i] > 0.05 * pmax_all) good.push_back(vals[i] / KV);
+    if (good.size() < 3) return NAN;
+    std::sort(good.begin(), good.end());
+    return good[(size_t)(good.size() * 0.9)];   // quantile 90 % ~ vitesse juste avant l'impact
+}
+
+
 // signal Doppler synthetique a partir d'une trajectoire simulee (mode club, pour le spectrogramme en bas)
 CAP_UNUSED static std::vector<double> gen_signal_simu(const std::vector< std::vector<double> >& mf, double vclub_kmh, double fs = FS) {
     const double lam = 299792458.0 / 10.525e9;
