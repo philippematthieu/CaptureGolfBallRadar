@@ -2,6 +2,9 @@
 # Golf Ball Simulator in Scilab (java and cpp)
 <img src="sci/img/Pasted image 20250120171635.png"  width="560" height="380">
 
+Application `simu_headless --capture` (scène 3D interactive + panneau mesures radar + spectrogramme docké/zoomable) :
+<img src="sci/img/Pasted image 20261110224721.png" width="980">
+
 ## Radar setup — geometry, swing line and shot angles
 
 <img src="sci/img/setup_radar.png" width="980">
