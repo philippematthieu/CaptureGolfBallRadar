@@ -447,7 +447,9 @@ CAP_UNUSED static double estimate_club_speed(const Capture& c, const EstRadar& e
 // f_D ± 2 kHz, puis AUTOCORRÉLATION en fréquence : le pic au lag f_rot donne
 // le spin. Robuste même quand les raies individuelles sont sous le fond (β petit),
 // car tout le peigne contribue en cohérence. Retourne 0 si rien trouvé.
-CAP_UNUSED static double estimate_spin_peigne(const Capture& c, const EstRadar& e) {
+// même analyse, en exposant l'autocorrélation (pour affichage) : lag en Hz, ac normalisée par ac[0]
+CAP_UNUSED static double estimate_spin_peigne_ac(const Capture& c, const EstRadar& e,
+                                                 std::vector<double>* lagHz, std::vector<double>* acv) {
     if (e.vball_kmh <= 0) return 0.0;
     double fD = e.vball_kmh * KV;
     int i0 = (int)(e.t0_s * FS);
@@ -496,7 +498,13 @@ CAP_UNUSED static double estimate_spin_peigne(const Capture& c, const EstRadar& 
     }
     if (bscore <= 0) return 0.0;
     double lagf = parabolic_peak(ac, best);
+    if (lagHz && acv && ac[0] > 0) {
+        for (int lag = 0; lag <= lag1; lag++) { lagHz->push_back(lag * df); acv->push_back(ac[lag] / ac[0]); }
+    }
     return 60.0 * lagf * df;                            // f_rot (Hz) -> rpm
+}
+CAP_UNUSED static double estimate_spin_peigne(const Capture& c, const EstRadar& e) {
+    return estimate_spin_peigne_ac(c, e, nullptr, nullptr);
 }
 
 // ---------------- passe-bande FFT : garde |f-f0| <= bw/2 ----------------
@@ -522,7 +530,9 @@ CAP_UNUSED static std::vector<double> bandpass(const std::vector<double>& x, dou
 // a pour phase φ(t) = 2π f_D t + β sin(2π f_rot t). La fréquence instantanée
 // dφ/dt - tendance = β f_rot cos(2π f_rot t) : le pic de son spectre à f_rot donne
 // le spin — plus propre que l'enveloppe d'amplitude (patch).
-CAP_UNUSED static double estimate_spin_phase(const Capture& c, const EstRadar& e) {
+// même analyse, en exposant le spectre de la fréquence instantanée detrendée (40..200 Hz, dB)
+CAP_UNUSED static double estimate_spin_phase_spec(const Capture& c, const EstRadar& e,
+                                                  std::vector<double>* sf, std::vector<double>* sdb) {
     if (e.vball_kmh <= 0) return 0.0;
     double fD = e.vball_kmh * KV;
     int i0 = (int)(e.t0_s * FS);
@@ -582,7 +592,17 @@ CAP_UNUSED static double estimate_spin_phase(const Capture& c, const EstRadar& e
         for (int q : loc) { int k = (int)lround(q * df / f0); if (k >= 1 && std::fabs(q * df - k * f0) < 2 * df) score += P[q]; }
         if (score > bs) { bs = score; best = p; }
     }
+    if (sf && sdb && pmax > 0) {
+        for (int k = k0; k <= k1; k++) {
+            sf->push_back(k * df);
+            double d = 10.0 * log10(P[k] / pmax + 1e-12);
+            sdb->push_back(d < -80.0 ? -80.0 : d);
+        }
+    }
     return 60.0 * parabolic_peak(P, best) * df;
+}
+CAP_UNUSED static double estimate_spin_phase(const Capture& c, const EstRadar& e) {
+    return estimate_spin_phase_spec(c, e, nullptr, nullptr);
 }
 
 // ---------------- fusion patch + phase + peigne ------------------------------
