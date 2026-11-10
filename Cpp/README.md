@@ -79,6 +79,57 @@ Toutes les briques sont dans `Capture.h` (header-only, FFT radix-2 maison) :
 
 Le mode `--capture` enchaîne : mesures radar → V club (passe-bande, sinon modèle vBall/1.35) → spin fusion → ajustement GamaFacePath par courbure → `Ball::runSimu()` → HTML 3D + SVG. Le shaft lean reste au cas idéal du club (non identifiable au radar).
 
+### Workflow détaillé : du spin total au back/side spin (contraindre par la courbure)
+
+```
+┌───────────────────────────┐   ┌────────────────────────────────┐   ┌─────────────────────────────┐   ┌──────────────────────────┐
+│ 1. CAPTATION RADAR        │ → │ 2. SIMULATIONS MULTIPLES       │ → │ 3. CORRÉLATION MESURES      │ → │ 4. GÉNÉRATION HTML/JS    │
+│  (Capture.h)              │   │  (modèle inverse, Ball)        │   │  RADAR vs SIMU              │   │  (Plot3D.h)              │
+└───────────────────────────┘   └────────────────────────────────┘   └─────────────────────────────┘   └──────────────────────────┘
+```
+
+#### Étape 1 — Captation et mesures radar (`Capture.h`, `estimate()`)
+
+- **Lecture** : CSV 2 lignes `;` ou WAV stéréo 44,1 kHz → canaux R1/R2 (`load_capture`).
+- **vBall** : STFT (NFFT 2048, hop 1024), pic dans la bande 1000–6000 Hz, interpolation parabolique sous-bin, médiane du ridge sur 50 ms post-impact, rejet inter-radars > 15 %, correction cos 20° → `vball_kmh`, `vball_corr_kmh`.
+- **t0 (impact)** : frame d'énergie max du spectrogramme.
+- **V club** : le lobe Doppler de la tête de club existe avant t0 → passe-bande FFT autour de `vBall/1.35` sur `[t0−0,3 s, t0]`, crête au quantile 90 % (`estimate_club_speed`) → `vclub_radar`, d'où **smash = vBall/vClub** (fallback modèle vBall/1.35 si NaN).
+- **Spin total — 3 voies** (mode `fusion` par défaut) :
+  1. *patch* : enveloppe de Hilbert sur 250 ms post-impact, spectre 50–200 Hz, score d'harmoniques (évite f_rot/2) ;
+  2. *phase* : lobe balle filtré passe-bande autour de f_D, signal analytique, fréquence instantanée `dφ/dt` detrendée (moyenne glissante 0,1 s), pic à f_rot (`estimate_spin_phase_spec`) ;
+  3. *peigne* : spectre Welch (NFFT 8192) autour de f_D ± 2 kHz, detrend glissant, autocorrélation normalisée en lag, score de fondamental (`estimate_spin_peigne_ac`).
+  - `fusion_spin()` : moyenne patch+phase si cohérents à ±15 %, sinon patch > phase > peigne.
+- **α₀ et Δα** : appariement stéréo — pour chaque frame post-impact, pic de R2 dans ±300 Hz autour de f1(R1), cohérence |f1−f2| ≤ 30 Hz, `α = atan((2L/B)·fd/fc)` avec L(t) évolutif ; α₀ = médiane des 50 ms initiales, Δα = médiane(fin 100 ms) − médiane(début) = **courbure de trajectoire mesurée**.
+
+#### Étape 2 — Simulations multiples avec le modèle (balayage de `GamaFacePath`)
+
+Le radar donne le spin **total** (norme) mais pas sa direction. Le modèle `Ball` lie `GamaFacePath` (angle face/trajectoire) au vecteur spin `(spinY, spinZ)` :
+
+- pour chaque `g` de −15° à +15° (pas 0,5°) :
+  - `Club` avec `ClubV0 = vclub`, `AlphaClubPath = α₀`, `GamaFacePath = g` ;
+  - `Ball probe(...)` → `spinY(g)`, `spinZ(g)` ;
+  - `probe.rescaleSpin(spin_radar / hypot(spinY, spinZ))` → spin total calé sur la mesure radar ;
+  - `probe.runSimu()` → trajectoire `mf` (vol + rebonds + roulement, RK4 dt = 0,01 s) ;
+  - **courbure azimutale simulée** : `da = atan2(vy,vx)` à la frame ~150 ms post-impact (même fenêtre que la mesure stéréo) moins la frame initiale.
+- on retient `g*` qui minimise `err = |da(g) − Δα_radar|`.
+
+#### Étape 3 — Corrélation avec les mesures radar
+
+- **Vecteur spin retenu** : `(spinY(g*), spinZ(g*))` rescalé au spin total mesuré → `backspin_est = spinY·k`, `sidespin_est = spinZ·k` avec `k = spin_radar / hypot(spinY,spinZ)`, donc toujours `hypot(back, side) = spin_radar` (backspin ≤ spin total — cohérence garantie).
+- **Cohérences vérifiées** sur les 12 captures : smash 1,18–1,40 stable ; side spin détecté quand Δα ≠ 0 (ex. cs104 : −246 rpm vs réf −630) ; signe à surveiller (convention Δα stéréo vs repère simu).
+- **Limites** : shaft lean non identifiable au radar (cas idéal du club retenu) ; le launch angle (pente du ridge post-impact) serait la prochaine contrainte pour affiner loft dynamique.
+
+#### Étape 4 — Simulation finale et génération du HTML/JS (`Plot3D.h`)
+
+- `Ball theBall(...)` avec le club ajusté (`vclub`, `α₀`, `g*`) + `rescaleSpin(spinScale·spin_radar/hypot(...))` → `runSimu()` → `mf` (matrice `[x, vx, y, vy, z, vz]`).
+- `write_traj_3d_html("trajectoire_capture_3d.html", mf, titre, inf, specJson)` génère un HTML autonome :
+  - **panneau infos** (gauche, 250 px) : toutes les mesures/estimations (vBall, V club radar/modèle, smash, spin total/phase/peigne, back/side estimés, GamaFacePath, α₀, Δα, t0, portée, hauteur max, z final) ;
+  - **scène 3D three.js** (centre) : trajectoire, balle animée (slider vitesse), OrbitControls, sol **carré** (côté = max(1,1×portée, 50 m)), grille ~10 m, projection au sol en pointillés, apex rouge ;
+  - **spectrogramme docké en bas** (`specJson` = `spec_to_json(e)`) : `left:250px; right:0`, redimensionnable (drag), zoom interactif (drag = zone, molette = zoom au curseur, dblclick/clic droit = reset), colormap viridis, ridge cyan, impact pointillé, axes km/h et s.
+- `write_traj_svg("trajectoire_capture.svg", ...)` pour la vue 2D.
+
+Fichiers impliqués : `Simu_headless.cpp` (orchestration `--capture`), `Capture.h` (mesures), `Ball/Club/EquationODE/SolverODE` (modèle), `Plot3D.h` (HTML 3D + spectrogramme), `PlotSVG.h` (SVG).
+
 ## Visualisation HTML 3D (`trajectoire_3d.html` / `trajectoire_capture_3d.html`)
 
 Layout HMI produit par `Plot3D.h` :
