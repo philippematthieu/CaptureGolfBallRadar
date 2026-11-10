@@ -41,6 +41,10 @@ static std::string kv(const char* k, const std::string& v) {
 static std::string fmt1(double x, const char* u) {
     char b[64]; snprintf(b, sizeof(b), "%.1f %s", x, u); return b;
 }
+static std::string fmt1nan(double x, const char* u) {
+    if (std::isnan(x)) return std::string("NaN ") + u;
+    return fmt1(x, u);
+}
 static std::string fmt0(double x, const char* u) {
     char b[64]; snprintf(b, sizeof(b), "%.0f %s", x, u); return b;
 }
@@ -60,8 +64,12 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     sac[5] = Club("F7", 0.200, 20.0, 30, 0.83, 380.00, 420.0, 0.54, 122.3, 0.0, 0.0, -6.5);
     unsigned j = 5;
     for (unsigned i = 0; i < sac.size(); i++) if (sac[i].getType() == clubType) j = i;
+    // vitesse club : passe-bande radar autour de vBall/1.35 (lobe du club avant t0), sinon modèle
+    double vclub_model = e.vball_kmh / 1.35;
+    double vclub_radar = estimate_club_speed(c, e);
+    double vclub = std::isnan(vclub_radar) ? vclub_model : vclub_radar;
     // vitesse club estimée = vBall / 1.35 (smash typique)
-    sac[j].setClubV0Kmh(e.vball_kmh / 1.35);
+    sac[j].setClubV0Kmh(vclub);
     sac[j].setAlphaClubPathDegre(e.alpha0_deg);
     Ball theBall("Decathlon", 320, 3, sac[j], 18.0, 0.01);
     theBall.rescaleSpin(spinScale * e.spin_rpm / max(theBall.getSpinYOrgrpm(), 1.0));
@@ -70,7 +78,9 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
     { std::string inf = kv("vBall radar", fmt1(e.vball_kmh, "km/h") + "  (" + fmt1(e.vball_corr_kmh, "corr. cos20") + ")")
-  + kv("V club (modèle vBall/1.35)", fmt1(sac[j].getClubV0kmh(), "km/h") + "   — non mesurable au radar (voit la balle seule)")
+  + kv("V club radar (passe-bande)", fmt1nan(vclub_radar, "km/h") + (std::isnan(vclub_radar) ? "  — lobe club non détecté" : ""))
+  + kv("V club modèle (vBall/1.35)", fmt1(vclub_model, "km/h"))
+  + kv("Smash mesuré (vBall/Vclub)", std::isnan(vclub_radar) ? std::string("NaN") : fmt1(e.vball_kmh / vclub_radar, ""))
   + kv("Spin total radar", fmt0(e.spin_rpm, "rpm"))
   + kv("BackSpin radar", fmt0nan(NAN, "rpm")) + kv("SideSpin radar", fmt0nan(NAN, "rpm"))
   + kv("BackSpin simu", fmt0(theBall.getSpinYOrgrpm(), "rpm")) + kv("SideSpin simu", fmt0(theBall.getSpinZOrgrpm(), "rpm"))
