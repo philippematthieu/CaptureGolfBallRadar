@@ -44,6 +44,10 @@ static std::string fmt1(double x, const char* u) {
 static std::string fmt0(double x, const char* u) {
     char b[64]; snprintf(b, sizeof(b), "%.0f %s", x, u); return b;
 }
+static std::string fmt0nan(double x, const char* u) {
+    if (std::isnan(x)) return std::string("NaN ") + u;
+    return fmt0(x, u);
+}
 
 // mode captation : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale]
 static int run_from_capture(const char* path, const char* clubType, double spinScale, bool openAfter) {
@@ -65,10 +69,15 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     auto mf = theBall.getMatriceFlight();
     printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
-    { std::string inf = kv("vBall", fmt1(e.vball_kmh, "km/h") + "  (" + fmt1(e.vball_corr_kmh, "corr.") + ")")
-  + kv("SpinTotal", fmt0(e.spin_rpm, "rpm")) + kv("alpha0", fmt1(e.alpha0_deg, "deg"))
+    { std::string inf = kv("vBall radar", fmt1(e.vball_kmh, "km/h") + "  (" + fmt1(e.vball_corr_kmh, "corr. cos20") + ")")
+  + kv("V club (modèle vBall/1.35)", fmt1(sac[j].getClubV0kmh(), "km/h") + "   — non mesurable au radar (voit la balle seule)")
+  + kv("Spin total radar", fmt0(e.spin_rpm, "rpm"))
+  + kv("BackSpin radar", fmt0nan(NAN, "rpm")) + kv("SideSpin radar", fmt0nan(NAN, "rpm"))
+  + kv("BackSpin simu", fmt0(theBall.getSpinYOrgrpm(), "rpm")) + kv("SideSpin simu", fmt0(theBall.getSpinZOrgrpm(), "rpm"))
+  + kv("alpha0", fmt1(e.alpha0_deg, "deg"))
   + kv("Delta alpha", fmt1(e.dalpha_deg, "deg")) + kv("Impact t0", fmt1(e.t0_s, "s"))
-  + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Apex", fmt1(theBall.getMaxHeight(), "m"));
+  + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Hauteur max", fmt1(theBall.getMaxHeight(), "m"))
+  + kv("z final", fmt1(mf.back()[2], "m"));
   write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf, spec_to_json(e)); }
     printf("HTML 3D ecrit : trajectoire_capture_3d.html\n");
     if (openAfter) {
@@ -172,11 +181,12 @@ int main(int argc, char *argv[]) {
     std::string titre3d = "Trajectoire 3D " + sac[j].getType() + " — portée " + std::to_string((int)portee) + " m, apex " + std::to_string((int)apex) + " m";
     char svgname[256];
     snprintf(svgname, sizeof(svgname), "trajectoire_%s.svg", sac[j].getType().c_str());
-    { std::string inf = kv("Club", sac[j].getType() + "  " + fmt1(sac[j].getClubV0kmh(), "km/h"))
+    { std::string inf = kv("Club", sac[j].getType())
+  + kv("V club (modèle)", fmt1(sac[j].getClubV0kmh(), "km/h"))
   + kv("V0 balle", fmt1(theBall.getV0BallInitms() * 3.6, "km/h"))
   + kv("Launch", fmt1(theBall.getLaunchAngle() * 180.0 / M_PI, "deg"))
-  + kv("BackSpin", fmt0(theBall.getSpinYOrgrpm(), "rpm")) + kv("SideSpin", fmt0(theBall.getSpinZOrgrpm(), "rpm"))
-  + kv("Portee", fmt1(portee, "m")) + kv("Apex", fmt1(apex, "m")) + kv("z final", fmt1(zfinal, "m"));
+  + kv("BackSpin", fmt0nan(theBall.getSpinYOrgrpm(), "rpm")) + kv("SideSpin", fmt0nan(theBall.getSpinZOrgrpm(), "rpm"))
+  + kv("Portee", fmt1(portee, "m")) + kv("Hauteur max", fmt1(apex, "m")) + kv("z final", fmt1(zfinal, "m"));
   { EstRadar es; auto sig = gen_signal_simu(mf, sac[j].getClubV0kmh()); fill_spec(es, sig, 512, 128);
   write_traj_3d_html("trajectoire_3d.html", mf, titre3d, inf, spec_to_json(es)); }
   }
