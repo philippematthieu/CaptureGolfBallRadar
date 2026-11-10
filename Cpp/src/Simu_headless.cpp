@@ -71,8 +71,25 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     // vitesse club estimée = vBall / 1.35 (smash typique)
     sac[j].setClubV0Kmh(vclub);
     sac[j].setAlphaClubPathDegre(e.alpha0_deg);
+    // décomposition back/side spin : smash mesuré + spin total radar contraignent GamaFacePath
+    // via le modèle — on balaie GamaFacePath pour |spinY,spinZ| = spin_radar
+    double gfp_est = 0.0, backspin_est = NAN, sidespin_est = NAN;
+    if (e.spin_rpm > 0) {
+        double best = 1e18;
+        for (double g = -15.0; g <= 15.0001; g += 0.25) {
+            sac[j].setGamaFacePathDegre(g);
+            Ball probe("Decathlon", 320, 3, sac[j], 18.0, 0.01);
+            double st = std::hypot(probe.getSpinYOrgrpm(), probe.getSpinZOrgrpm());
+            double err = std::fabs(st - e.spin_rpm);
+            if (err < best) { best = err; gfp_est = g; backspin_est = probe.getSpinYOrgrpm(); sidespin_est = probe.getSpinZOrgrpm(); }
+        }
+        sac[j].setGamaFacePathDegre(gfp_est);
+    }
     Ball theBall("Decathlon", 320, 3, sac[j], 18.0, 0.01);
-    theBall.rescaleSpin(spinScale * e.spin_rpm / max(theBall.getSpinYOrgrpm(), 1.0));
+    if (e.spin_rpm > 0)
+        theBall.rescaleSpin(spinScale * e.spin_rpm / std::max(std::hypot(theBall.getSpinYOrgrpm(), theBall.getSpinZOrgrpm()), 1.0));
+    else
+        theBall.rescaleSpin(0.0);
     theBall.runSimu();
     auto mf = theBall.getMatriceFlight();
     printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
@@ -82,8 +99,9 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
   + kv("V club modèle (vBall/1.35)", fmt1(vclub_model, "km/h"))
   + kv("Smash mesuré (vBall/Vclub)", std::isnan(vclub_radar) ? std::string("NaN") : fmt1(e.vball_kmh / vclub_radar, ""))
   + kv("Spin total radar", fmt0(e.spin_rpm, "rpm"))
-  + kv("BackSpin radar", fmt0nan(NAN, "rpm")) + kv("SideSpin radar", fmt0nan(NAN, "rpm"))
-  + kv("BackSpin simu", fmt0(theBall.getSpinYOrgrpm(), "rpm")) + kv("SideSpin simu", fmt0(theBall.getSpinZOrgrpm(), "rpm"))
+  + kv("BackSpin estimé", fmt0nan(backspin_est, "rpm") + (std::isnan(backspin_est) ? "  — spin nul, non décomposable" : "  (modèle contraint par smash + spin total)"))
+  + kv("SideSpin estimé", fmt0nan(sidespin_est, "rpm"))
+  + kv("GamaFacePath estimé", fmt1nan(gfp_est, "deg"))
   + kv("alpha0", fmt1(e.alpha0_deg, "deg"))
   + kv("Delta alpha", fmt1(e.dalpha_deg, "deg")) + kv("Impact t0", fmt1(e.t0_s, "s"))
   + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Hauteur max", fmt1(theBall.getMaxHeight(), "m"))
