@@ -31,20 +31,25 @@ static void write_traj_3d_html(const std::string& path,
     if (!f) return;
     fprintf(f, "<!DOCTYPE html><html><head><meta charset='utf-8'><title>%s</title>\n", titre.c_str());
     fprintf(f, "<script src='lib/three.min.js'></script><script src='lib/OrbitControls.js'></script>\n");
-    fprintf(f, "<style>body{margin:0;font-family:Helvetica}\n"
-               "#panel{position:fixed;left:0;top:0;width:250px;height:100%%;background:#1e1e2e;color:#eee;padding:12px;box-sizing:border-box;overflow:auto;font-size:13px}\n"
+    fprintf(f, "<style>body{margin:0;font-family:Helvetica;overflow:hidden}\n"
+               "#panel{position:fixed;left:0;top:0;width:250px;height:100%%;background:#1e1e2e;color:#eee;padding:12px;box-sizing:border-box;overflow:auto;font-size:13px;z-index:10}\n"
                "#panel h1{font-size:15px;margin:4px 0 10px;color:#8ab4ff}\n"
                "#panel .k{color:#9aa0b4;margin-top:6px}\n"
                "#panel .v{color:#fff;font-size:15px;font-weight:bold}\n"
                "#panel .hint{position:fixed;bottom:8px;left:12px;color:#889;font-size:11px}\n"
-               "canvas{margin-left:250px}\n"
+               "#view{margin-left:250px}\n"
+               "#gl{margin-left:250px;display:block}\n"
+               "#specWrap{position:fixed;bottom:0;left:250px;right:0;background:#000;border-top:2px solid #555;box-sizing:border-box;z-index:5}\n"
+               "#specHandle{position:absolute;top:-6px;left:0;right:0;height:12px;cursor:ns-resize;z-index:6}\n"
+               "#specHandle:hover{background:rgba(138,180,255,0.25)}\n"
+               "#spec{display:block;width:100%%;height:100%%}\n"
                "</style></head><body>\n");
     fprintf(f, "<div id='panel'><h1>%s</h1>%s<div class='hint'>glisser=turn &middot; molette=zoom<br>vitesse anim: <input id='vit' type='range' min='1' max='30' value='8' style='width:110px'> <span id='vitv'>8</span>x</div></div>\n",
             titre.c_str(), infosHtml.c_str());
     fprintf(f, "<script>\nvar traj=[");
     for (size_t i = 0; i < mf.size(); i += 2)
         fprintf(f, "[%g,%g,%g],", mf[i][0], mf[i][4], -mf[i][2]);  // (x, hauteur z, -latéral y)
-    fprintf(f, "];\nvar PW=250;var SH=0;var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth-PW,innerHeight-SH);document.body.appendChild(renderer.domElement);\n");
+    fprintf(f, "];\nvar PW=250;var SH=0;var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth-PW,innerHeight-SH);renderer.domElement.id='gl';document.body.appendChild(renderer.domElement);\n");
     fprintf(f, "var scene=new THREE.Scene();scene.background=new THREE.Color(0xffffff);\n");
     fprintf(f, "var cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,2000);cam.position.set(-30,%.0f,%.0f);\n", zmax*1.2, xmax*0.35);
     fprintf(f, "var ctl=new THREE.OrbitControls(cam,renderer.domElement);ctl.target.set(%.0f,0,0);\n", xmax/2);
@@ -65,13 +70,21 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "var ball=new THREE.Mesh(new THREE.SphereGeometry(0.8),new THREE.MeshLambertMaterial({color:0xffffff}));scene.add(ball);\n");
     fprintf(f, "var k=0;var VIT=8;document.getElementById('vit').oninput=function(){VIT=+this.value;document.getElementById('vitv').textContent=VIT;};\n");
     fprintf(f, "function anim(){ball.position.copy(pts[Math.floor(k)%%pts.length]);k+=0.15*VIT;ctl.update();renderer.render(scene,cam);requestAnimationFrame(anim);}anim();\n");
-    fprintf(f, "addEventListener('resize',function(){cam.aspect=(innerWidth-PW)/innerHeight;cam.updateProjectionMatrix();renderer.setSize(innerWidth-PW,innerHeight-SH);});\n");
+    fprintf(f, "addEventListener('resize',function(){resize3D();if(typeof drawSpec==='function')drawSpec();});\nfunction resize3D(){cam.aspect=(innerWidth-PW)/(innerHeight-SH);cam.updateProjectionMatrix();renderer.setSize(innerWidth-PW,innerHeight-SH);}\n");
     // --- frame fixe en bas : densité spectrale (spectrogramme) si fournie ---
     if (!specJson.empty()) {
         fprintf(f, "var S=%s;SH=190;ML=56;\n", specJson.c_str());
         fputs(R"JS(
-var sc=document.createElement('canvas');sc.id='spec';document.body.appendChild(sc);
-sc.style.cssText='position:fixed;bottom:0;left:'+(250+ML)+'px;border-top:2px solid #555;background:#000';
+// conteneur docké : attaché au panneau gauche (left:250px) et au bord droit (right:0)
+var wrap=document.createElement('div');wrap.id='specWrap';wrap.style.height=SH+'px';document.body.appendChild(wrap);
+var handle=document.createElement('div');handle.id='specHandle';handle.title='tirer pour redimensionner';wrap.appendChild(handle);
+var sc=document.createElement('canvas');sc.id='spec';wrap.appendChild(sc);
+// drag du handle pour changer la hauteur (redimensionnable)
+var dragging=false,startY=0,startH=0;
+handle.addEventListener('mousedown',function(e){dragging=true;startY=e.clientY;startH=SH;e.preventDefault();e.stopPropagation();});
+addEventListener('mousemove',function(e){if(!dragging)return;var nh=startH+(startY-e.clientY);if(nh<80)nh=80;if(nh>innerHeight-100)nh=innerHeight-100;SH=nh;wrap.style.height=SH+'px';drawSpec();resize3D();});
+addEventListener('mouseup',function(){dragging=false;});
+handle.addEventListener('dblclick',function(){SH=190;wrap.style.height=SH+'px';drawSpec();resize3D();});
 var off=document.createElement('canvas');off.width=S.nframe;off.height=S.nbin;var og=off.getContext('2d');
 var im=og.createImageData(S.nframe,S.nbin);
 var vir=[[68,1,84],[72,35,116],[59,82,139],[33,145,140],[94,201,98],[253,231,37]];
@@ -80,8 +93,9 @@ return [vir[i][0]+(vir[i+1][0]-vir[i][0])*f, vir[i][1]+(vir[i+1][1]-vir[i][1])*f
 for(var fr=0;fr<S.nframe;fr++)for(var b=0;b<S.nbin;b++){var v=S.img[fr*S.nbin+b]/255.0;var cc=cmap(v);
 var i=((S.nbin-1-b)*S.nframe+fr)*4;im.data[i]=cc[0];im.data[i+1]=cc[1];im.data[i+2]=cc[2];im.data[i+3]=255;}
 og.putImageData(im,0,0);
-function drawSpec(){var w=innerWidth-250-ML;if(w<100)w=100;sc.width=w;sc.height=SH;sc.style.width=w+'px';sc.style.height=SH+'px';
-var g=sc.getContext('2d');g.imageSmoothingEnabled=true;g.drawImage(off,0,0,w,SH);
+function drawSpec(){var w=wrap.clientWidth-ML;if(w<100)w=100;sc.width=w;sc.height=SH;sc.style.width=w+'px';sc.style.height=SH+'px';
+var g=sc.getContext('2d');g.imageSmoothingEnabled=true;g.clearRect(0,0,w,SH);g.drawImage(off,ML,0,w,SH);
+g.save();g.translate(ML,0);
 g.strokeStyle='#00ffff';g.lineWidth=2;g.beginPath();var started=false;
 for(var fr=0;fr<S.nframe;fr++){var r=S.ridge[fr];
 if(fr>0&&fr<S.nframe-1)r=(S.ridge[fr-1]+r+S.ridge[fr+1])/3;
@@ -92,8 +106,9 @@ g.fillStyle='#fff';g.font='11px Helvetica';g.fillText('impact',xi+4,24);
 for(var km=0;km<=250;km+=50){var fy=(1-((km*19.49)-S.fmin)/(S.fmax-S.fmin))*SH;if(fy<0||fy>SH)continue;
 g.fillText(km+' km/h',-ML+2,fy+3);g.strokeStyle='#666';g.beginPath();g.moveTo(0,fy);g.lineTo(w,fy);g.stroke();}
 var tmax=(S.nframe-1)*(S.hop||1024)/44100;for(var t=0;t<=tmax+0.001;t+=0.1){var tx=t/tmax*w;g.fillText(t.toFixed(1)+'s',tx+2,SH-4);}
-g.fillText('spectrogramme R1 — 0..250 km/h, passe-haut 50 km/h, ridge cyan, impact pointille',4,14);}
-drawSpec();
+g.fillText('spectrogramme R1 — 0..250 km/h, passe-haut 50 km/h, ridge cyan, impact pointillé',4,14);
+g.restore();}
+drawSpec();resize3D();
 )JS", f);
     }
     fprintf(f, "</script></body></html>\n");
