@@ -71,23 +71,33 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     // vitesse club estimée = vBall / 1.35 (smash typique)
     sac[j].setClubV0Kmh(vclub);
     sac[j].setAlphaClubPathDegre(e.alpha0_deg);
-    // décomposition back/side spin : le modèle (vClub mesuré) donne la direction du vecteur
-    // spin en fonction de GamaFacePath ; on rescale ensuite au spin total radar mesuré,
-    // donc hypot(backspin_est, sidespin_est) == spin_radar (backspin <= spin total).
-    double gfp_est = 0.0, backspin_est = NAN, sidespin_est = NAN;
+    // décomposition back/side spin par modèle inverse contraint par la COURBURE de trajectoire :
+    // pour chaque GamaFacePath on simule, on mesure la courbure azimutale sur ~150 ms post-impact
+    // (même fenêtre que la mesure stéréo dAlpha), et on retient le g qui colle à dAlpha radar.
+    // Le shaft lean reste au cas idéal du club (pas d'info radar dessus).
+    // Le vecteur spin retenu est ensuite rescalé au spin total radar :
+    // hypot(backspin_est, sidespin_est) == spin_radar (backspin <= spin total).
+    double gfp_est = 0.0, backspin_est = NAN, sidespin_est = NAN, da_est = 0.0;
     if (e.spin_rpm > 0) {
-        double best = 1e18, gbest = 0.0, syb = 0.0, szb = 0.0, stb = 1.0;
-        for (double g = -15.0; g <= 15.0001; g += 0.25) {
+        double best = 1e18, gbest = 0.0, syb = 0.0, szb = 0.0, stb = 1.0, dabest = 0.0;
+        for (double g = -15.0; g <= 15.0001; g += 0.5) {
             sac[j].setGamaFacePathDegre(g);
             Ball probe("Decathlon", 320, 3, sac[j], 18.0, 0.01);
             double sy = probe.getSpinYOrgrpm(), sz = probe.getSpinZOrgrpm();
-            double st = std::hypot(sy, sz);
-            double err = std::fabs(st - e.spin_rpm);
-            if (err < best) { best = err; gbest = g; syb = sy; szb = sz; stb = st; }
+            double st = std::max(std::hypot(sy, sz), 1.0);
+            probe.rescaleSpin(e.spin_rpm / st);          // spin total = spin radar
+            probe.runSimu();
+            auto mf = probe.getMatriceFlight();
+            int k1 = (int)mf.size() - 1, k2 = std::min(15, k1);   // ~150 ms post-impact (dt=0.01)
+            double a0 = atan2(mf[k1 > 1 ? 1 : 0][3], mf[k1 > 1 ? 1 : 0][1]) * 180.0 / M_PI;
+            double a1 = atan2(mf[k2][3], mf[k2][1]) * 180.0 / M_PI;
+            double da = a1 - a0;                          // courbure azimutale simulée (deg)
+            double err = std::fabs(da - e.dalpha_deg);    // colle à la courbure stéréo mesurée
+            if (err < best) { best = err; gbest = g; syb = sy; szb = sz; stb = st; dabest = da; }
         }
         sac[j].setGamaFacePathDegre(gbest);
-        gfp_est = gbest;
-        double k = e.spin_rpm / std::max(stb, 1.0);   // rescale au spin total mesuré
+        gfp_est = gbest; da_est = dabest;
+        double k = e.spin_rpm / stb;                      // rescale au spin total mesuré
         backspin_est = syb * k;
         sidespin_est = szb * k;
     }
@@ -107,7 +117,7 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
   + kv("Spin total radar", fmt0(e.spin_rpm, "rpm"))
   + kv("BackSpin estimé", fmt0nan(backspin_est, "rpm") + (std::isnan(backspin_est) ? "  — spin nul, non décomposable" : "  (vecteur modèle rescalé à spin total radar)"))
   + kv("SideSpin estimé", fmt0nan(sidespin_est, "rpm"))
-  + kv("GamaFacePath estimé", fmt1nan(gfp_est, "deg"))
+  + kv("GamaFacePath estimé", fmt1nan(gfp_est, "deg") + (std::isnan(gfp_est) ? "" : "  (ajusté sur courbure dAlpha=" + fmt1(da_est, "deg") + ")"))
   + kv("alpha0", fmt1(e.alpha0_deg, "deg"))
   + kv("Delta alpha", fmt1(e.dalpha_deg, "deg")) + kv("Impact t0", fmt1(e.t0_s, "s"))
   + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Hauteur max", fmt1(theBall.getMaxHeight(), "m"))
