@@ -185,6 +185,8 @@ Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendan
 
 Cette section retrace la démarche : les idées de départ, la théorie physique sous-jacente, les itérations de test, et comment chaque idée a été consolidée en code.
 
+> **Méthode de travail.** Ce que nous faisons est réalisé **de concert** : c'est l'utilisateur qui propose les idées et les « tricks » au fil de la lecture des résultats (ex. : passe-bande autour de f_D sur la voie patch pour rejeter l'écho club, 2ᵉ passe du ridge à bande restreinte [0,85·f_D, 1,10·f_D], fusion pondérée par confiance, rabais ×0,25 de la voie excursion, schéma vertical, étiquettes de données sur les flèches…) — l'assistant (Mistral Vibe) peut coder vite mais lui-même ne voit pas tous ces tricks ; il les code, les valide (`tests/test_synth_capture.py` + `sci/validate_all.py`), et l'utilisateur oriente et valide à chaque itération. Chaque amélioration est commitée et pushée individuellement.
+
 ### 1. Point de départ : le radar voit plus que la balle
 
 L'estimation initiale (`estimate()`) ne lisait que le lobe balle post-impact (vBall, spin par patch, α₀/Δα stéréo). L'idée novatrice : **le signal contient aussi le lobe de la tête de club avant l'impact** (saut de vitesse caractéristique), donc la vitesse du club y est mesurable. Consolidé en `estimate_club_speed()` : passe-bande FFT autour de vBall/1.35 sur [t0−0,3 s, t0], crête au quantile 90 % → **V club mesurée** (ex. 117 km/h sur cs111), d'où le **smash mesuré** = vBall/Vclub ≈ 1,2–1,4, très stable sur les 12 captures. C'est ce smash qui, via le modèle inverse, contraint ensuite la décomposition du spin.
