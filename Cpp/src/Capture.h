@@ -91,6 +91,9 @@ CAP_UNUSED static std::vector<double> highpass(const std::vector<double>& x, dou
     return y;
 }
 
+// déclaration anticipée (définie plus bas) : utilisée par estimate() pour la voie patch
+CAP_UNUSED static std::vector<double> bandpass(const std::vector<double>& x, double f0, double bw);
+
 // ---------------- chargement ------------------------------------------------
 struct Capture {
     std::vector<double> r1, r2;   // canaux R1/R2
@@ -296,8 +299,14 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
     int nseg = (int)(0.25 * FS);
     if ((i0 * HOP + nseg) < (int)c.r1.size() && nseg > NFFT) {
         int N = 1; while (N < nseg) N <<= 1;
+        std::vector<double> seg(c.r1.begin() + i0 * HOP, c.r1.begin() + i0 * HOP + nseg);
+        if (e.vball_kmh > 0) {
+            // passe-bande autour du lobe balle (vitesse à priori = ridge STFT) : rejette
+            // l'écho de la tête de club et le bruit hors lobe avant l'enveloppe de Hilbert
+            seg = bandpass(seg, e.vball_kmh * KV, 2000.0);
+        }
         std::vector<double> re(N, 0.0), im(N, 0.0);
-        for (int i = 0; i < nseg; i++) re[i] = c.r1[i0 * HOP + i];
+        for (int i = 0; i < nseg; i++) re[i] = seg[i];
         fft(re, im, false);
         std::vector<double> h(N, 0.0);
         h[0] = 1.0; for (int k = 1; k < N / 2; k++) h[k] = 2.0; h[N / 2] = 1.0;
@@ -533,7 +542,7 @@ CAP_UNUSED static double estimate_spin_peigne(const Capture& c, const EstRadar& 
     return estimate_spin_peigne_ac(c, e, nullptr, nullptr);
 }
 
-// ---------------- passe-bande FFT : garde |f-f0| <= bw/2 ----------------
+// ---------------- passe-bande FFT : garde |f-f0| <= bw/2 (définition) ----------------
 CAP_UNUSED static std::vector<double> bandpass(const std::vector<double>& x, double f0, double bw) {
     int n = (int)x.size();
     int N = 1; while (N < n) N <<= 1;
