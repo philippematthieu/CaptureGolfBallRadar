@@ -300,7 +300,7 @@ def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=
         raise FileNotFoundError(f"binaire C++ introuvable : {bin_} (compiler : voir Cpp/README.md)")
     cmd = [bin_, '--capture', os.path.abspath(path), club, repr(float(spin_scale))]
     if case_angle is not None:
-        cmd += ['--caseangle', repr(float(case_angle))]
+        cmd += ['--caseangle_deg', repr(float(case_angle))]
     r = subprocess.run(cmd,
                        capture_output=True, text=True, timeout=timeout,
                        cwd=os.path.dirname(bin_))  # le binaire écrit ses HTML/SVG dans son cwd
@@ -490,8 +490,8 @@ if __name__ == '__main__':
     ap.add_argument('--club', default='F7', help="club pour l'analyse C++ de la captation (défaut F7)")
     ap.add_argument('--launch', type=float, default=None,
                     help='launch angle en degrés (défaut : mesuré sur la captation si --capture, sinon 16.5)')
-    ap.add_argument('--caseangle', type=float, default=None,
-                    help='inclinaison de la valise radar vers le haut en degrés (ex: 11), passée au C++ (--caseangle)')
+    ap.add_argument('--caseangle_deg', '--caseangle', dest='caseangle_deg', type=float, default=None,
+                    help='inclinaison de la valise radar vers le haut en degrés (ex: 11), passée au C++ (--caseangle_deg)')
     ap.add_argument('--elev', type=float, default=10.0, help='elevation caméra 3D en degrés (défaut 10 = vue golfeur)')
     ap.add_argument('--azim', type=float, default=180.0, help='azimut caméra 3D en degrés (défaut 180 = de derrière, comme le golfeur ; -60 = vue plongeante)')
     args = ap.parse_args()
@@ -514,17 +514,18 @@ if __name__ == '__main__':
             raise SystemExit(2)
         # analyse complète : binaire C++ (V club, spin 3 voies, back/side par courbure) avec repli pipe_validation
         v0_ms, spin_rpm, azim_deg, side_rpm, _est = estimate_from_capture_full(args.capture, club=args.club,
-                                                                               case_angle=args.caseangle)
+                                                                               case_angle=args.caseangle_deg)
         if launch_deg is None:
             ld = float(_est.get('launch_deg', 0.0) or 0.0)
             lc = float(_est.get('launch_conf', 0.0) or 0.0)
-            if ld > 0 and lc >= 0.5:
-                launch_deg = ld
-                print(f"-> launch angle mesuré sur la captation : {launch_deg:.2f} deg (conf={lc:.2f})")
+            ca = float(_est.get('caseangle_deg', 0.0) or 0.0)
+            if ld > 0 and (lc >= 0.5 or ca != 0.0):
+                launch_deg = ld   # conf suffisante, ou case angle renseigné (géométrie connue : fit+ε fiable)
+                print(f"-> launch angle mesuré sur la captation : {launch_deg:.2f} deg (conf={lc:.2f}, caseangle={ca:.1f})")
             else:
                 launch_deg = 16.5   # fit absent ou peu confiant (butée de grille) -> défaut historique
                 print(f"-> launch angle fit peu fiable (mesuré={ld:.2f} deg, conf={lc:.2f}) "
-                      f"-> repli sur {launch_deg} deg (ou --launch pour forcer)")
+                      f"-> repli sur {launch_deg} deg (ou --launch/--caseangle_deg pour ajuster)")
         print(f"-> simulation lancée avec V0={v0_ms*3.6:.1f} km/h, spin={spin_rpm:.0f} rpm, "
               f"side={side_rpm if side_rpm is not None else 0:.0f} rpm, "
               f"azimut={azim_deg:+.2f} deg, launch={launch_deg} deg")
