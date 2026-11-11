@@ -124,9 +124,9 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
     Ball theBall("Decathlon", 320, 3, sac[j], 18.0, 0.01);
     if (!std::isnan(launchOverrideDeg))
         theBall.setLaunchAngleDegre(launchOverrideDeg);   // --launch XX : force l'angle de decollage (prioritaire)
-    else if (e.launch_deg > 0 && e.launch_conf >= 0.5) {
-        theBall.setLaunchAngleDegre(e.launch_deg);        // launch mesuré sur le ridge (conf suffisante)
-        printf("launch de la simu = mesuré sur captation : %.2f deg (conf %.2f)\n", e.launch_deg, e.launch_conf);
+    else if (e.launch_deg > 0 && (e.launch_conf >= 0.5 || caseDeg != 0.0)) {
+        theBall.setLaunchAngleDegre(e.launch_deg);        // launch mesuré sur le ridge (conf suffisante, ou case angle renseigné : géométrie connue)
+        printf("launch de la simu = mesuré sur captation : %.2f deg (conf %.2f, caseangle %.1f)\n", e.launch_deg, e.launch_conf, caseDeg);
     }   // sinon : loft du club (repli, comme le 16.5° de GolfBall.py)
     if (e.spin_rpm > 0)
         theBall.rescaleSpin(spinScale * e.spin_rpm / std::max(std::hypot(theBall.getSpinYOrgrpm(), theBall.getSpinZOrgrpm()), 1.0));
@@ -204,8 +204,12 @@ int main(int argc, char *argv[]) {
         else if (a.rfind("--mode=", 0) == 0) mode = a.substr(7);
         else if (a == "--launch" && i + 1 < argc) launchOverrideDeg = strtod(argv[++i], NULL);
         else if (a.rfind("--launch=", 0) == 0) launchOverrideDeg = strtod(a.c_str() + 9, NULL);
-        else if (a == "--caseangle" && i + 1 < argc) caseDeg = strtod(argv[++i], NULL);
-        else if (a.rfind("--caseangle=", 0) == 0) caseDeg = strtod(a.c_str() + 12, NULL);
+        else if (a == "--caseangle_deg" && i + 1 < argc) caseDeg = strtod(argv[++i], NULL);
+        else if (a.rfind("--caseangle_deg=", 0) == 0) caseDeg = strtod(a.c_str() + 16, NULL);
+        else if (a == "--caseangle" && i + 1 < argc) caseDeg = strtod(argv[++i], NULL);   // alias
+        else if (a.rfind("--caseangle=", 0) == 0) caseDeg = strtod(a.c_str() + 12, NULL); // alias
+        else if (a == "--launch_deg" && i + 1 < argc) launchOverrideDeg = strtod(argv[++i], NULL);   // alias de --launch
+        else if (a.rfind("--launch_deg=", 0) == 0) launchOverrideDeg = strtod(a.c_str() + 13, NULL); // alias
         else if (a == "--source" && i + 1 < argc) liveSource = argv[++i];
         else if (a.rfind("--source=", 0) == 0) liveSource = a.substr(9);
         else args2.push_back(a); } argc = (int)args2.size() + 1; for (size_t i = 0; i < args2.size(); i++) argv[i + 1] = strdup(args2[i].c_str()); }
@@ -237,8 +241,10 @@ int main(int argc, char *argv[]) {
                 "                  'standard' (patch Hilbert seul)\n"
                 "  --launch deg    (mode --capture) force l'angle de décollage de la simu au lieu du loft\n"
                 "                  du club ; sans --launch, le launch affiché est celui mesuré sur le ridge\n"
-                "  --caseangle deg inclinaison de la valise vers le haut (ex: 11) : v_r = V·cos(ψ−ε), le fit\n"
-                "                  mesure ψ−ε, ε est rajouté au launch estimé et à la correction de vBall\n"
+                "  --caseangle_deg deg   inclinaison de la valise vers le haut (ex: 11) : v_r = V·cos(ψ−ε), le fit\n"
+                "                  mesure ψ−ε, ε est rajouté au launch estimé (et à la correction de vBall) ; avec\n"
+                "                  --caseangle_deg renseigné, le launch estimé pilote la simu même si conf < 0,5\n"
+                "                  (alias --caseangle ; --launch_deg = alias de --launch)\n"
                 "\n"
                 "sorties (dans le dossier courant):\n"
                 "  console: RESULT portee=... apex=... z_final=... temps=...\n"
