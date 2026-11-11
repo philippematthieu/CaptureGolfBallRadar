@@ -24,6 +24,10 @@ python GolfBall.py ../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --c
 
 <img src="sci/img/Simulateur_Python.png" width="980">
 
+### Spectres multi-panneaux d'une captation — `spectres_html` (C++)
+Générés par `./spectres_html ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv` (8 panneaux : spectrogramme R1, zoom lobe balle, peigne de raies micro-Doppler, lobe club, patch Hilbert, autocorrélation du spectre, spectre de la fréquence instantanée, barre d'infos) :
+👉 [ouvrir `spectres_2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.html`](Cpp/src/spectres_2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.html) (HTML autonome rendu pleine page par GitHub ; tous les `Cpp/src/spectres_*.html` sont dans [`Cpp/src/spectres_index.html`](Cpp/src/spectres_index.html))
+
 
 
 ## Radar setup — geometry, swing line and shot angles
