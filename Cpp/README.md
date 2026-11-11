@@ -196,7 +196,20 @@ Une balle de diamètre d = 42,67 mm à 10,525 GHz (λ = 28,5 mm) tournant à ω 
 
 ### 3. Du spin total au back/side spin : contraindre par la courbure
 
-Le radar donne le spin **total** (norme), pas sa direction. L'idée : la **courbure de trajectoire Δα** (mesurée par appariement stéréo R1/R2) dépend du side spin. Consolidé en modèle inverse : balayage de `GamaFacePath` avec `runSimu`, courbure azimutale simulée sur la même fenêtre (~150 ms post-impact) que la mesure stéréo, on retient le g qui colle à Δα ; le vecteur spin est ensuite **rescalé au spin total radar** (correction d'une incohérence initiale où le backspin affiché dépassait le spin total). Résultat : side spin détecté quand Δα ≠ 0 (ex. −246 rpm sur cs104, +1241 rpm sur cs124-2025). Limite notée : le signe dépend de la convention Δα/spinZ (à vérifier), et le shaft lean n'est pas identifiable au radar (cas idéal retenu) — le launch angle (pente du ridge post-impact) serait la prochaine contrainte.
+**Le problème.** Le radar ne donne que la norme du spin (`spin_radar`), pas sa direction dans le plan (back vs side). Or la direction de l'axe de spin, c'est exactement ce qui fait courber la trajectoire (slice/draw). Plusieurs pistes discutées :
+
+- **smash factor** : avec V club mesurée (étape 1) et vBall, le smash = vBall/vClub ≈ 1,2–1,4 est stable, mais il ne dit rien directement sur l'angle face/chemin — un smash plus faible peut venir d'un mauvais centrage, pas forcément d'un angle de face. Il contraint le modèle (via `ClubV0`) mais ne décompose pas le spin.
+- **shaft lean** : non identifiable au radar (aucune signature Doppler propre) → on garde le cas idéal du club, noté comme limite.
+- **launch angle** : la pente initiale du ridge post-impact le donnerait, ce qui contraindrait le loft dynamique (shaft lean) ; piste laissée pour plus tard.
+- **courbure de trajectoire Δα** (mesurée stéréo, étape 1) : dépend directement du side spin via la force de Magnus latérale → c'est la contrainte retenue.
+
+**Première version (modèle inverse par balayage).** Pour chaque `GamaFacePath` g ∈ [−15°, +15°] (pas 0,5°), on construit un `Ball` probe avec `ClubV0 = vclub`, `AlphaClubPath = α₀`, on rescale son spin à `spin_radar`, on lance `runSimu()`, et on mesure la courbure azimutale simulée `da = atan2(vy,vx)` sur la même fenêtre (~150 ms post-impact) que la mesure stéréo. On retient `g* = argmin |da(g) − Δα|`. (Variante "descente de gradient / ODE" envisagée puis écartée : le balayage 1D de 61 simulations est déterministe, ~5 s, et suffit ici.)
+
+**Itération 1 — cohérence du vecteur spin.** Le premier jet affichait `backspin_est = spinY(g*)` *avant* rescale : sur cs104, backspin = 6381 rpm > spin total radar = 4927 rpm — absurde. Correction : le balayage ne sert qu'à trouver la **direction** du vecteur spin ; on rescale ensuite au total mesuré (`k = spin_radar / hypot(spinY,spinZ)`), d'où `backspin_est = spinY·k`, `sidespin_est = spinZ·k` et toujours `hypot(back, side) = spin_radar`. Corrigé dans le code et validé (cs104 : 4920/−246 → hypot = 4927 ✓).
+
+**Itération 2 — signe de la courbure (testé puis reverti).** En comparant aux side spin de référence des noms de fichiers (toutes négatives, format `trm-…trm`), le signe semblant inversé entre Δα stéréo et le repère de la simu. Une version avec `err = |da + Δα|` et courbure mesurée jusqu'à la chute donnait de meilleurs minimums intérieurs (cs119 : g=+15° → −1,5°, side +700 → −73 rpm). Mais visuellement la trajectoire était déjà correcte (léger slice) → **revert** à la version `err = |da − Δα|`, fenêtre 150 ms, à la demande de l'utilisateur (commit revert). La question du signe reste ouverte (convention de repère stéréo vs simu à clarifier proprement).
+
+**Résultat retenu.** Side spin estimé quand Δα ≠ 0 (cs104 : −246 rpm vs réf −630 ; cs124-2025 : +1241 vs +7102) ; quand Δα ≈ 0 (bruit < 0,3°) le balayage donne g ≈ 0. La trajectoire 3D résultante courbe du bon côté (vérifié visuellement sur cs119). Limites actées : amplitude du side limitée par le spin total radar (souvent sous-estimé), shaft lean au cas idéal, launch angle comme prochaine contrainte.
 
 ### 4. De la mesure à la visualisation
 
