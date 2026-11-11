@@ -12,7 +12,62 @@
 #include <vector>
 #include <string>
 #include <cstdio>
+#include <cstdlib>
 #include <cmath>
+#include <cstdint>
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#elif defined(__linux__)
+#include <unistd.h>
+#endif
+
+// dossier de l'exécutable en cours (pour retrouver lib/ à côté du binaire)
+static std::string exeDir() {
+#if defined(__APPLE__)
+    char buf[4096]; uint32_t sz = sizeof buf;
+    if (_NSGetExecutablePath(buf, &sz) == 0) {
+        std::string s = buf; size_t p = s.find_last_of('/');
+        return (p == std::string::npos) ? "." : s.substr(0, p);
+    }
+#elif defined(__linux__)
+    char buf[4096]; ssize_t n = readlink("/proc/self/exe", buf, sizeof buf - 1);
+    if (n > 0) { buf[n] = 0; std::string s = buf; size_t p = s.find_last_of('/'); return (p == std::string::npos) ? "." : s.substr(0, p); }
+#endif
+    return ".";
+}
+
+// rend le HTML autonome : si lib/three.min.js + lib/OrbitControls.js manquent à côté
+// du HTML généré (binaire lancé depuis un autre dossier), on les copie depuis le
+// dossier de Plot3D.h (ou les candidats usuels) — sinon THREE est undefined et la
+// page est blanche (panneau HTML ok, mais pas de scène 3D ni de spectrogramme).
+static void ensureLibNextTo(const std::string& htmlPath) {
+    auto exists = [](const std::string& p) { FILE* g = fopen(p.c_str(), "rb"); if (g) { fclose(g); return true; } return false; };
+    std::string dir = ".";
+    size_t p = htmlPath.find_last_of("/\\");
+    if (p != std::string::npos) dir = htmlPath.substr(0, p);
+    if (exists(dir + "/lib/three.min.js") && exists(dir + "/lib/OrbitControls.js")) return;
+    std::string hdir = __FILE__;
+    size_t q = hdir.find_last_of("/\\");
+    hdir = (q == std::string::npos) ? "." : hdir.substr(0, q);
+    std::string ed = exeDir();
+    std::string cands[] = { ed, hdir, ".", "Cpp/src", "src", "../Cpp/src", "../src", "../../Cpp/src" };
+    for (const std::string& d : cands) {
+        std::string s3 = d + "/lib/three.min.js", sO = d + "/lib/OrbitControls.js";
+        if (exists(s3) && exists(sO)) {
+            system(("mkdir -p \"" + dir + "/lib\"").c_str());
+            auto cp = [](const std::string& a, const std::string& b) {
+                FILE* ia = fopen(a.c_str(), "rb"); FILE* ob = fopen(b.c_str(), "wb");
+                if (!ia || !ob) { if (ia) fclose(ia); if (ob) fclose(ob); return; }
+                char buf[65536]; size_t n;
+                while ((n = fread(buf, 1, sizeof buf, ia)) > 0) fwrite(buf, 1, n, ob);
+                fclose(ia); fclose(ob);
+            };
+            cp(s3, dir + "/lib/three.min.js");
+            cp(sO, dir + "/lib/OrbitControls.js");
+            return;
+        }
+    }
+}
 
 static void write_traj_3d_html(const std::string& path,
                                const std::vector< std::vector<double> >& mf,
@@ -20,6 +75,7 @@ static void write_traj_3d_html(const std::string& path,
                                const std::string& infosHtml = "",
                                const std::string& specJson = "") {
     if (mf.empty()) return;
+    ensureLibNextTo(path);
     double xmax = 1, zmax = 1;
     int iapex = 0;
     for (size_t i = 0; i < mf.size(); i++) {
