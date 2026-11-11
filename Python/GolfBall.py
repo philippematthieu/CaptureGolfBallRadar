@@ -336,7 +336,8 @@ def estimate_from_capture_full(path, club='F7', spin_scale=1.0, simu_bin=None):
     print(f"capture {os.path.basename(path)} (C++) : vBall={est['vball_kmh']:.1f} km/h radiale "
           f"({v_corr:.1f} corr. cos20), spin={spin_rpm:.0f} rpm "
           f"(patch={est.get('spin_patch_rpm', nan):.0f}, phase={est.get('spin_phase_rpm', nan):.0f}, "
-          f"peigne={est.get('spin_peigne_rpm', nan):.0f}), Vclub={est.get('vclub_kmh', nan):.1f} km/h, "
+          f"peigne={est.get('spin_peigne_rpm', nan):.0f}, exc={est.get('spin_exc_rpm', nan):.0f}), "
+          f"Vclub={est.get('vclub_kmh', nan):.1f} km/h, "
           f"smash={est.get('smash', nan):.3f}, alpha0={azim:+.2f} deg, dAlpha={est.get('dalpha_deg', 0.0):+.2f} deg")
     if side is not None:
         back = est.get('backspin_est_rpm', nan)

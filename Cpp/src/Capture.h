@@ -197,6 +197,7 @@ struct EstRadar {
     double spin_rpm;       // périodicité du patch
     double spin_peigne_rpm = 0; // peigne de raies micro-Doppler (autocorrélation du spectre autour de f_D)
     double spin_phase_rpm = 0;  // fréquence instantanée du signal analytique du lobe balle
+    double spin_exc_rpm = 0;    // excursion micro-Doppler : spin = Δf crête-crête / (2·KS), β = 4πr/λ
     double alpha0_deg;     // azimut initial (appariement stéréo)
     double dalpha_deg;     // courbure début-fin
     double t0_s;
@@ -532,7 +533,8 @@ CAP_UNUSED static std::vector<double> bandpass(const std::vector<double>& x, dou
 // le spin — plus propre que l'enveloppe d'amplitude (patch).
 // même analyse, en exposant le spectre de la fréquence instantanée detrendée (40..200 Hz, dB)
 CAP_UNUSED static double estimate_spin_phase_spec(const Capture& c, const EstRadar& e,
-                                                  std::vector<double>* sf, std::vector<double>* sdb) {
+                                                  std::vector<double>* sf, std::vector<double>* sdb,
+                                                  double* exc_rpm = nullptr) {
     if (e.vball_kmh <= 0) return 0.0;
     double fD = e.vball_kmh * KV;
     int i0 = (int)(e.t0_s * FS);
@@ -559,6 +561,37 @@ CAP_UNUSED static double estimate_spin_phase_spec(const Capture& c, const EstRad
         while (d < -M_PI) d += 2.0 * M_PI;
         fi[i - 1] = d * FS / (2.0 * M_PI);
         prev = ph;
+    }
+    // excursion micro-Doppler (voie β) : sur fi juste après l'impact (fenêtre courte, la dérive
+    // Doppler y est faible), detrend LINEAIRE (la moyenne glissante 0,1 s ci-dessous atténuerait
+    // l'oscillation à f_rot), puis percentiles 2,5–97,5 -> Δf crête-crête robuste.
+    // s(t) = cos(2π f_D t + β sin ωt), β = 4πr/λ = 60·KS  =>  Δf = 2β·f_rot = 2·KS·rpm.
+    if (exc_rpm) {
+        int m0 = std::min((int)(0.30 * FS), (int)fi.size());   // ~300 ms post-impact
+        if (m0 > 1024) {
+            // lissage de fi (moyenne glissante ~2 ms) : le bruit de phase par échantillon
+            // (~±350 Hz) dominerait sinon l'excursion micro-Doppler
+            int w2 = std::max(1, (int)(0.002 * FS) / 2);
+            std::vector<double> y(m0);
+            for (int i = 0; i < m0; i++) {
+                double s = 0; int cc = 0;
+                for (int j = std::max(0, i - w2); j <= std::min(m0 - 1, i + w2); j++) { s += fi[j]; cc++; }
+                y[i] = s / cc;
+            }
+            // detrend linéaire (moindres carrés) : enlève la dérive Doppler
+            double sx = 0, sy = 0, sxx = 0, sxy = 0;
+            for (int i = 0; i < m0; i++) { sx += i; sy += y[i]; sxx += (double)i * i; sxy += (double)i * y[i]; }
+            double den = m0 * sxx - sx * sx;
+            double b = (den != 0) ? (m0 * sxy - sx * sy) / den : 0.0;
+            double a = (sy - b * sx) / m0;
+            std::vector<double> s(m0);
+            for (int i = 0; i < m0; i++) s[i] = y[i] - (a + b * i);
+            std::sort(s.begin(), s.end());
+            double lo = s[(size_t)(0.025 * (m0 - 1))], hi = s[(size_t)(0.975 * (m0 - 1))];
+            *exc_rpm = (hi - lo) / (2.0 * KS);   // Δf [Hz] / (2·KS [Hz/rpm]) -> rpm
+        } else {
+            *exc_rpm = 0.0;
+        }
     }
     // detrend : moyenne glissante 0,1 s (enlève la décélération Doppler f_D(t))
     int win = (int)(0.1 * FS) / 2;
@@ -605,15 +638,22 @@ CAP_UNUSED static double estimate_spin_phase(const Capture& c, const EstRadar& e
     return estimate_spin_phase_spec(c, e, nullptr, nullptr);
 }
 
-// ---------------- fusion patch + phase + peigne ------------------------------
+// ---------------- fusion patch + phase + peigne + excursion β ----------------
 // priorité au patch (score d'harmoniques), sinon phase, sinon peigne ;
-// si patch et phase cohérents à ±15 % -> moyenne.
-CAP_UNUSED static double fusion_spin(double patch_rpm, double phase_rpm, double peigne_rpm) {
+// si patch et phase cohérents à ±15 % -> moyenne ;
+// la voie excursion micro-Doppler (β = 4πr/λ, spin = Δf/(2·KS)) n'est moyennée
+// que si elle confirme le résultat à ±15 %, sinon elle sert de dernier recours.
+CAP_UNUSED static double fusion_spin(double patch_rpm, double phase_rpm, double peigne_rpm, double exc_rpm = 0.0) {
+    double base;
     if (patch_rpm > 0 && phase_rpm > 0 && std::fabs(patch_rpm - phase_rpm) / std::max(patch_rpm, phase_rpm) < 0.15)
-        return 0.5 * (patch_rpm + phase_rpm);
-    if (patch_rpm > 0) return patch_rpm;
-    if (phase_rpm > 0) return phase_rpm;
-    return peigne_rpm;
+        base = 0.5 * (patch_rpm + phase_rpm);
+    else if (patch_rpm > 0) base = patch_rpm;
+    else if (phase_rpm > 0) base = phase_rpm;
+    else base = peigne_rpm;
+    if (exc_rpm > 0 && base > 0 && std::fabs(exc_rpm - base) / std::max(exc_rpm, base) < 0.15)
+        return 0.5 * (exc_rpm + base);
+    if (base > 0) return base;
+    return exc_rpm;
 }
 
 
