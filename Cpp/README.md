@@ -284,3 +284,4 @@ Chaque capture a été relue (`spectres_*.html` + `--capture`) et comparée aux 
 ## Tests
 
 - `tests/test_synth_capture.py` — validation synthétique de bout en bout : génère des captations de vérité connue (`Python/gen_capture_modele.py`), les analyse avec `simu_headless --capture` (ligne `ESTIM`, via `GolfBall.analyze_capture_cpp`), compare vBall / spin / back-side / GamaFacePath aux vraies valeurs (tranche la convention de signe de Δα), puis rejoue la simu Python avec le side estimé. Lancer avec un Python numpy+scipy : `python3 tests/test_synth_capture.py` (code 0 si OK).
+- `sci/validate_all.py` — harnais de validation sur toutes les captations `sci/*-F7-*.csv` : analyse C++ (`ESTIM`) + rejoue la simu Python, compare à la référence du nom de fichier (portée, vBall, spin back/side) → table console + `sci/validation.html` coloré. `.venv/bin/python sci/validate_all.py` (code 1 si une captation échoue).
