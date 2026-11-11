@@ -143,6 +143,12 @@ void Ball::setLaunchAngleDegre(double deg) {
 	v0Initms[3] = -v0BallInitms * cos(launchAngle) * sin(0.0);
 	v0Initms[5] =  v0BallInitms * sin(launchAngle);
 	v0Currentms = v0Initms;
+	// le solver de vol a été construit dans le constructeur avec l'ancien v0Initms : on lui pousse le nouveau Q
+	solveFlight.setAllQ(v0Initms);
+	solveFlight.setCurrentS(0.0);
+	solveFlight.resetZeroCrossing();
+	solveFlight.resetUnderMinDs();
+	solveRoll.setAllQ(v0Initms);
 }
 double Ball::getImpactAngle() {
 	return verticalLand;
