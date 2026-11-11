@@ -488,10 +488,12 @@ if __name__ == '__main__':
     ap.add_argument('capture', nargs='?', default=None,
                     help="fichier de captation radar : .csv (2 lignes ';' = canaux R1/R2) ou .wav (stéréo 44,1 kHz)")
     ap.add_argument('--club', default='F7', help="club pour l'analyse C++ de la captation (défaut F7)")
-    ap.add_argument('--launch', type=float, default=None,
-                    help='launch angle en degrés (défaut : mesuré sur la captation si --capture, sinon 16.5)')
-    ap.add_argument('--caseangle_deg', '--caseangle', dest='caseangle_deg', type=float, default=None,
-                    help='inclinaison de la valise radar vers le haut en degrés (ex: 11), passée au C++ (--caseangle_deg)')
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument('--launch', '--launch_deg', dest='launch', type=float, default=None,
+                   help='launch angle ψ forcé en degrés, passé tel quel à la simu (défaut : mesuré sur la captation, sinon 16.5). '
+                        'EXCLUSIF avec --caseangle_deg (ψ forcé = on n\'y ajoute pas ε)')
+    g.add_argument('--caseangle_deg', '--caseangle', dest='caseangle_deg', type=float, default=None,
+                   help='inclinaison de la valise radar vers le haut en degrés (ex: 11), passée au C++ (--caseangle_deg)')
     ap.add_argument('--elev', type=float, default=10.0, help='elevation caméra 3D en degrés (défaut 10 = vue golfeur)')
     ap.add_argument('--azim', type=float, default=180.0, help='azimut caméra 3D en degrés (défaut 180 = de derrière, comme le golfeur ; -60 = vue plongeante)')
     args = ap.parse_args()

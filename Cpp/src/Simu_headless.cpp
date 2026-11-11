@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
                 "\n"
                 "usage:\n"
                 "  simu_headless Type ClubV0kmh AlphaClubPathDeg GamaFacePathDeg ShaftLeanImpDeg [spinScale]\n"
-                "  simu_headless --capture fichier.csv|.wav [club] [spinScale] [--launch deg]\n"
+                "  simu_headless --capture fichier.csv|.wav [club] [spinScale] [--launch_deg deg] [--caseangle_deg deg]\n"
                 "  simu_headless --live <secondes> [club] [spinScale] [--source f.wav] [--launch deg]\n"
                 "                  enregistre la carte son (radar en entrée audio, macOS), sauve live_capture.wav,\n"
                 "                  puis analyse comme --capture ; --source rejoue un fichier à la place (test)\n"
@@ -239,12 +239,12 @@ int main(int argc, char *argv[]) {
                 "  --mode m        analyse du spin : 'fusion' (défaut : patch Hilbert + fréquence\n"
                 "                  instantanée + peigne de raies micro-Doppler, fusionnés) ou\n"
                 "                  'standard' (patch Hilbert seul)\n"
-                "  --launch deg    (mode --capture) force l'angle de décollage de la simu au lieu du loft\n"
-                "                  du club ; sans --launch, le launch affiché est celui mesuré sur le ridge\n"
-                "  --caseangle_deg deg   inclinaison de la valise vers le haut (ex: 11) : v_r = V·cos(ψ−ε), le fit\n"
-                "                  mesure ψ−ε, ε est rajouté au launch estimé (et à la correction de vBall) ; avec\n"
-                "                  --caseangle_deg renseigné, le launch estimé pilote la simu même si conf < 0,5\n"
-                "                  (alias --caseangle ; --launch_deg = alias de --launch)\n"
+                "  --launch_deg deg (mode --capture, alias --launch) force l'angle de décollage ψ de la simu ;\n"
+                "                  sans --launch_deg, le launch est celui mesuré sur le ridge (fit + case angle)\n"
+                "  --caseangle_deg deg   inclinaison de la valise vers le haut (ex: 11, alias --caseangle) :\n"
+                "                  v_r = V·cos(ψ−ε), le fit mesure ψ−ε et ε est rajouté au launch estimé (et à la\n"
+                "                  correction de vBall) ; avec --caseangle_deg renseigné, le launch estimé pilote\n"
+                "                  la simu même si conf < 0,5. EXCLUSIF avec --launch_deg (erreur si les deux)\n"
                 "\n"
                 "sorties (dans le dossier courant):\n"
                 "  console: RESULT portee=... apex=... z_final=... temps=...\n"
@@ -259,6 +259,11 @@ int main(int argc, char *argv[]) {
                 "\033[33m  ./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav --open\033[0m\n"
                 "voir Cpp/README.md pour la compilation\n";
         return (argc < 2) ? 1 : 0;
+    }
+    if (!std::isnan(launchOverrideDeg) && caseDeg != 0.0) {
+        fprintf(stderr, "ERREUR: --launch_deg et --caseangle_deg sont exclusifs — le launch forcé est déjà ψ,\n"
+                        "on n'y ajoute pas le case angle. Choisissez l'un des deux.\n");
+        return 2;
     }
     if (string(argv[1]) == "--capture") {
         if (argc < 3) { cout << "il manque le fichier de captation" << endl; return 1; }
