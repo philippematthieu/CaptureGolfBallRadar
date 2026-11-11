@@ -198,6 +198,10 @@ struct EstRadar {
     double spin_peigne_rpm = 0; // peigne de raies micro-Doppler (autocorrélation du spectre autour de f_D)
     double spin_phase_rpm = 0;  // fréquence instantanée du signal analytique du lobe balle
     double spin_exc_rpm = 0;    // excursion micro-Doppler : spin = Δf crête-crête / (2·KS), β = 4πr/λ
+    double spin_patch_conf = 0;  // confiance voie patch   = pic / médiane spectre enveloppe (bande 50-200 Hz)
+    double spin_phase_conf = 0;  // confiance voie phase   = pic / médiane spectre fi detrendée (40-200 Hz)
+    double spin_peigne_conf = 0; // confiance voie peigne  = ac[best] / médiane ac (lags 45-200 Hz)
+    double spin_exc_conf = 0;    // confiance voie excursion = Δf / (1.4826·MAD résidu fi lissée)
     double alpha0_deg;     // azimut initial (appariement stéréo)
     double dalpha_deg;     // courbure début-fin
     double t0_s;
@@ -330,7 +334,20 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
         }
         if (best < 0 && !loc.empty()) best = loc[0];              // fallback : 1er pic local
         if (best < 0) { int k = 1; for (int j = 1; j < N / 2; j++) if (Pe[j] > Pe[k]) k = j; if (Pe[k] > 0) best = k; } // fallback : max global
-        if (best > 0) e.spin_rpm = 60.0 * parabolic_peak(Pe, best) * df;
+        if (best > 0) {
+            e.spin_rpm = 60.0 * parabolic_peak(Pe, best) * df;
+            // confiance = pic / médiane du spectre dans la bande f_rot 50..200 Hz
+            std::vector<double> band;
+            for (int k = 1; k < N / 2; k++) {
+                double f = k * FS / N;
+                if (f >= 50.0 && f <= 200.0) band.push_back(Pe[k]);
+            }
+            if (!band.empty()) {
+                std::nth_element(band.begin(), band.begin() + band.size() / 2, band.end());
+                double med = band[band.size() / 2];
+                e.spin_patch_conf = (med > 0) ? Pe[best] / med : 0.0;
+            }
+        }
     }
     // --- alpha(t) par appariement stéréo : f2 cherché au voisinage de f1 (±300 Hz), |f1-f2|<=30 Hz ---
     // spectrogrammes des 2 canaux
@@ -450,7 +467,8 @@ CAP_UNUSED static double estimate_club_speed(const Capture& c, const EstRadar& e
 // car tout le peigne contribue en cohérence. Retourne 0 si rien trouvé.
 // même analyse, en exposant l'autocorrélation (pour affichage) : lag en Hz, ac normalisée par ac[0]
 CAP_UNUSED static double estimate_spin_peigne_ac(const Capture& c, const EstRadar& e,
-                                                 std::vector<double>* lagHz, std::vector<double>* acv) {
+                                                 std::vector<double>* lagHz, std::vector<double>* acv,
+                                                 double* conf = nullptr) {
     if (e.vball_kmh <= 0) return 0.0;
     double fD = e.vball_kmh * KV;
     int i0 = (int)(e.t0_s * FS);
@@ -498,6 +516,13 @@ CAP_UNUSED static double estimate_spin_peigne_ac(const Capture& c, const EstRada
         if (score > bscore) { bscore = score; best = lag; }
     }
     if (bscore <= 0) return 0.0;
+    if (conf) {
+        // confiance = pic fondamental / médiane de l'autocorrélation sur la plage cherchée
+        std::vector<double> base(ac.begin() + lag0, ac.begin() + lag1 + 1);
+        std::nth_element(base.begin(), base.begin() + base.size() / 2, base.end());
+        double med = base[base.size() / 2];
+        *conf = (med > 0) ? ac[best] / med : 0.0;
+    }
     double lagf = parabolic_peak(ac, best);
     if (lagHz && acv && ac[0] > 0) {
         for (int lag = 0; lag <= lag1; lag++) { lagHz->push_back(lag * df); acv->push_back(ac[lag] / ac[0]); }
@@ -534,7 +559,8 @@ CAP_UNUSED static std::vector<double> bandpass(const std::vector<double>& x, dou
 // même analyse, en exposant le spectre de la fréquence instantanée detrendée (40..200 Hz, dB)
 CAP_UNUSED static double estimate_spin_phase_spec(const Capture& c, const EstRadar& e,
                                                   std::vector<double>* sf, std::vector<double>* sdb,
-                                                  double* exc_rpm = nullptr) {
+                                                  double* exc_rpm = nullptr, double* exc_conf = nullptr,
+                                                  double* conf = nullptr) {
     if (e.vball_kmh <= 0) return 0.0;
     double fD = e.vball_kmh * KV;
     int i0 = (int)(e.t0_s * FS);
@@ -589,6 +615,15 @@ CAP_UNUSED static double estimate_spin_phase_spec(const Capture& c, const EstRad
             std::sort(s.begin(), s.end());
             double lo = s[(size_t)(0.025 * (m0 - 1))], hi = s[(size_t)(0.975 * (m0 - 1))];
             *exc_rpm = (hi - lo) / (2.0 * KS);   // Δf [Hz] / (2·KS [Hz/rpm]) -> rpm
+            if (exc_conf) {
+                // confiance = excursion / écart-type robuste (1.4826·MAD) du résidu (s déjà trié)
+                double med = s[m0 / 2];
+                std::vector<double> absd(m0);
+                for (int i = 0; i < m0; i++) absd[i] = std::fabs(s[i] - med);
+                std::nth_element(absd.begin(), absd.begin() + m0 / 2, absd.end());
+                double sig = 1.4826 * absd[m0 / 2];
+                *exc_conf = (sig > 0) ? (hi - lo) / sig : 0.0;
+            }
         } else {
             *exc_rpm = 0.0;
         }
@@ -632,28 +667,48 @@ CAP_UNUSED static double estimate_spin_phase_spec(const Capture& c, const EstRad
             sdb->push_back(d < -80.0 ? -80.0 : d);
         }
     }
+    if (conf) {
+        // confiance = pic / médiane du spectre de fi detrendée (bande 40..200 Hz)
+        std::vector<double> base(P.begin() + k0, P.begin() + k1 + 1);
+        std::nth_element(base.begin(), base.begin() + base.size() / 2, base.end());
+        double med = base[base.size() / 2];
+        *conf = (med > 0) ? P[best] / med : 0.0;
+    }
     return 60.0 * parabolic_peak(P, best) * df;
 }
 CAP_UNUSED static double estimate_spin_phase(const Capture& c, const EstRadar& e) {
     return estimate_spin_phase_spec(c, e, nullptr, nullptr);
 }
 
-// ---------------- fusion patch + phase + peigne + excursion β ----------------
-// priorité au patch (score d'harmoniques), sinon phase, sinon peigne ;
-// si patch et phase cohérents à ±15 % -> moyenne ;
-// la voie excursion micro-Doppler (β = 4πr/λ, spin = Δf/(2·KS)) n'est moyennée
-// que si elle confirme le résultat à ±15 %, sinon elle sert de dernier recours.
-CAP_UNUSED static double fusion_spin(double patch_rpm, double phase_rpm, double peigne_rpm, double exc_rpm = 0.0) {
-    double base;
-    if (patch_rpm > 0 && phase_rpm > 0 && std::fabs(patch_rpm - phase_rpm) / std::max(patch_rpm, phase_rpm) < 0.15)
-        base = 0.5 * (patch_rpm + phase_rpm);
-    else if (patch_rpm > 0) base = patch_rpm;
-    else if (phase_rpm > 0) base = phase_rpm;
-    else base = peigne_rpm;
-    if (exc_rpm > 0 && base > 0 && std::fabs(exc_rpm - base) / std::max(exc_rpm, base) < 0.15)
-        return 0.5 * (exc_rpm + base);
-    if (base > 0) return base;
-    return exc_rpm;
+// ---------------- fusion patch + phase + peigne + excursion β, pondérée par confiance ----------------
+// Chaque voie a une confiance (pic / fond spectral, ex. pic/médiane). La référence est la voie
+// valide (rpm > 0, conf > 0) de plus grande confiance ; on moyenne alors toutes les voies
+// cohérentes à ±15 % de la référence, pondérées par leur confiance ; sinon on garde la
+// référence seule. Sans aucune confiance disponible, repli sur la 1re voie rpm > 0.
+CAP_UNUSED static double fusion_spin(double patch_rpm, double patch_conf,
+                                     double phase_rpm, double phase_conf,
+                                     double peigne_rpm, double peigne_conf,
+                                     double exc_rpm, double exc_conf) {
+    const double v[4] = {patch_rpm, phase_rpm, peigne_rpm, exc_rpm};
+    const double c[4] = {patch_conf, phase_conf, peigne_conf, exc_conf};
+    int ref = -1;
+    for (int i = 0; i < 4; i++)
+        if (v[i] > 0 && c[i] > 0 && (ref < 0 || c[i] > c[ref])) ref = i;
+    if (ref < 0) {
+        for (int i = 0; i < 4; i++)
+            if (v[i] > 0) { ref = i; break; }
+        return (ref < 0) ? 0.0 : v[ref];
+    }
+    double num = 0, den = 0;
+    for (int i = 0; i < 4; i++) {
+        if (v[i] <= 0) continue;
+        if (std::fabs(v[i] - v[ref]) / std::max(v[i], v[ref]) < 0.15) {
+            double w = (c[i] > 0) ? c[i] : 1.0;
+            num += w * v[i];
+            den += w;
+        }
+    }
+    return (den > 0) ? num / den : v[ref];
 }
 
 

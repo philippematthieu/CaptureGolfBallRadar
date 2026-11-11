@@ -286,7 +286,8 @@ def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=
     """Analyse une captation avec le binaire C++ `simu_headless --capture` et parse sa ligne ESTIM.
 
     Retourne un dict de floats : vball_kmh, vball_corr_kmh, spin_rpm, spin_patch_rpm, spin_phase_rpm,
-    spin_peigne_rpm, vclub_radar_kmh, vclub_kmh, smash, alpha0_deg, dalpha_deg, t0_s, gfp_est_deg,
+    spin_peigne_rpm, spin_exc_rpm, spin_patch_conf, spin_phase_conf, spin_peigne_conf, spin_exc_conf,
+    vclub_radar_kmh, vclub_kmh, smash, alpha0_deg, dalpha_deg, t0_s, gfp_est_deg,
     backspin_est_rpm, sidespin_est_rpm, da_est_deg, portee_m, apex_m, z_final_m, temps_s (+ '_stdout').
     Lève FileNotFoundError si le binaire manque, ValueError si la ligne ESTIM est absente."""
     import re
