@@ -33,13 +33,16 @@ Simulation complète : vol (traînée de White, Magnus/Smits & Smith, gravité) 
 ```bash
 cd Cpp/src
 
-# version de base (console + SVG + HTML 3D, aucune dépendance)
+# version de base (console + SVG + HTML 3D) — macOS : ajoute les frameworks audio pour le mode --live (carte son)
 g++ -O2 -std=c++11 -o simu_headless \
     Simu_headless.cpp Ball.cpp Club.cpp EquationODE.cpp EquationODEFlight.cpp \
-    EquationODERoll.cpp EquationODEEventFlight.cpp EquationODEEventRoll.cpp SolverODE.cpp
+    EquationODERoll.cpp EquationODEEventFlight.cpp EquationODEEventRoll.cpp SolverODE.cpp \
+    -framework AudioToolbox -framework CoreAudio -framework AudioUnit
+# sans le mode --live (autre plateforme) : compile aussi sans les frameworks (record_live retourne une erreur)
 
 # outil de visualisation multi-spectres d'une captation (HTML autonome, pur canvas 2D)
-g++ -O2 -std=c++11 -I. -o spectres_html spectres_html.cpp
+g++ -O2 -std=c++11 -I. -o spectres_html spectres_html.cpp \
+    -framework AudioToolbox -framework CoreAudio -framework AudioUnit   # macOS ; sinon sans les frameworks
 
 # PNG de densité spectrale (voir plus bas)
 g++ -O2 -std=c++11 -I. -o spectro_png spectro_png.cpp
@@ -66,6 +69,11 @@ L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/a
 ./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav --open
 ./simu_headless --capture ../../sci/2025-11-08-F7-131m-162kmh-9418trm-7102trm-cs124.csv F7 1.0
 ./simu_headless --capture <fichier> --mode standard     # ancien : patch Hilbert seul
+
+# radar branché en carte son : enregistre l'entrée audio live, sauve live_capture.wav, analyse comme --capture
+./simu_headless --live 2.0 F7 1.0                     # 2 s d'enregistrement sur l'entrée par défaut (macOS)
+./simu_headless --live 2.0 F7 1.0 --source fichier.wav  # rejoue un fichier via le pipeline live (test)
+# parité Python : live_capture.wav se relit avec --capture ou Python/GolfBall.py (même ligne ESTIM parsée)
 ./simu_headless --capture <fichier> F7 1.0 --launch 16.5  # force l'angle de décollage de la simu (conf=-1, prioritaire sur la mesure) ; sans --launch, la simu utilise le launch mesuré sur le ridge quand conf ≥ 0,5, sinon le loft du club (repli, comme le 16,5° de GolfBall.py) — fit balistique ±0,75° en synthétique
 
 # spectres multi-panneaux d'une captation (8 panneaux, voir plus bas)

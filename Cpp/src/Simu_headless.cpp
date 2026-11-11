@@ -53,9 +53,10 @@ static std::string fmt0nan(double x, const char* u) {
     return fmt0(x, u);
 }
 
-// mode captation : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale] [--mode standard|fusion] [--launch deg]
-static int run_from_capture(const char* path, const char* clubType, double spinScale, bool openAfter, const std::string& mode, double launchOverrideDeg) {
-    Capture c = load_capture(path);
+// mode captation fichier : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale] [--mode standard|fusion] [--launch deg]
+// mode captation live carte son : ./simu_headless --live <secondes> [club] [spinScale] [--source fichier.wav pour rejouer un fichier au lieu de la carte son]
+static int run_from_capture(Capture c, const std::string& label, const char* clubType, double spinScale, bool openAfter, const std::string& mode, double launchOverrideDeg) {
+    const char* path = label.c_str();
     EstRadar e = estimate(c);
     const double spin_patch_rpm = e.spin_rpm;   // voie patch seule (avant fusion)
     if (mode == "fusion") {
@@ -193,13 +194,16 @@ int main(int argc, char *argv[]) {
 
     bool openAfter = false;
     std::string mode = "fusion";   // défaut : patch + phase + peigne fusionnés
-    double launchOverrideDeg = NAN; // --launch XX en mode --capture : force l'angle de décollage
+    double launchOverrideDeg = NAN; // --launch XX en mode --capture/--live : force l'angle de décollage
+    std::string liveSource;         // --source f.wav en mode --live : rejoue un fichier au lieu de la carte son
     { std::vector<std::string> args2; for (int i = 1; i < argc; i++) { std::string a = argv[i];
         if (a == "--open" || a == "-o") openAfter = true;
         else if (a == "--mode" && i + 1 < argc) mode = argv[++i];
         else if (a.rfind("--mode=", 0) == 0) mode = a.substr(7);
         else if (a == "--launch" && i + 1 < argc) launchOverrideDeg = strtod(argv[++i], NULL);
         else if (a.rfind("--launch=", 0) == 0) launchOverrideDeg = strtod(a.c_str() + 9, NULL);
+        else if (a == "--source" && i + 1 < argc) liveSource = argv[++i];
+        else if (a.rfind("--source=", 0) == 0) liveSource = a.substr(9);
         else args2.push_back(a); } argc = (int)args2.size() + 1; for (size_t i = 0; i < args2.size(); i++) argv[i + 1] = strdup(args2[i].c_str()); }
     if (argc < 2 || string(argv[1]) == "--help" || string(argv[1]) == "-h" || string(argv[1]) == "help") {
         cout << "Simulateur de vol de balle de golf (C++) — vol + 3 rebonds + roulement\n"
@@ -207,6 +211,9 @@ int main(int argc, char *argv[]) {
                 "usage:\n"
                 "  simu_headless Type ClubV0kmh AlphaClubPathDeg GamaFacePathDeg ShaftLeanImpDeg [spinScale]\n"
                 "  simu_headless --capture fichier.csv|.wav [club] [spinScale] [--launch deg]\n"
+                "  simu_headless --live <secondes> [club] [spinScale] [--source f.wav] [--launch deg]\n"
+                "                  enregistre la carte son (radar en entrée audio, macOS), sauve live_capture.wav,\n"
+                "                  puis analyse comme --capture ; --source rejoue un fichier à la place (test)\n"
                 "  simu_headless --help\n"
                 "  simu_headless F7 122.3 0 0 -6.5 --open   # ouvre Safari directement\n"
                 "\n"
@@ -243,7 +250,22 @@ int main(int argc, char *argv[]) {
     }
     if (string(argv[1]) == "--capture") {
         if (argc < 3) { cout << "il manque le fichier de captation" << endl; return 1; }
-        return run_from_capture(argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0, openAfter, mode, launchOverrideDeg);
+        Capture c = load_capture(argv[2]);
+        return run_from_capture(c, argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0, openAfter, mode, launchOverrideDeg);
+    }
+    if (string(argv[1]) == "--live") {
+        double secs = argc > 2 ? strtod(argv[2], NULL) : 2.0;
+        const char* club = argc > 3 ? argv[3] : "F7";
+        double ss = argc > 4 ? strtod(argv[4], NULL) : 1.0;
+        Capture c = liveSource.empty() ? record_live(secs) : load_capture(liveSource);
+        if (liveSource.empty()) {
+            save_wav("live_capture.wav", c);   // sauvegarde pour relecture Python (parité --capture)
+            fprintf(stderr, "captation live sauvegardée : live_capture.wav\n");
+        } else {
+            fprintf(stderr, "--source %s : replay fichier via le pipeline live (test)\n", liveSource.c_str());
+        }
+        if (c.r1.empty()) { fprintf(stderr, "ERREUR: aucune donnée audio\n"); return 2; }
+        return run_from_capture(c, liveSource.empty() ? "live_capture.wav" : liveSource, club, ss, openAfter, mode, launchOverrideDeg);
     }
     for (unsigned i = 0; i < sac.size(); i++)
         if (sac[i].getType() == argv[1]) j = i;

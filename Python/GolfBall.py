@@ -285,6 +285,9 @@ def default_simu_bin():
 def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=300):
     """Analyse une captation avec le binaire C++ `simu_headless --capture` et parse sa ligne ESTIM.
 
+    Parité C++ : le C++ est l'outil principal (plus rapide, et `--live <s>` enregistre directement
+    la carte son radar, sauve `live_capture.wav`, puis analyse — ce fichier se relit ici avec --capture).
+
     Retourne un dict de floats : vball_kmh, vball_corr_kmh, spin_rpm, spin_patch_rpm, spin_phase_rpm,
     spin_peigne_rpm, spin_exc_rpm, spin_patch_conf, spin_phase_conf, spin_peigne_conf, spin_exc_conf,
     vclub_radar_kmh, vclub_kmh, smash, alpha0_deg, dalpha_deg, t0_s, launch_deg, launch_conf, gfp_est_deg,
