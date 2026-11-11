@@ -489,6 +489,7 @@ if __name__ == '__main__':
     azim_deg = 0.0
     spin_rpm = None
     side_rpm = None
+    _est = {}
     if args.capture:
         if not os.path.exists(args.capture):
             print(f"ERREUR: fichier de captation introuvable : {args.capture}")
@@ -510,6 +511,11 @@ if __name__ == '__main__':
         t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3, v0_ms=v0_ms,
                                                 launch_deg=launch_deg, azim_deg=azim_deg,
                                                 spin_rpm=spin_rpm, side_rpm=side_rpm)
+        _rpm = lambda w: w * 60.0 / (2.0 * np.pi)
+        print(f'Club: {args.club if args.capture else club_type}  '
+              f'V0={((v0_ms if v0_ms is not None else V0_ball_ms) * 3.6):.1f} km/h  '
+              f'spin={spin_rpm if spin_rpm else _rpm(np.hypot(spin_y, spin_z)):.0f} rpm  '
+              f'back={_rpm(spin_z):.0f} / side={_rpm(spin_y):+.0f} rpm')
         print(f'Rebonds: {bounce_count}  Portee: {y[-1, 0]:.1f} m  Apex: {y[:, 1].max():.1f} m  '
               f'z_final={y[-1, 2]:+.1f} m  Tfin: {t[-1]:.1f} s')
         raise SystemExit(0)
@@ -526,6 +532,32 @@ if __name__ == '__main__':
     # ANIMATION 3D AVEC MATPLOTLIB
     # =============================================
 
+    # panneau d'infos (mêmes infos que le panneau fixe du HTML 3D C++, Plot3D.h)
+    def _rpm(w):
+        return w * 60.0 / (2.0 * np.pi)
+    nan = float('nan')
+    v0_kmh = (v0_ms if v0_ms is not None else V0_ball_ms) * 3.6
+    spin_tot_used = spin_rpm if spin_rpm else _rpm(np.hypot(spin_y, spin_z))
+    info = [f"Club         : {args.club if args.capture else club_type}"]
+    if args.capture and _est:
+        info.append(f"V club radar : {_est.get('vclub_kmh', nan):.1f} km/h   smash={_est.get('smash', nan):.3f}")
+        info.append(f"vBall radar  : {_est.get('vball_kmh', nan):.1f} km/h  ({_est.get('vball_corr_kmh', nan):.1f} corr. cos20)")
+        info.append(f"spin 3 voies : patch={_est.get('spin_patch_rpm', 0):.0f}  phase={_est.get('spin_phase_rpm', 0):.0f}  "
+                    f"peigne={_est.get('spin_peigne_rpm', 0):.0f} rpm")
+        if side_rpm is not None:
+            info.append(f"back/side est: {_est.get('backspin_est_rpm', 0):.0f} / {side_rpm:+.0f} rpm  "
+                        f"(GamaFacePath={_est.get('gfp_est_deg', 0):+.1f} deg)")
+        info.append(f"alpha0={azim_deg:+.2f} deg  dAlpha={_est.get('dalpha_deg', 0):+.2f} deg  t0={_est.get('t0_s', 0):.3f} s")
+    else:
+        info.append(f"V club       : {v_club_kmh:.1f} km/h")
+        info.append(f"club path    : {alpha_club_path_deg:+.1f} deg   face/path: {gama_face_path_deg:+.1f} deg   "
+                    f"shaft lean: {shaf_lean_imp_deg:+.1f} deg")
+    info.append(f"V0 balle     : {v0_kmh:.1f} km/h   launch={launch_deg:.1f} deg   azim={azim_deg:+.2f} deg")
+    info.append(f"Spin total   : {spin_tot_used:.0f} rpm")
+    info.append(f"Back / Side  : {_rpm(spin_z):.0f} / {_rpm(spin_y):+.0f} rpm")
+    info.append(f"Portee       : {x[-1]:.1f} m   Apex: {y_pos.max():.1f} m")
+    info.append(f"z final      : {z[-1]:+.1f} m   Rebonds: {bounce_count}   Tfin: {t[-1]:.1f} s")
+
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111, projection='3d')
 
@@ -536,8 +568,14 @@ if __name__ == '__main__':
     ax.set_xlabel('Distance (m)')
     ax.set_ylabel('Hauteur (m)')
     ax.set_zlabel('Dév. latérale (m)')
-    ax.set_title('Simulation du vol d\'une balle de golf (3D)')
+    ax.set_title('Simulation du vol d\'une balle de golf (3D)'
+                 + (f' — {os.path.basename(args.capture)}' if args.capture else f' — club {club_type}'))
     ax.view_init(elev=args.elev, azim=args.azim)  # défaut 10/180 : vue de derrière, comme le golfeur (cf. Pasted image 20250120171635.png)
+
+    # panneau d'infos fixe en haut à gauche (comme le panneau 250 px du HTML C++)
+    info_text = ax.text2D(0.02, 0.98, '\n'.join(info), transform=ax.transAxes,
+                          fontsize=9, family='monospace', va='top', ha='left',
+                          bbox=dict(boxstyle='round,pad=0.4', fc='white', ec='gray', alpha=0.85))
 
     # Dessiner le sol
     xx, zz = np.meshgrid(np.linspace(0, max(x) * 1.1, 10), np.linspace(-max(abs(z)) * 1.1, max(abs(z)) * 1.1, 10))
@@ -618,9 +656,9 @@ if __name__ == '__main__':
             (x[frame], y_pos[frame], z[frame]),
             (x[frame] - 0.2, y_pos[frame] + 0.4, z[frame])]])
 
-        # Mettre à jour le temps et les rebonds
-        time_text.set_text(f'Temps: {t[frame]:.2f} s')
-        time_text.set_position((ax.get_xlim()[1] * 0.7, ax.get_ylim()[1] * 0.9, ax.get_zlim()[1] * 0.9))
+        # Mettre à jour le temps, la distance parcourue et la déviation latérale courante
+        time_text.set_text(f'Temps: {t[frame]:.2f} s   dist: {x[frame]:.1f} m   dev. lat.: {z[frame]:+.1f} m')
+        time_text.set_position((ax.get_xlim()[1] * 0.55, ax.get_ylim()[1] * 0.9, ax.get_zlim()[1] * 0.9))
         bounce_text.set_text(f'Rebonds: {bounce_count}')
         bounce_text.set_position((ax.get_xlim()[1] * 0.7, ax.get_ylim()[1] * 0.85, ax.get_zlim()[1] * 0.9))
 
