@@ -66,7 +66,7 @@ L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/a
 ./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav --open
 ./simu_headless --capture ../../sci/2025-11-08-F7-131m-162kmh-9418trm-7102trm-cs124.csv F7 1.0
 ./simu_headless --capture <fichier> --mode standard     # ancien : patch Hilbert seul
-./simu_headless --capture <fichier> F7 1.0 --launch 16.5  # force l'angle de décollage de la simu (conf=-1) ; sans --launch, le launch affiché est celui mesuré sur le ridge (fit balistique, ±1° en synthétique)
+./simu_headless --capture <fichier> F7 1.0 --launch 16.5  # force l'angle de décollage de la simu (conf=-1, prioritaire sur la mesure) ; sans --launch, la simu utilise le launch mesuré sur le ridge quand conf ≥ 0,5, sinon le loft du club (repli, comme le 16,5° de GolfBall.py) — fit balistique ±0,75° en synthétique
 
 # spectres multi-panneaux d'une captation (8 panneaux, voir plus bas)
 ./spectres_html ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv -o

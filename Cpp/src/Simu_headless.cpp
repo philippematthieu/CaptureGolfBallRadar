@@ -122,7 +122,11 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     }
     Ball theBall("Decathlon", 320, 3, sac[j], 18.0, 0.01);
     if (!std::isnan(launchOverrideDeg))
-        theBall.setLaunchAngleDegre(launchOverrideDeg);   // --launch XX : force l'angle de decollage de la simu
+        theBall.setLaunchAngleDegre(launchOverrideDeg);   // --launch XX : force l'angle de decollage (prioritaire)
+    else if (e.launch_deg > 0 && e.launch_conf >= 0.5) {
+        theBall.setLaunchAngleDegre(e.launch_deg);        // launch mesuré sur le ridge (conf suffisante)
+        printf("launch de la simu = mesuré sur captation : %.2f deg (conf %.2f)\n", e.launch_deg, e.launch_conf);
+    }   // sinon : loft du club (repli, comme le 16.5° de GolfBall.py)
     if (e.spin_rpm > 0)
         theBall.rescaleSpin(spinScale * e.spin_rpm / std::max(std::hypot(theBall.getSpinYOrgrpm(), theBall.getSpinZOrgrpm()), 1.0));
     else
