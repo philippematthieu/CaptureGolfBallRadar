@@ -169,7 +169,8 @@ CAP_UNUSED static Capture load_capture(const std::string& path) {
 // ---------------- spectrogramme + ridge --------------------------------------
 CAP_UNUSED static void spectrogram(const std::vector<double>& x, int nfft, int hop,
                         std::vector<double>& ridge, std::vector<double>& power,
-                        std::vector<double>& tgrid) {
+                        std::vector<double>& tgrid,
+                        double flo = 1000.0, double fhi = 6000.0) {
     int n = (int)x.size();
     int nframes = 1 + (n - nfft) / hop;
     std::vector<double> w(nfft);
@@ -184,7 +185,7 @@ CAP_UNUSED static void spectrogram(const std::vector<double>& x, int nfft, int h
         for (int k = 1; k < nfft / 2; k++) {
             double f = k * FS / nfft;
             P[k] = re[k] * re[k] + im[k] * im[k];
-            if (f < 1000.0 || f > 6000.0) { P[k] = -1.0; continue; }  // passe-bande vitesse balle
+            if (f < flo || f > fhi) { P[k] = -1.0; continue; }  // passe-bande vitesse (balle par défaut)
             if (P[k] > pmax) { pmax = P[k]; kmax = k; }
         }
         ridge[fr] = parabolic_peak(P, kmax) * FS / nfft;   // sous-bin (comme Python)
@@ -295,6 +296,25 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
         e.vball_kmh = (v1 > 0) ? v1 : v2;
     }
     e.vball_corr_kmh = e.vball_kmh / cos(THETA_RADAR);
+    // --- 2e passe : on restreint la recherche du ridge à ±20 % autour de f_D (vitesse à priori) ---
+    // L'écho de la tête de club (fréquence plus basse, très puissant) décélère après l'impact et
+    // accroche sinon le ridge des 1res frames post-impact ; en bande restreinte, le ridge suit
+    // la balle dès l'impact. vBall est raffiné sur cette passe, et l'appariement stéréo aussi.
+    if (e.vball_kmh > 0) {
+        double fD = e.vball_kmh * KV;
+        double flo = std::max(1000.0, fD * 0.85), fhi = std::min(6000.0, fD * 1.10);
+        spectrogram(c.r1, NFFT, HOP, ridge, power, tg, flo, fhi);
+        std::vector<double> post;
+        for (size_t i = i0; i < ridge.size() && tg[i] < tg[i0] + 0.05; i++) post.push_back(ridge[i]);
+        if (!post.empty()) {
+            std::sort(post.begin(), post.end());
+            double vref = post[post.size() / 2] / KV;
+            if (vref > 0) {
+                e.vball_kmh = vref;
+                e.vball_corr_kmh = vref / cos(THETA_RADAR);
+            }
+        }
+    }
     // --- spin par périodicité du patch, avec score d'harmoniques (comme Python) ---
     int nseg = (int)(0.25 * FS);
     if ((i0 * HOP + nseg) < (int)c.r1.size() && nseg > NFFT) {
@@ -359,9 +379,15 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
         }
     }
     // --- alpha(t) par appariement stéréo : f2 cherché au voisinage de f1 (±300 Hz), |f1-f2|<=30 Hz ---
-    // spectrogrammes des 2 canaux
+    // spectrogramme du canal 2 sur la même bande restreinte autour de f_D (rejette l'écho club)
     std::vector<double> ridge2, power2, tg2;
-    spectrogram(c.r2, NFFT, HOP, ridge2, power2, tg2);
+    if (e.vball_kmh > 0) {
+        double fD = e.vball_kmh * KV;
+        spectrogram(c.r2, NFFT, HOP, ridge2, power2, tg2,
+                    std::max(1000.0, fD * 0.85), std::min(6000.0, fD * 1.10));
+    } else {
+        spectrogram(c.r2, NFFT, HOP, ridge2, power2, tg2);
+    }
     std::vector<double> tt, al;
     double v_ms = e.vball_kmh / KV * 1000.0 / 3600.0;
     for (size_t i = i0; i < ridge.size(); i++) {
@@ -699,7 +725,10 @@ CAP_UNUSED static double fusion_spin(double patch_rpm, double patch_conf,
                                      double peigne_rpm, double peigne_conf,
                                      double exc_rpm, double exc_conf) {
     const double v[4] = {patch_rpm, phase_rpm, peigne_rpm, exc_rpm};
-    const double c[4] = {patch_conf, phase_conf, peigne_conf, exc_conf};
+    // la voie excursion a un biais SYSTEMATIQUE connu (β effectif < 4πr/λ sur balle réelle :
+    // elle lit bas) : sa confiance SNR est rabattue pour ne pas prendre la main seule.
+    const double EXC_CONF_DISCOUNT = 0.25;
+    const double c[4] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT};
     int ref = -1;
     for (int i = 0; i < 4; i++)
         if (v[i] > 0 && c[i] > 0 && (ref < 0 || c[i] > c[ref])) ref = i;

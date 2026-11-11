@@ -68,12 +68,12 @@ Toutes les briques sont dans `Capture.h` (header-only, FFT radix-2 maison) :
 
 | Mesure | Méthode | Fonction |
 |---|---|---|
-| **vBall** | ridge STFT (2048/1024) post-impact, médiane 50 ms, 2 canaux, correction cos20° | `estimate()` |
+| **vBall** | ridge STFT (2048/1024) post-impact, médiane 50 ms, 2 canaux, correction cos20°. **2 passes** : 1ʳᵉ pleine bande 1000–6000 Hz, puis 2ᵉ restreinte à [0,85·f_D, 1,10·f_D] autour de la vitesse à priori — l'écho club (plus basse fréquence, très puissant, il décélère après l'impact) n'accroche plus le ridge des 1ʳᵉʳᵉˢ frames post-impact | `estimate()` |
 | **t0 (impact)** | frame d'énergie max | `estimate()` |
 | **V club** | **passe-bande FFT autour de vBall/1.35** sur la fenêtre [t0−0,3 s, t0] (le lobe Doppler de la tête de club est dans le signal avant l'impact), crête au quantile 90 % | `estimate_club_speed()` |
 | **smash** | vBall / Vclub mesuré | (dans `Simu_headless.cpp`) |
 | **spin — 4 voies** | ① patch : segment 250 ms post-impact **filtré passe-bande autour de f_D = vBall·KV ± 1 kHz (vitesse à priori du ridge → rejette l'écho de la tête de club)**, puis enveloppe de Hilbert, spectre 50–200 Hz, score d'harmoniques · ② **phase** : signal analytique du lobe balle filtré autour de f_D, fréquence instantanée detrendée, pic à f_rot · ③ **peigne** : autocorrélation du spectre Welch autour de f_D ± 2 kHz (lag = f_rot) · ④ **excursion β** : excursion crête-crête de la fréquence instantanée lissée (300 ms post-impact, detrend linéaire), `spin = Δf/(2·KS)` avec β = 4πr/λ. Chaque voie sort aussi sa **confiance** = pic / fond (médiane spectrale ; pour l'excursion : Δf / (1,4826·MAD)) | `estimate()` (`spin_patch_conf`), `estimate_spin_phase_spec()` (params `exc_rpm`, `exc_conf`, `conf`), `estimate_spin_peigne_ac()` (param `conf`) |
-| **spin retenu** | `fusion_spin()` **pondérée par confiance** : référence = voie valide (rpm>0, conf>0) de plus grande confiance ; moyenne des voies cohérentes à ±15 % de la référence, pondérées par leur confiance ; seule la référence sinon. Confiance exposée dans `ESTIM` (`spin_*_conf=`) | `fusion_spin()` (8 args) |
+| **spin retenu** | `fusion_spin()` **pondérée par confiance** : référence = voie valide (rpm>0, conf>0) de plus grande confiance ; moyenne des voies cohérentes à ±15 % de la référence, pondérées par leur confiance ; seule la référence sinon. La confiance de la voie excursion est rabattue ×0,25 (biais systématique connu : β effectif < 4πr/λ sur balle réelle). Confiance exposée dans `ESTIM` (`spin_*_conf=`) | `fusion_spin()` (8 args) |
 | **α₀, Δα** | appariement stéréo R1/R2 (Δf ≤ 30 Hz), α = atan((2L/B)·fd/fc), médianes début/fin | `estimate()` |
 | **back/side spin** | modèle inverse : balayage de `GamaFacePath` (−15°..+15°) avec `runSimu`, courbure azimutale sur ~150 ms post-impact ajustée au **Δα stéréo**, vecteur spin rescalé au spin total radar (donc `hypot(back,side) = spin_radar`) | `Simu_headless.cpp` |
 
@@ -91,7 +91,7 @@ Le mode `--capture` enchaîne : mesures radar → V club (passe-bande, sinon mod
 #### Étape 1 — Captation et mesures radar (`Capture.h`, `estimate()`)
 
 - **Lecture** : CSV 2 lignes `;` ou WAV stéréo 44,1 kHz → canaux R1/R2 (`load_capture`).
-- **vBall** : STFT (NFFT 2048, hop 1024), pic dans la bande 1000–6000 Hz, interpolation parabolique sous-bin, médiane du ridge sur 50 ms post-impact, rejet inter-radars > 15 %, correction cos 20° → `vball_kmh`, `vball_corr_kmh`.
+- **vBall** : STFT (NFFT 2048, hop 1024), pic dans la bande 1000–6000 Hz, interpolation parabolique sous-bin, médiane du ridge sur 50 ms post-impact, rejet inter-radars > 15 %, correction cos 20° → `vball_kmh`, `vball_corr_kmh`. **2ᵉ passe à bande restreinte** [0,85·f_D, 1,10·f_D] : le fort écho club (fréquence plus basse) décélère après l'impact et masquait le début du vol de la balle sur le ridge pleine bande ; en bande restreinte le ridge accroche la balle dès l'impact (vBall raffiné + appariement stéréo utilisent cette passe).
 - **t0 (impact)** : frame d'énergie max du spectrogramme.
 - **V club** : le lobe Doppler de la tête de club existe avant t0 → passe-bande FFT autour de `vBall/1.35` sur `[t0−0,3 s, t0]`, crête au quantile 90 % (`estimate_club_speed`) → `vclub_radar`, d'où **smash = vBall/vClub** (fallback modèle vBall/1.35 si NaN).
 - **Spin total — 4 voies** (mode `fusion` par défaut) :
@@ -100,7 +100,7 @@ Le mode `--capture` enchaîne : mesures radar → V club (passe-bande, sinon mod
   3. *peigne* : spectre Welch (NFFT 8192) autour de f_D ± 2 kHz, detrend glissant, autocorrélation normalisée en lag, score de fondamental (`estimate_spin_peigne_ac`) ;
   4. *excursion β* : fi lissée (2 ms) sur 300 ms post-impact, detrend **linéaire**, percentiles 2,5/97,5 → `spin = Δf/(2·KS)`.
   - Chaque voie a une **confiance** (pic/médiane du spectre ; excursion : Δf/(1,4826·MAD)) exposée dans `ESTIM` (`spin_patch_conf`, `spin_phase_conf`, `spin_peigne_conf`, `spin_exc_conf`).
-  - `fusion_spin()` **pondérée par confiance** : référence = voie de plus grande confiance, moyenne pondérée des voies à ±15 % d'elle ; repli sur la 1ʳᵉ voie rpm>0 si aucune confiance.
+  - `fusion_spin()` **pondérée par confiance** : référence = voie de plus grande confiance, moyenne pondérée des voies à ±15 % d'elle ; repli sur la 1ʳᵉ voie rpm>0 si aucune confiance. Confiance excursion rabattue ×0,25 (biais β systématique).
 - **α₀ et Δα** : appariement stéréo — pour chaque frame post-impact, pic de R2 dans ±300 Hz autour de f1(R1), cohérence |f1−f2| ≤ 30 Hz, `α = atan((2L/B)·fd/fc)` avec L(t) évolutif ; α₀ = médiane des 50 ms initiales, Δα = médiane(fin 100 ms) − médiane(début) = **courbure de trajectoire mesurée**.
 
 #### Étape 2 — Simulations multiples avec le modèle (balayage de `GamaFacePath`)
@@ -225,14 +225,14 @@ flowchart TD
         R["Radar 10,525 GHz<br/>2 canaux R1 / R2"] -->|"écho radar brut"| W["Fichier WAV stéréo 44,1 kHz<br/>ou CSV 2 lignes ';'"]
         W -->|"fichier"| LC["load_capture()<br/>→ signaux bruts R1, R2"]
         LC -->|"samples R1, R2"| HP["FILTRAGE passe-haut ~50 km/h<br/>(élimine le bruit basse fréquence)"]
-        HP -->|"signaux filtrés"| EST["estimate() — STFT 2048/1024<br/>ridge → vBall (±8 %), t0 = frame d'énergie max<br/>R1 ∥ R2 : appariement stéréo<br/>→ α₀, Δα (courbure mesurée)"]
+        HP -->|"signaux filtrés"| EST["estimate() — STFT 2048/1024, 2 passes<br/>1ʳᵉ pleine bande 1000–6000 Hz<br/>2ᵉ restreinte [0,85·f_D, 1,10·f_D] : rejette l'écho club<br/>→ vBall raffiné (±6 %), t0, R1 ∥ R2 : appariement stéréo<br/>→ α₀, Δα (courbure mesurée)"]
         EST -->|"vBall, t0"| VCLUB["estimate_club_speed()<br/>passe-bande autour de vBall/1.35, sur [t0−0,3 s, t0]<br/>→ V club mesurée, smash"]
         EST -->|"signal post-impact, f_D, t0"| S1 & S2 & S3 & S4
         S1["① voie patch — identification par les ALVÉOLES (AM)<br/>passe-bande f_D ± 1 kHz (rejette l'écho club)<br/>puis enveloppe de Hilbert 250 ms<br/>spectre 50–200 Hz, score d'harmoniques"]
         S2["② voie phase — démodulation FRÉQUENCE/PHASE<br/>estimate_spin_phase_spec()<br/>fi du signal analytique detrendée → pic f_rot"]
         S3["③ voie peigne — recherche de PÉRIODICITÉ micro-Doppler<br/>(PAS l'écho radar / vitesse) : autocorr. du spectre<br/>autour de f_D ± 2 kHz → lag = f_rot"]
         S4["④ voie excursion β — amplitude de l'excursion micro-Doppler<br/>fi lissée 300 ms, detrend linéaire → Δf/(2·KS)<br/>β SUPPOSÉ = 4πr/λ → norme du spin<br/>(l'angle/direction du vecteur spin = balayage SIMU ci-dessous)"]
-        S1 & S2 & S3 & S4 -->|"rpm + confiance (pic/fond)"| FUS["fusion_spin() — 4 voies EN PARALLÈLE<br/>pondérée par confiance<br/>réf = voie la + confiante, moyenne des voies à ±15 %<br/>→ spin_radar"]
+        S1 & S2 & S3 & S4 -->|"rpm + confiance (pic/fond)"| FUS["fusion_spin() — 4 voies EN PARALLÈLE<br/>pondérée par confiance (conf excursion ×0,25 : biais β)<br/>réf = voie la + confiante, moyenne des voies à ±15 %<br/>→ spin_radar"]
     end
 
     subgraph SIMU["💻 PARTIE SIMULÉE — modèle inverse + itérations"]
@@ -275,7 +275,7 @@ flowchart TD
 
 ### 5. Validation : tableau de cohérence sur les 12 captations
 
-Chaque capture a été relue (`spectres_*.html` + `--capture`) et comparée aux valeurs de référence du nom de fichier. Écarts moyens constatés : vBall ±8 %, smash 1,18–1,40 stable, spin total radar ±64 % (patch seul, avec 4 cas à 0) → le mode **fusion** ramène ces cas à une valeur non nulle (ex. cs118 : 0 → 5073 rpm). Bilan : V club et smash fiables ; le spin total reste le maillon faible, d'où les 4 voies. La **fusion pondérée par confiance** (point 9 : chaque voie sort pic/fond, la référence est la voie la plus confiante, moyenne pondérée des voies à ±15 % d'elle) fait passer l'erreur moyenne de spin de **44,4 % → 42,5 %** sur les 12 captations. Le **passe-bande autour de f_D appliqué à la voie patch** (vitesse à priori du ridge → rejet de l'écho club avant l'enveloppe de Hilbert) fait ensuite passer l'erreur moyenne de spin à **32,1 %** (cs99 +105 % → +4 %, cs124-2019 −41 % → −6 % ; cs111 un peu dégradé −21 % → −30 %). La portée simulée colle à ±8 m quand le spin est bon.
+Chaque capture a été relue (`spectres_*.html` + `--capture`) et comparée aux valeurs de référence du nom de fichier. Écarts moyens constatés : vBall ±8 %, smash 1,18–1,40 stable, spin total radar ±64 % (patch seul, avec 4 cas à 0) → le mode **fusion** ramène ces cas à une valeur non nulle (ex. cs118 : 0 → 5073 rpm). Bilan : V club et smash fiables ; le spin total reste le maillon faible, d'où les 4 voies. La **fusion pondérée par confiance** (point 9 : chaque voie sort pic/fond, la référence est la voie la plus confiante, moyenne pondérée des voies à ±15 % d'elle) fait passer l'erreur moyenne de spin de **44,4 % → 42,5 %** sur les 12 captations. Le **passe-bande autour de f_D appliqué à la voie patch** (vitesse à priori du ridge → rejet de l'écho club avant l'enveloppe de Hilbert) fait ensuite passer l'erreur moyenne de spin à **32,1 %** (cs99 +105 % → +4 %, cs124-2019 −41 % → −6 %). La **2ᵉ passe du ridge à bande restreinte** [0,85·f_D, 1,10·f_D] — l'écho club, très puissant et décroissant après l'impact, masquait le début du vol de la balle sur le ridge pleine bande — plus le **rabattement ×0,25 de la confiance de la voie excursion** (biais β systématique) donnent finalement **vBall 6,2 %, spin 30,0 %, portée Python 11,6 %** (cs118-2019 +1,2 %, cs119 −4,3 %, cs99 +1,0 % ; cs136 reste mauvais : spin 11624 tr/min, f_rot proche du bord de bande 200 Hz). La portée simulée colle à ±8 m quand le spin est bon.
 
 ### 6. Pièges rencontrés (et corrigés)
 
@@ -287,4 +287,4 @@ Chaque capture a été relue (`spectres_*.html` + `--capture`) et comparée aux 
 ## Tests
 
 - `tests/test_synth_capture.py` — validation synthétique de bout en bout : génère des captations de vérité connue (`Python/gen_capture_modele.py`), les analyse avec `simu_headless --capture` (ligne `ESTIM`, via `GolfBall.analyze_capture_cpp`), compare vBall / spin / back-side / GamaFacePath aux vraies valeurs (tranche la convention de signe de Δα), puis rejoue la simu Python avec le side estimé. Lancer avec un Python numpy+scipy : `python3 tests/test_synth_capture.py` (code 0 si OK).
-- `sci/validate_all.py` — harnais de validation sur toutes les captations `sci/*-F7-*.csv` : analyse C++ (`ESTIM`) + rejoue la simu Python, compare à la référence du nom de fichier (portée, vBall, spin back/side) → table console + `sci/validation.html` coloré. `.venv/bin/python sci/validate_all.py` (code 1 si une captation échoue). Baseline courante (fusion pondérée par confiance + passe-bande f_D sur la voie patch) : vBall 8,1 %, **spin 32,1 %**, portée Python 12,6 %.
+- `sci/validate_all.py` — harnais de validation sur toutes les captations `sci/*-F7-*.csv` : analyse C++ (`ESTIM`) + rejoue la simu Python, compare à la référence du nom de fichier (portée, vBall, spin back/side) → table console + `sci/validation.html` coloré. `.venv/bin/python sci/validate_all.py` (code 1 si une captation échoue). Baseline courante (2ᵉ passe ridge à bande restreinte + passe-bande f_D sur la voie patch + fusion pondérée par confiance avec rabais excursion ×0,25) : **vBall 6,2 %, spin 30,0 %, portée Python 11,6 %**.
