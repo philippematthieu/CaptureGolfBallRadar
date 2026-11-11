@@ -11,7 +11,7 @@ Application `simu_headless --capture` (scène 3D interactive + panneau mesures r
 ./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv F7 1.0 --
 ```
 
-<img src="sci/img/Pasted image 20261110224721.png" width="980">
+<img src="sci/img/capture_simu_headless_20261110.png" width="980">
 
 
 
