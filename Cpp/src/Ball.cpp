@@ -136,6 +136,14 @@ double Ball::getV0BallInitms() {
 double Ball::getLaunchAngle() {
 	return launchAngle;
 }
+void Ball::setLaunchAngleDegre(double deg) {
+	launchAngle = deg * M_PI / 180.0;
+	// recalcule les composantes initiales a norme v0BallInitms conservee (meme pattern que le constructeur)
+	v0Initms[1] =  v0BallInitms * cos(launchAngle);
+	v0Initms[3] = -v0BallInitms * cos(launchAngle) * sin(0.0);
+	v0Initms[5] =  v0BallInitms * sin(launchAngle);
+	v0Currentms = v0Initms;
+}
 double Ball::getImpactAngle() {
 	return verticalLand;
 }

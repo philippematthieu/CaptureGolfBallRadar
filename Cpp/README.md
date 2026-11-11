@@ -66,6 +66,7 @@ L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/a
 ./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav --open
 ./simu_headless --capture ../../sci/2025-11-08-F7-131m-162kmh-9418trm-7102trm-cs124.csv F7 1.0
 ./simu_headless --capture <fichier> --mode standard     # ancien : patch Hilbert seul
+./simu_headless --capture <fichier> F7 1.0 --launch 16.5  # force l'angle de décollage de la simu (conf=-1) ; sans --launch, le launch affiché est celui mesuré sur le ridge (fit balistique, ±1° en synthétique)
 
 # spectres multi-panneaux d'une captation (8 panneaux, voir plus bas)
 ./spectres_html ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv -o
@@ -323,5 +324,5 @@ Chaque capture a été relue (`spectres_*.html` + `--capture`) et comparée aux 
 
 ## Tests
 
-- `tests/test_synth_capture.py` — validation synthétique de bout en bout : génère des captations de vérité connue (`Python/gen_capture_modele.py`), les analyse avec `simu_headless --capture` (ligne `ESTIM`, via `GolfBall.analyze_capture_cpp`), compare vBall / spin / back-side / GamaFacePath / **launch angle (±2°)** aux vraies valeurs (tranche la convention de signe de Δα), puis rejoue la simu Python avec le side estimé. Lancer avec un Python numpy+scipy : `python3 tests/test_synth_capture.py` (code 0 si OK). Dernier run : launch 16,5° → 17,5° et 16,0° → 17,0° (conf 1,00).
+- `tests/test_synth_capture.py` — validation synthétique de bout en bout : génère des captations de vérité connue (`Python/gen_capture_modele.py`), les analyse avec `simu_headless --capture` (ligne `ESTIM`, via `GolfBall.analyze_capture_cpp`), compare vBall / spin / back-side / GamaFacePath / **launch angle (±2°)** aux vraies valeurs (tranche la convention de signe de Δα), puis rejoue la simu Python avec le side estimé. Lancer avec un Python numpy+scipy : `python3 tests/test_synth_capture.py` (code 0 si OK). Dernier run : launch 16,5° → 17,25° et 16,0° → 16,75° (conf 1,00). Le fit utilise la même physique que `flightg` (Golfball.sci) / `EquationODEFlight.cpp` : traînée de White D = ½ρCdAV², gravité −g non divisée par m, Magnus F = ½ρ·A·(d/2)·Cm·V·(ω×v) avec Re = V·d/ν (ν cinématique).
 - `sci/validate_all.py` — harnais de validation sur toutes les captations `sci/*-F7-*.csv` : analyse C++ (`ESTIM`) + rejoue la simu Python, compare à la référence du nom de fichier (portée, vBall, spin back/side) → table console + `sci/validation.html` coloré. `.venv/bin/python sci/validate_all.py` (code 1 si une captation échoue). Baseline courante (2ᵉ passe ridge à bande restreinte + passe-bande f_D sur la voie patch + fusion pondérée par confiance avec rabais excursion ×0,25 + fit launch angle du ridge post-impact) : **vBall 6,2 %, spin 30,0 %, portée Python 11,6 %** (le launch mesuré n'est pas encore réinjecté dans `validate_all.py`, qui garde 16,5° fixe).

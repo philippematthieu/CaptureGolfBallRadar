@@ -53,8 +53,8 @@ static std::string fmt0nan(double x, const char* u) {
     return fmt0(x, u);
 }
 
-// mode captation : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale] [--mode standard|fusion]
-static int run_from_capture(const char* path, const char* clubType, double spinScale, bool openAfter, const std::string& mode) {
+// mode captation : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale] [--mode standard|fusion] [--launch deg]
+static int run_from_capture(const char* path, const char* clubType, double spinScale, bool openAfter, const std::string& mode, double launchOverrideDeg) {
     Capture c = load_capture(path);
     EstRadar e = estimate(c);
     const double spin_patch_rpm = e.spin_rpm;   // voie patch seule (avant fusion)
@@ -71,6 +71,10 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
                e.spin_rpm, e.spin_patch_conf, e.spin_phase_rpm, e.spin_phase_conf,
                e.spin_peigne_rpm, e.spin_peigne_conf, e.spin_exc_rpm, e.spin_exc_conf, sf);
         e.spin_rpm = sf;
+    }
+    if (!std::isnan(launchOverrideDeg)) {
+        e.launch_deg = launchOverrideDeg;   // --launch XX : override de la mesure (conf -1 = forcé)
+        e.launch_conf = -1.0;
     }
     printf("capture %s : vBall=%.1f km/h radiale (%.1f corr. cos20), spin=%.0f rpm, alpha0=%+.2f deg, dAlpha=%+.2f deg, launch=%.2f deg (conf %.2f), t0=%.3f s, %zu ech/canal\n",
            path, e.vball_kmh, e.vball_corr_kmh, e.spin_rpm, e.alpha0_deg, e.dalpha_deg, e.launch_deg, e.launch_conf, e.t0_s, c.r1.size());
@@ -117,6 +121,8 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
         sidespin_est = szb * k;
     }
     Ball theBall("Decathlon", 320, 3, sac[j], 18.0, 0.01);
+    if (!std::isnan(launchOverrideDeg))
+        theBall.setLaunchAngleDegre(launchOverrideDeg);   // --launch XX : force l'angle de decollage de la simu
     if (e.spin_rpm > 0)
         theBall.rescaleSpin(spinScale * e.spin_rpm / std::max(std::hypot(theBall.getSpinYOrgrpm(), theBall.getSpinZOrgrpm()), 1.0));
     else
@@ -183,17 +189,20 @@ int main(int argc, char *argv[]) {
 
     bool openAfter = false;
     std::string mode = "fusion";   // défaut : patch + phase + peigne fusionnés
+    double launchOverrideDeg = NAN; // --launch XX en mode --capture : force l'angle de décollage
     { std::vector<std::string> args2; for (int i = 1; i < argc; i++) { std::string a = argv[i];
         if (a == "--open" || a == "-o") openAfter = true;
         else if (a == "--mode" && i + 1 < argc) mode = argv[++i];
         else if (a.rfind("--mode=", 0) == 0) mode = a.substr(7);
+        else if (a == "--launch" && i + 1 < argc) launchOverrideDeg = strtod(argv[++i], NULL);
+        else if (a.rfind("--launch=", 0) == 0) launchOverrideDeg = strtod(a.c_str() + 9, NULL);
         else args2.push_back(a); } argc = (int)args2.size() + 1; for (size_t i = 0; i < args2.size(); i++) argv[i + 1] = strdup(args2[i].c_str()); }
     if (argc < 2 || string(argv[1]) == "--help" || string(argv[1]) == "-h" || string(argv[1]) == "help") {
         cout << "Simulateur de vol de balle de golf (C++) — vol + 3 rebonds + roulement\n"
                 "\n"
                 "usage:\n"
                 "  simu_headless Type ClubV0kmh AlphaClubPathDeg GamaFacePathDeg ShaftLeanImpDeg [spinScale]\n"
-                "  simu_headless --capture fichier.csv|.wav [club] [spinScale]\n"
+                "  simu_headless --capture fichier.csv|.wav [club] [spinScale] [--launch deg]\n"
                 "  simu_headless --help\n"
                 "  simu_headless F7 122.3 0 0 -6.5 --open   # ouvre Safari directement\n"
                 "\n"
@@ -211,6 +220,8 @@ int main(int argc, char *argv[]) {
                 "  --mode m        analyse du spin : 'fusion' (défaut : patch Hilbert + fréquence\n"
                 "                  instantanée + peigne de raies micro-Doppler, fusionnés) ou\n"
                 "                  'standard' (patch Hilbert seul)\n"
+                "  --launch deg    (mode --capture) force l'angle de décollage de la simu au lieu du loft\n"
+                "                  du club ; sans --launch, le launch affiché est celui mesuré sur le ridge\n"
                 "\n"
                 "sorties (dans le dossier courant):\n"
                 "  console: RESULT portee=... apex=... z_final=... temps=...\n"
@@ -228,7 +239,7 @@ int main(int argc, char *argv[]) {
     }
     if (string(argv[1]) == "--capture") {
         if (argc < 3) { cout << "il manque le fichier de captation" << endl; return 1; }
-        return run_from_capture(argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0, openAfter, mode);
+        return run_from_capture(argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0, openAfter, mode, launchOverrideDeg);
     }
     for (unsigned i = 0; i < sac.size(); i++)
         if (sac[i].getType() == argv[1]) j = i;

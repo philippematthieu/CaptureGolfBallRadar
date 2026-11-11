@@ -404,7 +404,7 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
     // de V(t) à un facteur d'échelle libre c près, v_r_model(t) = c·V_model(t; V0, ψ).
     if (e.vball_kmh > 0) {
         const double rho = 1.292 * 273.15 / 293.15;             // kg/m³ à 20 °C (comme Golfball.sci)
-        const double Ab = M_PI * pow(BALL_D / 2, 2), mm = 0.04545, mu = 1.5e-5;
+        const double Ab = M_PI * pow(BALL_D / 2, 2), mm = 0.04545, mu = 1.5e-5;  // mu = viscosité CINÉMATIQUE (m²/s)
         const double Cl1 = 0.54;                                 // fer 7 (SAC)
         double fD = e.vball_kmh * KV;
         int i0s = (int)(e.t0_s * FS);
@@ -464,7 +464,7 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
                     for (size_t f = 0; f < tm.size(); f++) {
                         while (t < tm[f]) {
                             double V = sqrt(vx * vx + vy * vy);
-                            double Re = rho * V * BALL_D / mu;
+                            double Re = V * BALL_D / mu;   // mu cinématique : Re = V·d/ν (comme flightg Scilab et EquationODEFlight)
                             double Cd = 0.36 + 24.0 / Re + 6.0 / (1.0 + sqrt(Re));   // White
                             double Cm = Cl1 * pow(BALL_D / 2, 2) * pow(w / std::max(V, 1e-6), 0.4);
                             double FD = 0.5 * rho * Cd * Ab * V * V;               // traînée ∝ V²
