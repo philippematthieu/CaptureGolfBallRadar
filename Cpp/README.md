@@ -164,6 +164,7 @@ Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendan
 ## Sorties produites (dans `Cpp/src/`)
 
 - console : `RESULT portee=... m  apex=... m  z_final=... m  temps=... s`
+- console (mode `--capture`) : ligne machine **`ESTIM key=value ...`** (une seule ligne, `nan` pour les non-détectés) : `vball_kmh vball_corr_kmh spin_rpm spin_patch_rpm spin_phase_rpm spin_peigne_rpm vclub_radar_kmh vclub_kmh smash alpha0_deg dalpha_deg t0_s gfp_est_deg backspin_est_rpm sidespin_est_rpm da_est_deg portee_m apex_m z_final_m temps_s` — parsée par `Python/GolfBall.py` (`analyze_capture_cpp`) pour rejouer la simu Python avec le side spin estimé
 - `trajectoire_<club>.svg` — image 2D vectorielle (profil + dessus)
 - `trajectoire_<club>.png` / `.bmp` — image 2D raster (CImg, compile `-DUSE_CIMG`)
 - `trajectoire_3d.html` / `trajectoire_capture_3d.html` — scène 3D interactive + panneau infos + spectrogramme docké/zoomable
@@ -279,3 +280,7 @@ Chaque capture a été relue (`spectres_*.html` + `--capture`) et comparée aux 
 - HTML à canvas blancs → apostrophe dans une chaîne JS + `FS` non défini côté JS (corrigés, `json_escape`, `var FS=44100`) ;
 - peigne par autocorrélation : pic artificiel à lag~0 → normalisation par (nb−lag) + detrend glissant + score de fondamental (comme le patch) ;
 - `head` en pipe tuait le process avant l'écriture du HTML (SIGPIPE) lors des tests.
+
+## Tests
+
+- `tests/test_synth_capture.py` — validation synthétique de bout en bout : génère des captations de vérité connue (`Python/gen_capture_modele.py`), les analyse avec `simu_headless --capture` (ligne `ESTIM`, via `GolfBall.analyze_capture_cpp`), compare vBall / spin / back-side / GamaFacePath aux vraies valeurs (tranche la convention de signe de Δα), puis rejoue la simu Python avec le side estimé. Lancer avec un Python numpy+scipy : `python3 tests/test_synth_capture.py` (code 0 si OK).

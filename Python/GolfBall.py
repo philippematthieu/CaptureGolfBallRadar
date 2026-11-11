@@ -276,6 +276,74 @@ def estimate_from_capture(path):
           f"alpha0={a0:+.2f} deg, conf={conf}")
     return v, spin, a0
 
+
+def default_simu_bin():
+    """Chemin du binaire C++ simu_headless (analyse radar avancée : V club, spin 3 voies, back/side)."""
+    return os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Cpp', 'src', 'simu_headless'))
+
+
+def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=300):
+    """Analyse une captation avec le binaire C++ `simu_headless --capture` et parse sa ligne ESTIM.
+
+    Retourne un dict de floats : vball_kmh, vball_corr_kmh, spin_rpm, spin_patch_rpm, spin_phase_rpm,
+    spin_peigne_rpm, vclub_radar_kmh, vclub_kmh, smash, alpha0_deg, dalpha_deg, t0_s, gfp_est_deg,
+    backspin_est_rpm, sidespin_est_rpm, da_est_deg, portee_m, apex_m, z_final_m, temps_s (+ '_stdout').
+    Lève FileNotFoundError si le binaire manque, ValueError si la ligne ESTIM est absente."""
+    import re
+    import subprocess
+    bin_ = simu_bin or default_simu_bin()
+    if not os.path.exists(bin_):
+        raise FileNotFoundError(f"binaire C++ introuvable : {bin_} (compiler : voir Cpp/README.md)")
+    r = subprocess.run([bin_, '--capture', os.path.abspath(path), club, repr(float(spin_scale))],
+                       capture_output=True, text=True, timeout=timeout,
+                       cwd=os.path.dirname(bin_))  # le binaire écrit ses HTML/SVG dans son cwd
+    out = r.stdout + r.stderr
+    m = re.search(r'^ESTIM (.*)$', out, re.M)
+    if not m:
+        raise ValueError("pas de ligne ESTIM dans la sortie de simu_headless :\n" + out[-2000:])
+    d = {'_stdout': out}
+    for tok in m.group(1).split():
+        k, _, v = tok.partition('=')
+        try:
+            d[k] = float(v)
+        except ValueError:
+            d[k] = v
+    return d
+
+
+def estimate_from_capture_full(path, club='F7', spin_scale=1.0, simu_bin=None):
+    """Estimation complète d'une captation : essaie le binaire C++ (V club, spin fusion 3 voies,
+    décomposition back/side par courbure dAlpha), sinon repli sur pipe_validation (vBall, spin patch, alpha0).
+
+    Retourne (v0_ms, spin_rpm, azim_deg, side_rpm, info) — side_rpm = None si non décomposé (spin nul)."""
+    try:
+        est = analyze_capture_cpp(path, club=club, spin_scale=spin_scale, simu_bin=simu_bin)
+    except (FileNotFoundError, ValueError) as ex:
+        print(f"analyse C++ indisponible ({ex}) -> repli sur pipe_validation")
+        v_kmh, spin_rpm, a0 = estimate_from_capture(path)
+        v0_ms = v_kmh / 3.6 / np.cos(np.radians(20.0))  # correction angle radar ~20°
+        return v0_ms, spin_rpm, a0, None, {}
+    v_corr = est.get('vball_corr_kmh', 0.0)
+    if not np.isfinite(v_corr) or v_corr <= 0:
+        v_corr = est['vball_kmh']
+    v0_ms = v_corr / 3.6  # vball_corr_kmh est déjà corrigée cos(20°) côté C++
+    spin_rpm = est.get('spin_rpm', 0.0) or 0.0
+    azim = est.get('alpha0_deg', 0.0)
+    side = est.get('sidespin_est_rpm')
+    if side is None or not np.isfinite(side):
+        side = None
+    nan = float('nan')
+    print(f"capture {os.path.basename(path)} (C++) : vBall={est['vball_kmh']:.1f} km/h radiale "
+          f"({v_corr:.1f} corr. cos20), spin={spin_rpm:.0f} rpm "
+          f"(patch={est.get('spin_patch_rpm', nan):.0f}, phase={est.get('spin_phase_rpm', nan):.0f}, "
+          f"peigne={est.get('spin_peigne_rpm', nan):.0f}), Vclub={est.get('vclub_kmh', nan):.1f} km/h, "
+          f"smash={est.get('smash', nan):.3f}, alpha0={azim:+.2f} deg, dAlpha={est.get('dalpha_deg', 0.0):+.2f} deg")
+    if side is not None:
+        back = est.get('backspin_est_rpm', nan)
+        print(f"   -> back/side estimes : {back:.0f} / {side:+.0f} rpm  "
+              f"(GamaFacePath={est.get('gfp_est_deg', 0.0):+.1f} deg, hypot={np.hypot(back, side):.0f} = spin radar)")
+    return v0_ms, spin_rpm, azim, side, est
+
 def simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3, v0_ms=None, launch_deg=None, azim_deg=None,
                        spin_rpm=None, side_rpm=None):
     global vx0, vy0, vz0, spin_x, spin_y, spin_z
@@ -410,7 +478,8 @@ if __name__ == '__main__':
                                              "les conditions initiales sont mesurées dessus (pipe_validation).")
     ap.add_argument('capture', nargs='?', default=None,
                     help="fichier de captation radar : .csv (2 lignes ';' = canaux R1/R2) ou .wav (stéréo 44,1 kHz)")
-    ap.add_argument('--launch', type=float, default=16.5, help='launch angle en degrés (défaut 16.5, ignoré si captation)')
+    ap.add_argument('--club', default='F7', help="club pour l'analyse C++ de la captation (défaut F7)")
+    ap.add_argument('--launch', type=float, default=16.5, help='launch angle en degrés (défaut 16.5)')
     ap.add_argument('--elev', type=float, default=10.0, help='elevation caméra 3D en degrés (défaut 10 = vue golfeur)')
     ap.add_argument('--azim', type=float, default=180.0, help='azimut caméra 3D en degrés (défaut 180 = de derrière, comme le golfeur ; -60 = vue plongeante)')
     args = ap.parse_args()
@@ -419,33 +488,38 @@ if __name__ == '__main__':
     launch_deg = args.launch
     azim_deg = 0.0
     spin_rpm = None
+    side_rpm = None
     if args.capture:
         if not os.path.exists(args.capture):
             print(f"ERREUR: fichier de captation introuvable : {args.capture}")
-            print("usage : GolfBall.py [capture.csv|capture.wav] [--launch 16.5] [--elev 10] [--azim 180]")
+            print("usage : GolfBall.py [capture.csv|capture.wav] [--club F7] [--launch 16.5] [--elev 10] [--azim 180]")
             print("exemples de fichiers existants :")
             sci = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'sci')
             for f in sorted(os.listdir(sci)):
                 if f.endswith(('.csv', '.wav')) and 'F7' in f:
                     print(f"  ../sci/{f}")
             raise SystemExit(2)
-        v_kmh, spin_rpm, azim_deg = estimate_from_capture(args.capture)
-        v0_ms = v_kmh / 3.6 / np.cos(np.radians(20.0))  # correction angle radar ~20° (biais géométrique)
+        # analyse complète : binaire C++ (V club, spin 3 voies, back/side par courbure) avec repli pipe_validation
+        v0_ms, spin_rpm, azim_deg, side_rpm, _est = estimate_from_capture_full(args.capture, club=args.club)
         print(f"-> simulation lancée avec V0={v0_ms*3.6:.1f} km/h, spin={spin_rpm:.0f} rpm, "
+              f"side={side_rpm if side_rpm is not None else 0:.0f} rpm, "
               f"azimut={azim_deg:+.2f} deg, launch={launch_deg} deg")
 
     if not HAS_MPL:
         # mode headless : résultats texte uniquement (pas d'animation)
         t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3, v0_ms=v0_ms,
-                                                launch_deg=launch_deg, azim_deg=azim_deg, spin_rpm=spin_rpm)
-        print(f'Rebonds: {bounce_count}  Portee: {y[-1, 0]:.1f} m  Apex: {y[:, 2].max():.1f} m  Tfin: {t[-1]:.1f} s')
+                                                launch_deg=launch_deg, azim_deg=azim_deg,
+                                                spin_rpm=spin_rpm, side_rpm=side_rpm)
+        print(f'Rebonds: {bounce_count}  Portee: {y[-1, 0]:.1f} m  Apex: {y[:, 1].max():.1f} m  '
+              f'z_final={y[-1, 2]:+.1f} m  Tfin: {t[-1]:.1f} s')
         raise SystemExit(0)
     # =============================================
     # EXÉCUTION DE LA SIMULATION
     # =============================================
 
     t, y, bounce_count = simulate_golf_ball(t_max=10, dt=0.01, max_bounces=3, v0_ms=v0_ms,
-                                            launch_deg=launch_deg, azim_deg=azim_deg, spin_rpm=spin_rpm)
+                                            launch_deg=launch_deg, azim_deg=azim_deg,
+                                            spin_rpm=spin_rpm, side_rpm=side_rpm)
     x, y_pos, z, vx, vy, vz, wx, wy, wz, cl1 = y.T
 
     # =============================================
