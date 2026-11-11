@@ -1,15 +1,30 @@
 
-# Golf Ball Simulator in Scilab (java and cpp)
+# Golf Ball Simulator in Scilab (Scilab, Python and cpp)
 ## Simulateur Scilab
 <img src="sci/img/Pasted image 20250120171635.png"  width="560" height="380">
 
+
+
 ## Simulateur CPP
 Application `simu_headless --capture` (scène 3D interactive + panneau mesures radar + spectrogramme docké/zoomable) :
+```shell
+./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv F7 1.0 --
+```
+
 <img src="sci/img/Pasted image 20261110224721.png" width="980">
+
+
 
 ## Simulateur Python
 Animation 3D matplotlib `Python/GolfBall.py [capture.csv|wav]` (vol + 3 rebonds + roulement ; panneau d'infos : club, V club/smash, vBall radar, spin total + back/side estimés, portée, apex, déviation latérale z final) :
+
+```python
+python GolfBall.py ../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --club F7
+```
+
 <img src="sci/img/Simulateur_Python.png" width="980">
+
+
 
 ## Radar setup — geometry, swing line and shot angles
 
