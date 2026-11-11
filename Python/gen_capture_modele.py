@@ -76,11 +76,19 @@ def gen_capture(name, v0_kmh, launch_deg, alpha_path_deg, spin_tot_rpm, side_rpm
         + 0.5 * k_courbe * (tt[tt >= t0] - t0)**2
 
     rows = []
+    # amplitude : club qui monte (t/t0)^2.5 avant impact, balle à l'impact puis atténuation ~1/R
+    # post-impact (sinon plateau d'énergie -> t0 = argmax n'importe où dans le vol)
+    R_post = np.concatenate([[0.0], np.cumsum(V_obj[:-1]) / FS_])
+    R_post[tt < t0] = 0.0
     for a_rad in alpha_radar_deg:
         fD = KV * V_kmh * np.cos(np.radians(a_rad) + alpha_t)   # f_D par canal, modulée par α(t)
         phase = 2 * np.pi * np.cumsum(fD) / FS_
-        phase += (2 * r / LAM) * np.sin(w_tot * 2 * np.pi * tt)  # micro-Doppler patch (spin total)
-        rows.append(0.5 * np.cos(phase) + 0.02 * rng.standard_normal(N))
+        # micro-Doppler patch (spin total) : phase = (2r/lambda) * sin(w_tot * t), w_tot en rad/s
+        # (forme physique -> peigne de raies espacées de f_rot = spin/60 Hz, ridge stable)
+        phase += (2 * r / LAM) * np.sin(w_tot * tt)
+        amp = np.where(tt < t0, 0.30 * (np.clip(tt, 0, t0) / t0) ** 2.5,
+                       0.5 / (1.0 + R_post / 50.0))
+        rows.append(amp * np.cos(phase) + 0.02 * rng.standard_normal(N))
 
     out = os.path.join(SCI, name)
     with open(out, 'w') as f:
