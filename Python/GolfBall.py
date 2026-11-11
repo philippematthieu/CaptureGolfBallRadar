@@ -507,9 +507,14 @@ if __name__ == '__main__':
         v0_ms, spin_rpm, azim_deg, side_rpm, _est = estimate_from_capture_full(args.capture, club=args.club)
         if launch_deg is None:
             ld = float(_est.get('launch_deg', 0.0) or 0.0)
-            launch_deg = ld if ld > 0 else 16.5
-            print(f"-> launch angle mesuré sur la captation : {launch_deg:.2f} deg "
-                  f"(conf={_est.get('launch_conf', 0.0):.2f})")
+            lc = float(_est.get('launch_conf', 0.0) or 0.0)
+            if ld > 0 and lc >= 0.5:
+                launch_deg = ld
+                print(f"-> launch angle mesuré sur la captation : {launch_deg:.2f} deg (conf={lc:.2f})")
+            else:
+                launch_deg = 16.5   # fit absent ou peu confiant (butée de grille) -> défaut historique
+                print(f"-> launch angle fit peu fiable (mesuré={ld:.2f} deg, conf={lc:.2f}) "
+                      f"-> repli sur {launch_deg} deg (ou --launch pour forcer)")
         print(f"-> simulation lancée avec V0={v0_ms*3.6:.1f} km/h, spin={spin_rpm:.0f} rpm, "
               f"side={side_rpm if side_rpm is not None else 0:.0f} rpm, "
               f"azimut={azim_deg:+.2f} deg, launch={launch_deg} deg")
