@@ -1,0 +1,628 @@
+\documentclass[journal]{IEEEtran}
+ 
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usepackage[hidelinks]{hyperref}
+ 
+% --- Environnements de type théorème ---
+\newtheorem{proposition}{Proposition}
+\newtheorem{definition}{Définition}
+\newtheorem{remark}{Remarque}
+ 
+% --- Macros ---
+\newcommand{\taueff}{\tau_{\mathrm{eff}}}
+\newcommand{\deltaQ}{\delta_{Q}}
+\newcommand{\epsQ}{\epsilon(Q)}
+\newcommand{\ZOH}{H_{\mathrm{ZOH}}}
+\newcommand{\ZOHSW}{H_{\mathrm{ZOH,SW}}}
+\newcommand{\keymsg}[1]{\vspace{2pt}\noindent\textbf{Message clé.} #1\vspace{2pt}}
+ 
+\title{Contrat de temps pour la co-simulation des systèmes cyber-physiques sous virtualisation :\\
+modélisation unifiée par retard effectif et stabilité robuste}
+ 
+\author{Matthieu~PHILIPPE%
+\thanks{Matthieu Philippe Safran Electronics \& Defense, France. Contact : \texttt{matthieu-r.philippe@safrangroup.com}.}
+\today
+}
+\markboth{Journal -- Manuscrit en préparation}{Philippe : Contrat de temps pour la co-simulation CPS}
+ 
+\begin{document}
+ 
+\maketitle
+ 
+\begin{abstract}
+La co-simulation des systèmes cyber-physiques (CPS) couple des dynamiques physiques continues, un logiciel discret et des communications distribuées. En pratique, ce couplage introduit fréquemment des incohérences temporelles : retards d’interface artificiels, gestion non explicite de l’absence de données et distorsions temporelles dues à la virtualisation. Ces effets modifient la dynamique du système et peuvent invalider l’analyse de stabilité.
+ 
+Cet article propose un contrat de temps fondé sur un principe simple : le modèle doit refléter ce que le logiciel observe et non un comportement physique idéal. Dans ce cadre, nous montrons que l’ensemble du CPS peut être ramené à un système à retard effectif unique agrégeant les contributions physiques, logicielles, d’ordonnancement, de virtualisation et de jitter.
+ 
+Les effets de virtualisation ne sont pas modélisés par le quantum lui-même, mais par un retard résiduel borné. La stabilité se formule alors comme une condition robuste sur la marge de phase, directement exprimée en fonction du retard effectif. Enfin, une décomposition GSN (Goal Structuring Notation) est proposée pour structurer l’argumentaire de cohérence temporelle et soutenir une utilisation en validation pré-HIL et dans un contexte certifiable.
+\end{abstract}
+ 
+\begin{IEEEkeywords}
+systèmes cyber-physiques, co-simulation, stabilité robuste, virtualisation, quantum, jitter, GSN, pré-HIL
+\end{IEEEkeywords}
+ 
+% =========================================================
+\section{Introduction}
+% =========================================================
+ 
+Les systèmes cyber-physiques (CPS) combinent des dynamiques physiques continues, un logiciel embarqué discret et des mécanismes de communication distribuée \cite{Lee2008CPS,Mar2021}. La co-simulation constitue un moyen naturel de les valider précocement, en connectant modèles physiques, exécution logicielle et composants virtualisés dans un même environnement \cite{GTC17,SGNV22}. Pourtant, ce couplage est fréquemment réalisé au prix d’approximations temporelles implicites : insertion de retards d’interface, utilisation FIFO de données horodatées, ou politiques d’absence non explicitées. Ces choix, souvent dictés par l’outillage, modifient la dynamique du système et peuvent invalider les conclusions de stabilité. \cite{GTC17,LLA78}
+ 
+\begin{center}
+\fbox{\parbox{0.92\linewidth}{
+\centering
+Le modèle doit refléter ce que le logiciel voit,\\
+pas la physique idéale.
+}}
+\end{center}
+ 
+La thèse défendue dans cet article est que la cohérence et la stabilité d’un CPS co-simulé se ramènent à un problème unique : la maîtrise du \emph{retard effectif vu par le logiciel}. Cette idée conduit à deux conséquences fortes. Premièrement, les retards d’interface artificiels (par exemple un \(z^{-1}\) ajouté pour “faire converger” une boucle) doivent être interdits s’ils ne correspondent à aucune réalité physique ou logicielle. Deuxièmement, les effets de virtualisation ne doivent pas être modélisés par le quantum lui-même, mais par un résiduel temporel borné. \cite{Mar2021,LLA78}
+ 
+La contribution principale de cet article est quadruple :
+\begin{itemize}
+\item formulation d’un \textbf{contrat de temps} unifiant temps global, causalité, absence et validité des retards ;
+\item modélisation du CPS par un \textbf{système à retard effectif unique} ;
+\item intégration explicite des effets de virtualisation via un \textbf{retard résiduel borné} ;
+\item structuration de l’argumentaire de cohérence par une \textbf{décomposition GSN} orientée validation et certification.
+\end{itemize}
+ 
+\keymsg{La stabilité et la cohérence du CPS dépendent uniquement du retard effectif vu par le logiciel.}
+ 
+% =========================================================
+\section{Travaux connexes}
+% =========================================================
+ 
+La littérature sur la co-simulation traite largement de l’orchestration de modèles hétérogènes, notamment via FMI et ses variantes, ainsi que de la classification des schémas de couplage \cite{GTC17,fmi2,fmi3,SRLVS15}. Ces travaux décrivent correctement l’existence de retards, d’ordonnancement maître et de relations d’échange, mais ne traitent pas toujours explicitement la sémantique logicielle de l’absence, ni la question du retard d’interface artificiel ajouté pour stabiliser le couplage. \cite{GTC17,SGNV22}
+ 
+Du point de vue des systèmes distribués, les travaux fondateurs de Lamport et Mattern ont montré que l’ordre causal exige un temps logique explicite, distinct de l’ordre d’arrivée des messages \cite{LLA78,FMA89}. Cette observation est directement applicable aux CPS distribués : la donnée correcte est celle associée au tick logique, pas celle “la plus récemment reçue”. \cite{LLA78,Mat89}
+ 
+Enfin, en systèmes temps réel, les travaux sur l’ordonnancement et les langages synchrones ont mis en évidence l’importance de la maîtrise explicite du temps \cite{LiuLayland1973,GautierLeGuernicBesnard1987FPCA}. Notre approche s’inscrit dans cette continuité, mais avec une focalisation spécifique sur la co-simulation couplée à la virtualisation de processeur.
+ 
+% =========================================================
+\section{Contrat de temps : définitions et hypothèses}
+% =========================================================
+ 
+\begin{definition}[Tick global]
+On définit le tick global discret par :
+\begin{equation}
+t_k = t_0 + kT_s
+\label{eq:tick}
+\end{equation}
+où \(T_s\) est la période de référence partagée par les composants du système.
+\end{definition}
+ 
+\begin{definition}[Absence explicite]
+L’absence de donnée à l’instant logique \(t_k\) est un état explicite du système. Dans sa forme minimale, elle est modélisée par un maintien logiciel :
+\begin{equation}
+y[k] =
+\begin{cases}
+y(t_k) & \text{si disponible} \\
+y[k-1] & \text{sinon}
+\end{cases}
+\label{eq:absence}
+\end{equation}
+\end{definition}
+ 
+\begin{definition}[Classification des retards]
+Nous distinguons :
+\begin{itemize}
+\item les retards \emph{physiques} (\(\tau + \mathrm{ZOH}\)) liés à la chaîne capteur/actionneur ;
+\item les retards \emph{logiciels} (\(\mathrm{ZOH}_{SW}\)) issus des politiques d’absence ;
+\item les retards \emph{artificiels} (\(z^{-1}\)) introduits uniquement par l’interface ou l’outillage.
+\end{itemize}
+Seuls les deux premiers sont autorisés.
+\end{definition}
+ 
+\begin{remark}
+L’usage FIFO de données horodatées est incompatible avec ce contrat : une valeur reçue en retard ne remplace pas automatiquement la valeur correspondant au tick courant.
+\end{remark}
+ 
+% =========================================================
+\section{Jacobi, Gauss--Seidel et interprétation temporelle}
+% =========================================================
+ 
+La distinction entre Jacobi et Gauss--Seidel n’est pas ici un détail numérique ; elle structure la temporalité du couplage \cite{GUD95}. Une mise à jour de type Jacobi s’écrit :
+\begin{equation}
+y^{k+1} = f(y^k)
+\label{eq:jacobi}
+\end{equation}
+et correspond à un calcul utilisant l’état du pas précédent, donc à l’introduction d’un retard implicite.
+ 
+À l’inverse, une mise à jour de type Gauss--Seidel s’écrit :
+\begin{equation}
+y^{k+1} = f(y^{k+1})
+\label{eq:gs}
+\end{equation}
+ce qui représente un couplage causal à l’intérieur du même pas.
+ 
+\keymsg{Gauss--Seidel n’accélère pas la physique ; il évite seulement d’ajouter un retard d’outillage en plus du retard réel.}
+ 
+Cette distinction devient cruciale sous virtualisation : un retard résiduel non négligeable fait basculer le comportement d’un couplage causal vers un comportement équivalent à Jacobi.
+ 
+% =========================================================
+\section{Virtualisation, quantum et retard résiduel}
+% =========================================================
+ 
+\subsection{Quantum comme paramètre d’exécution}
+ 
+Dans un environnement DBT, l’exécution est structurée par un quantum :
+\begin{equation}
+Q = \text{durée d'exécution simulée entre deux synchronisations}
+\label{eq:quantum}
+\end{equation}
+Le quantum est un \emph{levier d’accélération}, souvent choisi avec \(Q \gg T_s\). Le problème n’est donc pas la valeur de \(Q\) en elle-même, mais le décalage temporel effectivement introduit par la virtualisation.
+ 
+\subsection{Retard résiduel de virtualisation}
+ 
+L’effet CPS pertinent de la virtualisation est modélisé par un retard résiduel \(\delta_Q\), borné par une enveloppe \(\epsilon(Q)\) :
+\begin{equation}
+0 \le \delta_Q \le \epsilon(Q)
+\label{eq:epsQ}
+\end{equation}
+ 
+Cette enveloppe n’est pas postulée ; elle doit être \emph{estimée par campagne de mesure en pire cas}, sur la configuration VLAB et les scénarios représentatifs considérés.
+ 
+\subsection{Time dilation}
+ 
+On caractérise également le ratio temps simulé / temps mur :
+\begin{equation}
+\rho = \frac{\Delta t_{sim}}{\Delta t_{wall}}
+\label{eq:rho}
+\end{equation}
+Le quantum agit principalement sur \(\rho\), tandis que \(\epsilon(Q)\) capture la fidélité temporelle.
+ 
+ 
+\section{Virtualisation temps réel et cohérence temporelle}
+ 
+La virtualisation permet l’exécution de logiciels embarqués natifs dans un environnement simulé, en reproduisant l’architecture matérielle et les mécanismes d’interruptions. Cette approche est largement utilisée en validation pré-HIL, mais introduit des effets temporels non négligeables.
+ 
+\subsection{Propriété fondamentale}
+ 
+Dans un environnement virtualisé, le système est :
+\begin{itemize}
+\item synchrone au niveau du tick global,
+\item asynchrone à l’intérieur du tick.
+\end{itemize}
+ 
+Cette dissociation introduit un décalage temporel dans la prise en compte des événements.
+ 
+\subsection{Virtualisation comme système dynamique}
+ 
+La virtualisation ne doit pas être considérée comme un simple simulateur neutre, mais comme une composante dynamique du CPS.
+ 
+En particulier :
+\begin{itemize}
+\item les interruptions sont traitées avec un délai non nul,
+\item l’ordonnancement interne introduit des variations temporelles,
+\item l’exécution est contrainte par le quantum $Q$.
+\end{itemize}
+ 
+Ces effets peuvent être modélisés comme un retard supplémentaire dans la boucle de contrôle.
+ 
+\subsection{Retard effectif de virtualisation}
+ 
+Le quantum $Q$ n’est pas un retard en soi, mais un paramètre d’ordonnancement interne. L’effet pertinent sur le système est le retard résiduel $\delta_Q$, borné par $\epsilon(Q)$ :
+ 
+\begin{equation}
+0 \le \delta_Q \le \epsilon(Q)
+\end{equation}
+ 
+Ce retard est lié à la prise en compte des événements (interruptions, timers) et dépend de la configuration du moteur de virtualisation.
+ 
+\subsection{Condition de cohérence temporelle}
+ 
+Pour garantir la cohérence du CPS, il est nécessaire que :
+ 
+\begin{equation}
+\epsilon(Q) \ll T_s
+\end{equation}
+ 
+c’est-à-dire que le retard résiduel reste négligeable devant le tick global.
+ 
+\subsection{Lien avec le modèle unifié}
+ 
+Dans le modèle proposé, la virtualisation contribue directement au retard effectif :
+ 
+\begin{equation}
+\tau_{eff} = \tau_{physique} + \tau_{SW} + \tau_{ISR} + \delta_Q + \delta
+\end{equation}
+ 
+Ainsi, l’impact de la virtualisation sur la stabilité du système est entièrement capturé par $\delta_Q$.
+ 
+\subsection{Interprétation}
+ 
+Deux régimes peuvent être distingués :
+ 
+\begin{itemize}
+\item $\delta_Q \ll T_s$ : comportement proche Gauss-Seidel (causal),
+\item $\delta_Q \sim T_s$ : comportement proche Jacobi (retard implicite).
+\end{itemize}
+ 
+Le cas critique correspond à $\delta_Q \approx T_s$, où la virtualisation introduit un retard du même ordre que la dynamique du système.
+ 
+\subsection{Conclusion}
+ 
+La virtualisation temps réel n’est pas neutre et doit être modélisée explicitement. Dans le cadre proposé, elle est entièrement caractérisée par un retard résiduel borné, intégré dans le retard effectif du CPS.
+ 
+Cette formulation permet d’assurer la cohérence temporelle et de garantir la validité des analyses de stabilité en environnement virtualisé.
+%%%%%%%%%%%%%%
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+block/.style={draw, rectangle, rounded corners, minimum width=2.6cm, minimum height=0.9cm, align=center},
+sum/.style={draw, circle, minimum size=0.6cm, inner sep=0pt},
+arrow/.style={-Latex, thick},
+node distance=1.0cm
+]
+ 
+% Nodes
+\node[block] (phys) {Retards\\physiques\\$\tau_{\text{physique}}$};
+\node[block, right=of phys] (sw) {Logiciel\\$\tau_{\text{SW}}$};
+\node[block, right=of sw] (isr) {ISR / Scheduler\\$\tau_{\text{ISR}}$};
+\node[block, below=of sw] (virt) {Virtualisation\\$\delta_Q \le \epsilon(Q)$};
+\node[block, right=of isr] (sumblock) {Retard effectif\\$\tau_{eff}$};
+ 
+% Arrows
+\draw[arrow] (phys) -- node[above]{} (sw);
+\draw[arrow] (sw) -- (isr);
+\draw[arrow] (isr) -- (sumblock);
+\draw[arrow] (virt) -- node[right]{contribution résiduelle} (sw);
+ 
+% Output
+\node[block, right=of sumblock] (sys) {Dynamique CPS\\$G_{eff}(s)$};
+ 
+\draw[arrow] (sumblock) -- (sys);
+ 
+\end{tikzpicture}
+ 
+\caption{
+Impact du retard résiduel de virtualisation $\delta_Q$ sur le retard effectif $\tau_{eff}$.
+La virtualisation n’introduit pas directement un retard structurant, mais contribue à un
+retard effectif agrégé qui gouverne l’ensemble de la dynamique du système.
+}
+\label{fig:deltaQ_taueff}
+\end{figure*}
+ 
+ 
+% =========================================================
+\section{Vision unifiée : le CPS comme système à retard effectif}
+% =========================================================
+ 
+Le système complet peut être modélisé par :
+\begin{equation}
+\begin{aligned}
+\taueff &= \tau_{physique} + \tau_{SW} + \tau_{ISR} + \deltaQ + \delta \\
+G_{eff}(s) &= G(s)\,e^{-s\taueff}\,\ZOH(s)\,\ZOHSW(s)
+\end{aligned}
+\label{eq:visionunifiee}
+\end{equation}
+ 
+Toutes les contributions dynamiques se ramènent à un unique paramètre : le retard effectif \(\taueff\). Ainsi, la dynamique du système dépend uniquement du retard effectif perçu par le logiciel.
+ 
+\begin{proposition}[Réduction à un retard effectif]
+Sous les hypothèses suivantes :
+\begin{itemize}
+\item temps global discret partagé ;
+\item absence modélisée explicitement ;
+\item absence de retard artificiel d’interface ;
+\item retard résiduel de virtualisation borné ;
+\end{itemize}
+le CPS co-simulé peut être ramené à un système à retard effectif unique donné par \eqref{eq:visionunifiee}.
+\end{proposition}
+ 
+\begin{proof}[Esquisse]
+Les contributions dynamiques admises dans le contrat de temps sont toutes de la forme “retard + maintien” : chaîne physique, politique d’absence, exécution logicielle et virtualisation. Chacune agit comme un terme retardant la valeur effectivement perçue par le logiciel ou appliquée à la plante. L’agrégation additive de ces décalages conduit à \(\taueff\), tandis que les effets de maintien se factorisent en \(\ZOH\) et \(\ZOHSW\). Les retards artificiels d’interface étant exclus, il ne subsiste aucune autre contribution temporelle indépendante.
+\end{proof}
+ 
+% =========================================================
+\section{Stabilité robuste}
+% =========================================================
+ 
+Le retard effectif induit une perte de phase :
+\begin{equation}
+\phi_{delay}(\omega) = -\omega \taueff
+\label{eq:phase_delay}
+\end{equation}
+ 
+En introduisant la décomposition :
+\begin{equation}
+\taueff = \tau_0 + \delta + \deltaQ
+\label{eq:taueff_decomp}
+\end{equation}
+avec \(\delta \in [-J,+J]\) et \(\deltaQ \le \epsQ\), on obtient une condition robuste simple :
+ 
+\begin{equation}
+\omega_c (J + \epsQ) < \phi_m
+\label{eq:robust_cond}
+\end{equation}
+ 
+Cette condition exprime que la perte de phase induite par les incertitudes temporelles doit rester inférieure à la marge de phase disponible.
+ 
+\begin{proposition}[Stabilité robuste]
+Si \eqref{eq:robust_cond} est satisfaite pour un système nominal stable de marge \(\phi_m\), alors la stabilité du système reste préservée pour tout jitter borné \(J\) et tout retard résiduel de virtualisation borné par \(\epsQ\).
+\end{proposition}
+ 
+\subsection{Cas critique}
+ 
+Le cas critique n’est pas \(Q \approx T_s\), mais :
+\begin{equation}
+\deltaQ \approx T_s
+\label{eq:cas_critique}
+\end{equation}
+c’est-à-dire lorsque le retard résiduel devient du même ordre que le tick de référence. Dans cette situation, le couplage tend vers un comportement de type Jacobi.
+ 
+% =========================================================
+\section{Illustrations : Bode et interprétation}
+% =========================================================
+La figure \ref{fig:bodefig} illustre la perte de phase proportionnelle à $\tau_{eff}$, à l’origine de la condition de stabilité \eqref{eq:robust_cond}.
+ 
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    name=mag,
+    at={(0,0)},
+    anchor=west,
+    width=0.45\linewidth,
+    height=0.32\linewidth,
+    xmode=log,
+    grid=both
+]
+\def\T{0.02}
+\addplot+[domain=0.1:1000]
+{-10*ln(1+(x*\T)^2)/ln(10)};
+\end{axis}
+\begin{axis}[
+    at={(mag.east)},
+    anchor=west,
+    xshift=1cm,
+    width=0.45\linewidth,
+    height=0.32\linewidth,
+    xmode=log,
+    grid=both
+]
+\def\T{0.02}
+\def\tau{0.02}
+\addplot+[domain=0.1:1000]
+{-(atan(x*\T))*(180/pi)};
+\addplot+[domain=0.1:1000]
+{-(atan(x*\T))*(180/pi) - x*\tau*(180/pi)};
+\end{axis}
+\end{tikzpicture}
+\caption{Effet du retard}
+\label{fig:bodefig}
+\end{figure}
+ 
+ 
+La perte de marge de phase induite par le retard effectif limite directement la bande passante contrôlable du système. C’est pourquoi toute approximation temporelle non modélisée peut conduire à une erreur de validation.
+ 
+% =========================================================
+\section{GSN : justification structurée}
+% =========================================================
+ 
+L’argumentaire de cohérence est structuré par GSN \cite{ACWG2021GSN_V3}. L’objectif global \(G_0\) est décomposé en :
+\begin{itemize}
+\item \(G_1\) : temps global unique ;
+\item \(G_2\) : causalité respectée ;
+\item \(G_3\) : absence explicitement modélisée ;
+\item \(G_4\) : absence de retard artificiel ;
+\item \(G_5\) : stabilité robuste.
+\end{itemize}
+ 
+La propriété \(G_5\) est satisfaite si la condition \eqref{eq:robust_cond} est vérifiée. On obtient ainsi un lien explicite entre le modèle unifié, l’analyse de stabilité et l’argumentaire de justification.
+ 
+\begin{equation}
+G_0 = G_1 \land G_2 \land G_3 \land G_4 \land G_5
+\label{eq:gsn}
+\end{equation}
+%%%%%%%%%%%%%
+ 
+\begin{figure*}[t]
+\centering
+ 
+\begin{tikzpicture}[
+node distance=1cm,
+level distance=1cm]
+ 
+\tikzstyle{goal}=[draw, rounded corners, fill=blue!8, text width=2cm, minimum height=0.9cm, align=center]
+\tikzstyle{strat}=[draw, rounded corners, fill=purple!12, text width=4cm, minimum height=0.9cm, align=center]
+\tikzstyle{evid}=[ draw,  fill=green!10,  text width=3.6cm,  minimum height=0.7cm,  align=center,  font=\small]
+\tikzstyle{ctxt}= [draw, dashed, fill=gray!10, text width=4cm, align=center]
+\tikzstyle{arrow}=[->, thick]
+ 
+% -------- TOP --------
+\node[goal] (G0) {G0 : Cohérence temporelle CPS garantie};
+ 
+\node[strat, below=of G0] (S0)
+{S0 : Décomposition temporelle, causale et robuste};
+ 
+% -------- LEVEL 1 --------
+\node[goal, below left=of S0] (G1)
+{G1 : Temps global unique};
+ 
+\node[goal, below=of S0] (G2)
+{G2 : Causalité respectée};
+ 
+\node[goal, below right=of S0] (G3)
+{G3 : Absence modélisée};
+ 
+% -------- LEVEL 2 --------
+\node[goal, below left=of G2] (G4)
+{ \\G4 : \\ Aucun retard artificiel};
+ 
+\node[goal, below right=of G2] (G5)
+{ \\G5 : \\Stabilité robuste};
+ 
+% -------- EVIDENCE --------
+\node[evid, below =0.5cm of G1] (E1)
+{Simulink maître du temps};
+ 
+\node[evid, below=of G2] (E2)
+{SimuTime + MsgSeq};
+ 
+\node[evid, below =0.5cm of G3] (E3)
+{Fallback ZOH logiciel};
+ 
+\node[evid, below=0.6cm of G4] (E4)
+{Absence de $z^{-1}$ interface};
+ 
+\node[evid, below=0.6cm of G5] (E5)
+{Analyse $\delta + \epsilon(Q)$ + Nyquist};
+ 
+% -------- CONTEXT --------
+\node[ctxt, right=1cm of G0] (C0)
+{Contexte : SW VLAB boîte noire};
+ 
+\node[ctxt, right=of G5] (C1)
+{$\epsilon(Q) \ll T_s$};
+ 
+\node[ctxt, below=of C1] (C2)
+{Jitter borné $\pm J$};
+ 
+% -------- LINKS --------
+\draw[arrow] (G0) -- (S0);
+ 
+\draw[arrow] (S0) -- (G1);
+\draw[arrow] (S0) -- (G2);
+\draw[arrow] (S0) -- (G3);
+ 
+\draw[arrow] (G2) -- (G4);
+\draw[arrow] (G2) -- (G5);
+ 
+\draw[arrow] (G1) -- (E1);
+\draw[arrow] (G2) -- (E2);
+\draw[arrow] (G3) -- (E3);
+\draw[arrow] (G4) -- (E4);
+\draw[arrow] (G5) -- (E5);
+ 
+\draw[arrow] (C0) -- (G0);
+\draw[arrow] (C1) -- (G5);
+\draw[arrow] (C2) -- (G5);
+ 
+\end{tikzpicture}
+\caption{GSN du contrat de temps CPS}
+\end{figure*}
+ 
+% =========================================================
+\section{Discussion}
+% =========================================================
+ 
+Le principal intérêt de cette formulation est de fermer une ambiguïté classique : la co-simulation CPS n’est pas d’abord un problème de modélisation physique, mais un problème de cohérence temporelle. Le quantum n’est pas assimilé à une dynamique ; seuls ses effets résiduels, bornés et mesurés, entrent dans le modèle. Cette distinction est essentielle sous virtualisation, où l’accélération d’exécution n’a de sens que si elle ne détériore pas la fidélité temporelle vue par le logiciel. \cite{turn64search3}
+ 
+Une limite de l’approche est que l’enveloppe \(\epsQ\) reste dépendante de la configuration VLAB, du code exécuté et des scénarios de stimulation. Cela n’invalide pas le modèle : cela signifie seulement qu’il faut expliciter le \emph{périmètre d’emploi} et documenter la campagne de mesure supportant \(\epsQ\).
+\section{Méthodologie d’estimation du retard résiduel de virtualisation}
+ 
+Le retard résiduel de virtualisation $\delta_Q$ représente l’écart temporel
+entre l’instant logique d’un événement (timer, interruption) et son instant
+effectif de prise en compte dans l’environnement virtualisé.
+ 
+Ce retard est borné par une enveloppe $\epsilon(Q)$ :
+\begin{equation}
+0 \le \delta_Q \le \epsilon(Q)
+\end{equation}
+ 
+L’estimation de $\epsilon(Q)$ repose sur une campagne de mesure
+visant à caractériser le pire cas observable dans un environnement donné.
+ 
+\subsection{Principe de mesure}
+ 
+Le principe consiste à comparer :
+\begin{itemize}
+\item l’instant logique attendu d’un événement (référence idéale),
+\item l’instant effectif d’exécution observé dans la simulation.
+\end{itemize}
+ 
+Le retard résiduel est alors défini par :
+\begin{equation}
+\delta_Q = t_{\mathrm{exécution}} - t_{\mathrm{référence}}
+\end{equation}
+ 
+\subsection{Instrumentation}
+ 
+La mesure repose sur :
+\begin{itemize}
+\item l’injection d’événements périodiques (timers) ou déterministes,
+\item l’horodatage des événements à leur émission (côté simulateur),
+\item l’horodatage à leur prise en compte (côté logiciel virtualisé).
+\end{itemize}
+ 
+Ces horodatages permettent de reconstruire l’écart temporel effectif
+pour chaque événement.
+ 
+\subsection{Campagne de mesure}
+ 
+La campagne doit couvrir un ensemble représentatif de scénarios incluant :
+\begin{itemize}
+\item différentes valeurs de quantum $Q$,
+\item différentes charges de calcul du logiciel embarqué,
+\item différents types d’événements (timer, interruption, I/O simulée).
+\end{itemize}
+ 
+L’objectif est de capturer les variations temporelles induites
+par l’ordonnancement et le moteur de virtualisation.
+ 
+\subsection{Extraction de l’enveloppe}
+ 
+À partir des traces collectées, on construit l’ensemble des valeurs
+de $\delta_Q$ et on définit :
+\begin{equation}
+\epsilon(Q) = \max(\delta_Q)
+\end{equation}
+ 
+Cette valeur correspond à une borne pire cas pour la configuration étudiée.
+ 
+\subsection{Validité du modèle}
+ 
+L’utilisation de $\epsilon(Q)$ dans le modèle CPS suppose que :
+\begin{itemize}
+\item le système est opéré dans un domaine d’utilisation couvert
+par la campagne de mesure,
+\item les conditions d’exécution (charge, configuration, ordonnanceur)
+restent compatibles avec celles mesurées.
+\end{itemize}
+ 
+\subsection{Interprétation}
+ 
+Le quantum $Q$ n’est pas un retard en soi ; il agit indirectement
+en influençant la distribution de $\delta_Q$.
+ 
+Ainsi, l’impact de la virtualisation sur le CPS est entièrement capturé
+par le paramètre $\epsilon(Q)$, qui est une quantité mesurable
+et intégrable dans l’analyse de stabilité.
+% =========================================================
+\section{Conclusion}
+% =========================================================
+ 
+Nous avons proposé un contrat de temps pour la co-simulation CPS sous virtualisation, basé sur une idée unique : toutes les contributions dynamiques se ramènent à un retard effectif unique, \(\taueff\), vu par le logiciel.
+ 
+Cette formulation permet :
+\begin{itemize}
+\item d’interdire les retards artificiels d’interface ;
+\item d’intégrer explicitement l’absence comme état système ;
+\item de modéliser la virtualisation par un retard résiduel borné ;
+\item de formuler une condition de stabilité robuste directement exploitable ;
+\item de soutenir une justification structurée par GSN.
+\end{itemize}
+ 
+\keymsg{La co-simulation CPS n’est pas un problème de modélisation physique, mais un problème de cohérence temporelle.}
+ 
+Cette base est directement exploitable en validation pré-HIL et constitue une fondation sérieuse pour une argumentation certifiable.
+ 
+%\chapter{Bibliographie}
+\phantomsection
+\addcontentsline{toc}{chapter}{Bibliographie}
+                               \markboth{Bibliographie}{Bibliographie}
+                               \bibliographystyle{alpha}
+                               \selectlanguage{english}
+                               \renewcommand{\bibname}{Bibliographie}
+                               \bibliography{biblioBibTex}
+ 
+\end{document}
