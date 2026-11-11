@@ -287,7 +287,7 @@ def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=
 
     Retourne un dict de floats : vball_kmh, vball_corr_kmh, spin_rpm, spin_patch_rpm, spin_phase_rpm,
     spin_peigne_rpm, spin_exc_rpm, spin_patch_conf, spin_phase_conf, spin_peigne_conf, spin_exc_conf,
-    vclub_radar_kmh, vclub_kmh, smash, alpha0_deg, dalpha_deg, t0_s, gfp_est_deg,
+    vclub_radar_kmh, vclub_kmh, smash, alpha0_deg, dalpha_deg, t0_s, launch_deg, launch_conf, gfp_est_deg,
     backspin_est_rpm, sidespin_est_rpm, da_est_deg, portee_m, apex_m, z_final_m, temps_s (+ '_stdout').
     Lève FileNotFoundError si le binaire manque, ValueError si la ligne ESTIM est absente."""
     import re
@@ -481,13 +481,14 @@ if __name__ == '__main__':
     ap.add_argument('capture', nargs='?', default=None,
                     help="fichier de captation radar : .csv (2 lignes ';' = canaux R1/R2) ou .wav (stéréo 44,1 kHz)")
     ap.add_argument('--club', default='F7', help="club pour l'analyse C++ de la captation (défaut F7)")
-    ap.add_argument('--launch', type=float, default=16.5, help='launch angle en degrés (défaut 16.5)')
+    ap.add_argument('--launch', type=float, default=None,
+                    help='launch angle en degrés (défaut : mesuré sur la captation si --capture, sinon 16.5)')
     ap.add_argument('--elev', type=float, default=10.0, help='elevation caméra 3D en degrés (défaut 10 = vue golfeur)')
     ap.add_argument('--azim', type=float, default=180.0, help='azimut caméra 3D en degrés (défaut 180 = de derrière, comme le golfeur ; -60 = vue plongeante)')
     args = ap.parse_args()
 
     v0_ms = None
-    launch_deg = args.launch
+    launch_deg = args.launch   # None -> mesuré sur la captation (launch_deg ESTIM), sinon 16.5
     azim_deg = 0.0
     spin_rpm = None
     side_rpm = None
@@ -504,9 +505,17 @@ if __name__ == '__main__':
             raise SystemExit(2)
         # analyse complète : binaire C++ (V club, spin 3 voies, back/side par courbure) avec repli pipe_validation
         v0_ms, spin_rpm, azim_deg, side_rpm, _est = estimate_from_capture_full(args.capture, club=args.club)
+        if launch_deg is None:
+            ld = float(_est.get('launch_deg', 0.0) or 0.0)
+            launch_deg = ld if ld > 0 else 16.5
+            print(f"-> launch angle mesuré sur la captation : {launch_deg:.2f} deg "
+                  f"(conf={_est.get('launch_conf', 0.0):.2f})")
         print(f"-> simulation lancée avec V0={v0_ms*3.6:.1f} km/h, spin={spin_rpm:.0f} rpm, "
               f"side={side_rpm if side_rpm is not None else 0:.0f} rpm, "
               f"azimut={azim_deg:+.2f} deg, launch={launch_deg} deg")
+
+    if launch_deg is None:
+        launch_deg = 16.5   # pas de captation -> défaut historique
 
     if not HAS_MPL:
         # mode headless : résultats texte uniquement (pas d'animation)

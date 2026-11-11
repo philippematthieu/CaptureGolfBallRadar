@@ -209,6 +209,8 @@ struct EstRadar {
     double alpha0_deg;     // azimut initial (appariement stéréo)
     double dalpha_deg;     // courbure début-fin
     double t0_s;
+    double launch_deg = 0;   // angle de lancement ψ estimé par fit balistique sur le ridge post-impact
+    double launch_conf = 0;  // confiance du fit = 1 − SSE/SST
     // spectrogramme embarqué pour affichage fixe (densité 0..255, bande FMIN..FMAX Hz, axe Y en km/h via /KV)
     std::vector<unsigned char> spec;   // [nframes * nbin], ligne = frame temporelle
     int spec_nbin = 0, spec_nframe = 0, spec_hop = 0;
@@ -392,6 +394,100 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
                 std::nth_element(band.begin(), band.begin() + band.size() / 2, band.end());
                 double med = band[band.size() / 2];
                 e.spin_patch_conf = (med > 0) ? Pe[best] / med : 0.0;
+            }
+        }
+    }
+    // --- launch angle ψ : fit du vol 2D (traînée de White + gravité + Magnus, comme flight_ode)
+    // sur la fréquence instantanée f_i(t) du lobe balle (signal analytique passe-bande autour de
+    // f_D, lissée sur ~1,5 période de rotation pour moyenner la modulation micro-Doppler ±β·f_rot).
+    // Le radar mesure v_r(t) ≈ V(t)·cos(Φ), Φ quasi constant (cf. THETA_RADAR) : on fitte la FORME
+    // de V(t) à un facteur d'échelle libre c près, v_r_model(t) = c·V_model(t; V0, ψ).
+    if (e.vball_kmh > 0) {
+        const double rho = 1.292 * 273.15 / 293.15;             // kg/m³ à 20 °C (comme Golfball.sci)
+        const double Ab = M_PI * pow(BALL_D / 2, 2), mm = 0.04545, mu = 1.5e-5;
+        const double Cl1 = 0.54;                                 // fer 7 (SAC)
+        double fD = e.vball_kmh * KV;
+        int i0s = (int)(e.t0_s * FS);
+        int n = std::min((int)(0.45 * FS), (int)c.r1.size() - i0s);
+        if (n > 8192) {
+            std::vector<double> seg(c.r1.begin() + i0s, c.r1.begin() + i0s + n);
+            std::vector<double> xf = bandpass(seg, fD, 2000.0);
+            int N = 1; while (N < n) N <<= 1;
+            std::vector<double> re(N, 0.0), im(N, 0.0);
+            for (int i = 0; i < n; i++) re[i] = xf[i];
+            fft(re, im, false);
+            std::vector<double> h(N, 0.0);
+            h[0] = 1.0; for (int k = 1; k < N / 2; k++) h[k] = 2.0; h[N / 2] = 1.0;
+            for (int k = 0; k < N; k++) { re[k] *= h[k]; im[k] *= h[k]; }
+            fft(re, im, true);
+            std::vector<double> fi(n - 1);
+            double prev = atan2(im[0], re[0]);
+            for (int i = 1; i < n; i++) {
+                double ph = atan2(im[i], re[i]);
+                double d = ph - prev;
+                while (d > M_PI) d -= 2.0 * M_PI;
+                while (d < -M_PI) d += 2.0 * M_PI;
+                fi[i - 1] = d * FS / (2.0 * M_PI);
+                prev = ph;
+            }
+            // lissage sur ~1,5 période de rotation (moyenne glissante) : enlève ±β·f_rot
+            double frot = std::max(e.spin_rpm, 1200.0) / 60.0;
+            int wsm = std::max(1, (int)(1.5 / frot * FS) / 2);
+            // agrégation en K bins sur [0, 0.35 s]
+            const int K = 12;
+            double tmax = std::min(0.35, (n - 1) / FS);
+            std::vector<double> tm, vrm;
+            for (int b = 0; b < K; b++) {
+                double ta = (b + 0.5) / K * tmax;
+                int ia = (int)(ta * FS), wa = std::max(1, (int)(0.5 / K * tmax * FS));
+                // bins tronqués par le lissage de bord (convolution 'same' à padding nul) : on les écarte
+                if (ia - wa < wsm + 1 || ia + wa > n - 2 - wsm - 1) continue;
+                double sm = 0; int c2 = 0;
+                for (int j = ia - wa; j <= ia + wa; j++) {
+                    double ss = 0; int c3 = 0;
+                    for (int q = j - wsm; q <= j + wsm; q++) { ss += fi[q]; c3++; }
+                    sm += ss / c3; c2++;
+                }
+                tm.push_back(ta);
+                vrm.push_back((sm / c2) / KV / 3.6);
+            }
+            double vr0 = vrm.empty() ? 0 : vrm[0];
+            if (tm.size() >= 5 && vr0 > 0) {
+                double w = e.spin_rpm * 2.0 * M_PI / 60.0;           // backspin (rad/s), voie patch
+                const double dt = 0.002;
+                double bestPsi = 0, bestSse = 1e18;
+                for (double psiDeg = 4.0; psiDeg <= 26.0; psiDeg += 0.25) {
+                    double psi = psiDeg * M_PI / 180.0;
+                    // le modèle démarre au premier bin (t = tm[0], V0 = vrm[0]) pour aligner donnée et modèle
+                    double vx = vr0 * cos(psi), vy = vr0 * sin(psi), t = tm[0];
+                    std::vector<double> Vm(tm.size(), 0.0);
+                    for (size_t f = 0; f < tm.size(); f++) {
+                        while (t < tm[f]) {
+                            double V = sqrt(vx * vx + vy * vy);
+                            double Re = rho * V * BALL_D / mu;
+                            double Cd = 0.36 + 24.0 / Re + 6.0 / (1.0 + sqrt(Re));   // White
+                            double Cm = Cl1 * pow(BALL_D / 2, 2) * pow(w / std::max(V, 1e-6), 0.4);
+                            double FD = 0.5 * rho * Cd * Ab * V * V;               // traînée ∝ V²
+                            // Magnus comme flight_ode (Python) : F_M = 0.5·ρ·Cm·A·V·(ω×v), |ω×v| = ω·V
+                            double kM = 0.5 * rho * Cm * Ab * V * w;
+                            // accélération = −g + (forces aéro)/m  (g n'est PAS divisé par m)
+                            vx += (-FD * vx / V - kM * vy) / mm * dt;
+                            vy += (-9.81 + (-FD * vy / V + kM * vx) / mm) * dt;
+                            t += dt;
+                        }
+                        Vm[f] = sqrt(vx * vx + vy * vy);
+                    }
+                    double num = 0, den = 0;
+                    for (size_t f = 0; f < tm.size(); f++) { num += vrm[f] * Vm[f]; den += Vm[f] * Vm[f]; }
+                    double c = (den > 0) ? num / den : 0;
+                    double sse = 0;
+                    for (size_t f = 0; f < tm.size(); f++) { double d = vrm[f] - c * Vm[f]; sse += d * d; }
+                    if (sse < bestSse) { bestSse = sse; bestPsi = psiDeg; }
+                }
+                double mean = 0; for (double v : vrm) mean += v; mean /= vrm.size();
+                double sst = 0; for (double v : vrm) { double d = v - mean; sst += d * d; }
+                e.launch_deg = bestPsi;
+                e.launch_conf = (sst > 0) ? std::max(0.0, std::min(1.0, 1.0 - bestSse / sst)) : 0.0;
             }
         }
     }

@@ -94,6 +94,10 @@ def main():
                         f"{est['spin_rpm']:.0f} vs {spin:.0f} rpm")
         # 2b. voie excursion micro-Doppler (point 5) : validée à part ci-dessous avec beta physique
         print(f"   [info] spin excursion beta : exc={est.get('spin_exc_rpm', 0.0):.0f} rpm (beta_gen={BETA_GEN:.2f}, spin vrai {spin:.0f})")
+        # 2c. launch angle mesuré (point 3) : fit balistique sur le ridge post-impact
+        ld = est.get('launch_deg', 0.0)
+        all_ok &= check('launch mesuré', 0 < ld and abs(ld - launch) < 2.0,
+                        f"{ld:.2f} vs {launch} deg (conf={est.get('launch_conf', 0.0):.2f})")
         # 3. cohérence du vecteur spin : hypot(back, side) == spin radar
         h = math.hypot(est['backspin_est_rpm'], est['sidespin_est_rpm'])
         coh_ok = (est['spin_rpm'] < 1 and h < 1) or \
