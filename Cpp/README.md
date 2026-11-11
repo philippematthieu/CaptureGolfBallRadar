@@ -211,6 +211,31 @@ Une balle de diamètre d = 42,67 mm à 10,525 GHz (λ = 28,5 mm) tournant à ω 
 
 **Résultat retenu.** Side spin estimé quand Δα ≠ 0 (cs104 : −246 rpm vs réf −630 ; cs124-2025 : +1241 vs +7102) ; quand Δα ≈ 0 (bruit < 0,3°) le balayage donne g ≈ 0. La trajectoire 3D résultante courbe du bon côté (vérifié visuellement sur cs119). Limites actées : amplitude du side limitée par le spin total radar (souvent sous-estimé), shaft lean au cas idéal, launch angle comme prochaine contrainte.
 
+**Schéma du workflow et des itérations (fonctions utilisées) :**
+
+```mermaid
+flowchart TD
+    A["Captation CSV/WAV<br/>load_capture()"] --> B["estimate() : vBall, t0, α₀, Δα (stéréo)<br/>spin patch (Hilbert)"]
+    B --> C["estimate_club_speed()<br/>passe-bande vBall/1.35 → V club, smash"]
+    B --> D["estimate_spin_phase_spec() +<br/>estimate_spin_peigne_ac()<br/>fusion_spin() → spin_radar"]
+    C --> E["Balayage GamaFacePath g ∈ [-15°,15°]<br/>Ball probe + rescaleSpin + runSimu<br/>da = atan2(vy,vx) à ~150 ms"]
+    D --> E
+    E --> F{"Itération 1<br/>backspin > spin_radar ?"}
+    F -- "oui (cs104: 6381 > 4927)" --> G["Correction : rescale du vecteur<br/>k = spin_radar / hypot(spinY,spinZ)<br/>hypot(back,side) = spin_radar"]
+    F -- "non" --> G
+    G --> H{"Itération 2<br/>signe de Δα ?"}
+    H -- "test: err = |da + Δα|, fenêtre chute<br/>cs119: g=+15° → -1,5°" --> I["Version testée<br/>(meilleurs minimums intérieurs)"]
+    I -- "revert demandé<br/>(trajectoire déjà correcte)" --> J["Version retenue:<br/>err = |da - Δα|, fenêtre 150 ms"]
+    H -- "version initiale" --> J
+    J --> K["g* = argmin err<br/>backspin_est = spinY·k, sidespin_est = spinZ·k"]
+    K --> L["Ball theBall + rescaleSpin + runSimu()"]
+    L --> M["write_traj_3d_html() + spec_to_json()<br/>→ trajectoire_capture_3d.html<br/>write_traj_svg()"]
+    style F fill:#ffe0b2
+    style H fill:#ffe0b2
+    style I fill:#ffcdd2
+    style J fill:#c8e6c9
+```
+
 ### 4. De la mesure à la visualisation
 
 - `Plot3D.h` : spectrogramme d'abord fixe en bas → **docké** (`left:250px; right:0`) et **redimensionnable** (drag), puis **zoom interactif** (drag = zone, molette = zoom au curseur, dblclick = reset) ; fairway passé de rectangle à **carré** (côté ≥ 1,1 × portée).
