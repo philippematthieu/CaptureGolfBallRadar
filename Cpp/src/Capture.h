@@ -262,6 +262,23 @@ CAP_UNUSED static void fill_spec(EstRadar& e, const std::vector<double>& sig, in
         }
         int i0l = 0; for (size_t i = 1; i < e.spec_power.size(); i++) if (e.spec_power[i] > e.spec_power[i0l]) i0l = (int)i;
         e.spec_i0 = i0l;
+        // dès l'impact, le ridge AFFICHÉ est cherché dans [0,85..1,10]·f_D : la ligne cyan colle
+        // à la balle juste après l'impact (sinon elle suivrait l'écho club, très fort, qui décélère).
+        // Avant l'impact on garde le ridge pleine bande (on voit le lobe club monter).
+        if (e.vball_kmh > 0 && i0l < nframes) {
+            double fD = e.vball_kmh * KV;
+            int klo = std::max(1, (int)(fD * 0.85 * NFFT / FS));
+            int khi = std::min(NFFT / 2 - 1, (int)(fD * 1.10 * NFFT / FS));
+            int frEnd = std::min(nframes, i0l + (int)(0.5 * FS / HOP));   // ~0,5 s post-impact
+            for (int fr = i0l; fr < frEnd; fr++) {
+                for (int i = 0; i < NFFT; i++) { re[i] = s[fr * HOP + i] * w[i]; im[i] = 0; }
+                fft(re, im, false);
+                for (int k = 0; k < NFFT / 2; k++) P[k] = re[k] * re[k] + im[k] * im[k];
+                int kb = klo; double pmax = 0;
+                for (int k = klo; k <= khi; k++) if (P[k] > pmax) { pmax = P[k]; kb = k; }
+                e.spec_ridge[fr] = parabolic_peak(P, kb) * FS / NFFT;
+            }
+        }
 }
 
 CAP_UNUSED static EstRadar estimate(const Capture& c) {
