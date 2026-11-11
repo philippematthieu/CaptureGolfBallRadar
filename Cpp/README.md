@@ -219,7 +219,7 @@ Une balle de diamètre d = 42,67 mm à 10,525 GHz (λ = 28,5 mm) tournant à ω 
 Légende : **bleu = partie réelle** (captation radar → mesures), **vert = partie simulée** (modèle inverse), **jaune = corrélation mesure ↔ simu**, **orange = itérations testées**, **rouge = testé puis reverti**, **vert foncé = version retenue**.
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph REAL["📡 PARTIE RÉELLE — captation radar"]
         direction TB
         R["Radar 10,525 GHz<br/>2 canaux R1 / R2"] --> W["Fichier WAV stéréo 44,1 kHz<br/>ou CSV 2 lignes ';'"]
