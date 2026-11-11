@@ -55,11 +55,15 @@ def simu_vol(V0_kmh, launch_deg, alpha_path_deg, spin_tot_rpm, side_rpm):
 
 
 def gen_capture(name, v0_kmh, launch_deg, alpha_path_deg, spin_tot_rpm, side_rpm, cs_kmh,
-                dur=0.45, t0=0.12, alpha_radar_deg=(-2.0, 2.0), k_courbe=0.0, seed=42):
-    """Génère le CSV stéréo du swing complet. k_courbe : courbure α(t)=α0+0.5*k*(t-t0)² après impact (rad/s²)."""
+                dur=0.45, t0=0.12, alpha_radar_deg=(-2.0, 2.0), k_courbe=0.0, seed=42, beta=None,
+                noise=0.02):
+    """Génère le CSV stéréo du swing complet. k_courbe : courbure α(t)=α0+0.5*k*(t-t0)² après impact (rad/s²).
+    beta : amplitude de la modulation de phase micro-Doppler ; None = beta physique 4*pi*r/lambda
+    (~9.4, sphère miroir -> peigne très large, ridge instable) ; mettre ~1.0 pour un peigne
+    modéré (ridge stable, proche des vraies balles alvéolées)."""
     t_vol, V_vol, alpha_vol, carry = simu_vol(v0_kmh, launch_deg, alpha_path_deg, spin_tot_rpm, side_rpm)
     back = np.sqrt(spin_tot_rpm**2 - side_rpm**2)
-    beta = np.degrees(np.arctan2(side_rpm, back))
+    beta_tilt = np.degrees(np.arctan2(side_rpm, back))  # angle d'inclinaison de l'axe de spin (affichage)
     w_tot = spin_tot_rpm * 2 * np.pi / 60
     r = G.diam / 2
 
@@ -83,12 +87,14 @@ def gen_capture(name, v0_kmh, launch_deg, alpha_path_deg, spin_tot_rpm, side_rpm
     for a_rad in alpha_radar_deg:
         fD = KV * V_kmh * np.cos(np.radians(a_rad) + alpha_t)   # f_D par canal, modulée par α(t)
         phase = 2 * np.pi * np.cumsum(fD) / FS_
-        # micro-Doppler patch (spin total) : phase = (2r/lambda) * sin(w_tot * t), w_tot en rad/s
-        # (forme physique -> peigne de raies espacées de f_rot = spin/60 Hz, ridge stable)
-        phase += (2 * r / LAM) * np.sin(w_tot * tt)
+        # micro-Doppler patch (spin total) : phase = beta * sin(w_tot * t), w_tot en rad/s
+        # (peigne de raies espacées de f_rot = spin/60 Hz ; excursion Δf = 2·beta·f_rot)
+        if beta is None:
+            beta = 4 * np.pi * r / LAM   # physique aller-retour radar, sphère parfaite
+        phase += beta * np.sin(w_tot * tt)
         amp = np.where(tt < t0, 0.30 * (np.clip(tt, 0, t0) / t0) ** 2.5,
                        0.5 / (1.0 + R_post / 50.0))
-        rows.append(amp * np.cos(phase) + 0.02 * rng.standard_normal(N))
+        rows.append(amp * np.cos(phase) + noise * rng.standard_normal(N))
 
     out = os.path.join(SCI, name)
     with open(out, 'w') as f:
@@ -96,7 +102,7 @@ def gen_capture(name, v0_kmh, launch_deg, alpha_path_deg, spin_tot_rpm, side_rpm
             f.write(';'.join(f'{v:.9f}' for v in row) + '\n')
     print(f"OK -> {out}")
     print(f"   config: V0={v0_kmh} km/h, launch={launch_deg}°, spin_tot={spin_tot_rpm} rpm "
-          f"(back={back:.0f}, side={side_rpm}, β={beta:.1f}°), cs={cs_kmh}, carry={carry:.0f} m, "
+          f"(back={back:.0f}, side={side_rpm}, β={beta_tilt:.1f}°), cs={cs_kmh}, carry={carry:.0f} m, "
           f"dur={dur*1000:.0f} ms, t0={t0*1000:.0f} ms, k_courbe={k_courbe}")
     return carry, beta
 

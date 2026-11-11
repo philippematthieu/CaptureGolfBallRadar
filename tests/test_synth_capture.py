@@ -40,6 +40,12 @@ CONFIGS = [
     ('synth_side_neg.csv', 166.0, 16.0, 3.0, 4990.0, -1312.0, 118.0),  # hook connu
 ]
 
+# beta de modulation du générateur pour les configs principales (2r/lambda ~ 1.5 : peigne modéré,
+# ridge stable comme les vraies balles alvéolées ; le beta physique 4*pi*r/lambda ~ 9.4 casserait
+# le ridge sur le synthétique). La voie excursion est validée à part avec beta physique + low noise.
+BETA_GEN = 2.0 * (G.diam / 2.0) / (299792458.0 / 10.525e9)
+LAM = 299792458.0 / 10.525e9
+
 
 def build_simu():
     """Compile simu_headless si le binaire manque (voir Cpp/README.md)."""
@@ -68,7 +74,7 @@ def main():
               f'spin={spin:.0f} rpm, side={side:+.0f} rpm, Vclub={cs} km/h (k_courbe=0, '
               f'courbure = pur effet Magnus de la simu de vol)')
         path = os.path.join(tmp, name)
-        carry, beta = gcm.gen_capture(path, v0, launch, apath, spin, side, cs, k_courbe=0.0)
+        carry, beta = gcm.gen_capture(path, v0, launch, apath, spin, side, cs, k_courbe=0.0, beta=BETA_GEN)
         t_vol, V_vol, alpha_vol, _ = gcm.simu_vol(v0, launch, apath, spin, side)
         dalpha_true = math.degrees(alpha_vol[-1] - alpha_vol[0])
         print(f'   vérité : carry(vol)={carry:.0f} m, dAlpha_vol={dalpha_true:+.3f}°, beta={beta:+.1f}°')
@@ -86,6 +92,8 @@ def main():
         # 2. spin total (voie fusion ; le spin reste le maillon faible, ~30 % toléré ici)
         all_ok &= check('spin total', abs(est['spin_rpm'] - spin) / spin < 0.30,
                         f"{est['spin_rpm']:.0f} vs {spin:.0f} rpm")
+        # 2b. voie excursion micro-Doppler (point 5) : validée à part ci-dessous avec beta physique
+        print(f"   [info] spin excursion beta : exc={est.get('spin_exc_rpm', 0.0):.0f} rpm (beta_gen={BETA_GEN:.2f}, spin vrai {spin:.0f})")
         # 3. cohérence du vecteur spin : hypot(back, side) == spin radar
         h = math.hypot(est['backspin_est_rpm'], est['sidespin_est_rpm'])
         coh_ok = (est['spin_rpm'] < 1 and h < 1) or \
@@ -119,6 +127,19 @@ def main():
                         f"z_final={z_final:+.1f} m vs dAlpha_vrai={dalpha_true:+.3f}° "
                         f"(portee={y[-1, 0]:.1f} m, apex={y[:, 1].max():.1f} m, rebonds={b})")
         print()
+
+    # ---- voie excursion micro-Doppler (point 5) : beta physique 4*pi*r/lambda + faible bruit,
+    # sinon le bruit de phase (~±350 Hz/ech) domine l'excursion et la voie est illisible ----
+    print('\n=== synth_exc_beta_phys.csv : validation de la voie excursion (beta=4πr/λ, noise=0.002)')
+    p = os.path.join(tmp, 'synth_exc_beta_phys.csv')
+    spin_c = 4500.0
+    gcm.gen_capture(p, 151.0, 16.5, 3.0, spin_c, 0.0, 115.0, k_courbe=0.0, beta=None, noise=0.002)
+    est_c = G.analyze_capture_cpp(p, club='F7')
+    exc = est_c.get('spin_exc_rpm', 0.0)
+    print(f"   spin vrai={spin_c:.0f} rpm  exc={exc:.0f} rpm  (fusion={est_c['spin_rpm']:.0f}, "
+          f"patch={est_c['spin_patch_rpm']:.0f}, phase={est_c['spin_phase_rpm']:.0f})")
+    all_ok &= check('spin excursion beta (physique)', exc > 0 and abs(exc - spin_c) / spin_c < 0.30,
+                    f"exc={exc:.0f} vs {spin_c:.0f} rpm")
 
     print('RÉSULTAT :', 'TOUS LES CONTRÔLES PASSENT' if all_ok else 'DES CONTRÔLES ONT ÉCHOUÉ')
     return 0 if all_ok else 1

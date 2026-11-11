@@ -72,8 +72,8 @@ Toutes les briques sont dans `Capture.h` (header-only, FFT radix-2 maison) :
 | **t0 (impact)** | frame d'énergie max | `estimate()` |
 | **V club** | **passe-bande FFT autour de vBall/1.35** sur la fenêtre [t0−0,3 s, t0] (le lobe Doppler de la tête de club est dans le signal avant l'impact), crête au quantile 90 % | `estimate_club_speed()` |
 | **smash** | vBall / Vclub mesuré | (dans `Simu_headless.cpp`) |
-| **spin — 3 voies** | ① patch : enveloppe de Hilbert 250 ms, spectre 50–200 Hz, score d'harmoniques · ② **phase** : signal analytique du lobe balle filtré autour de f_D, fréquence instantanée detrendée, pic à f_rot · ③ **peigne** : autocorrélation du spectre Welch autour de f_D ± 2 kHz (lag = f_rot) | `estimate()`, `estimate_spin_phase_spec()`, `estimate_spin_peigne_ac()` |
-| **spin retenu** | `fusion_spin()` : moyenne patch+phase si cohérents à ±15 %, sinon patch, sinon phase, sinon peigne | `fusion_spin()` |
+| **spin — 4 voies** | ① patch : enveloppe de Hilbert 250 ms, spectre 50–200 Hz, score d'harmoniques · ② **phase** : signal analytique du lobe balle filtré autour de f_D, fréquence instantanée detrendée, pic à f_rot · ③ **peigne** : autocorrélation du spectre Welch autour de f_D ± 2 kHz (lag = f_rot) · ④ **excursion β** : excursion crête-crête de la fréquence instantanée lissée (300 ms post-impact, detrend linéaire), `spin = Δf/(2·KS)` avec β = 4πr/λ | `estimate()`, `estimate_spin_phase_spec()` (param `exc_rpm`), `estimate_spin_peigne_ac()` |
+| **spin retenu** | `fusion_spin()` : moyenne patch+phase si cohérents à ±15 %, sinon patch, sinon phase, sinon peigne ; la voie excursion n'est moyennée que si cohérente à ±15 %, sinon dernier recours | `fusion_spin()` |
 | **α₀, Δα** | appariement stéréo R1/R2 (Δf ≤ 30 Hz), α = atan((2L/B)·fd/fc), médianes début/fin | `estimate()` |
 | **back/side spin** | modèle inverse : balayage de `GamaFacePath` (−15°..+15°) avec `runSimu`, courbure azimutale sur ~150 ms post-impact ajustée au **Δα stéréo**, vecteur spin rescalé au spin total radar (donc `hypot(back,side) = spin_radar`) | `Simu_headless.cpp` |
 
@@ -164,7 +164,7 @@ Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendan
 ## Sorties produites (dans `Cpp/src/`)
 
 - console : `RESULT portee=... m  apex=... m  z_final=... m  temps=... s`
-- console (mode `--capture`) : ligne machine **`ESTIM key=value ...`** (une seule ligne, `nan` pour les non-détectés) : `vball_kmh vball_corr_kmh spin_rpm spin_patch_rpm spin_phase_rpm spin_peigne_rpm vclub_radar_kmh vclub_kmh smash alpha0_deg dalpha_deg t0_s gfp_est_deg backspin_est_rpm sidespin_est_rpm da_est_deg portee_m apex_m z_final_m temps_s` — parsée par `Python/GolfBall.py` (`analyze_capture_cpp`) pour rejouer la simu Python avec le side spin estimé
+- console (mode `--capture`) : ligne machine **`ESTIM key=value ...`** (une seule ligne, `nan` pour les non-détectés) : `vball_kmh vball_corr_kmh spin_rpm spin_patch_rpm spin_phase_rpm spin_peigne_rpm spin_exc_rpm vclub_radar_kmh vclub_kmh smash alpha0_deg dalpha_deg t0_s gfp_est_deg backspin_est_rpm sidespin_est_rpm da_est_deg portee_m apex_m z_final_m temps_s` — parsée par `Python/GolfBall.py` (`analyze_capture_cpp`) pour rejouer la simu Python avec le side spin estimé
 - `trajectoire_<club>.svg` — image 2D vectorielle (profil + dessus)
 - `trajectoire_<club>.png` / `.bmp` — image 2D raster (CImg, compile `-DUSE_CIMG`)
 - `trajectoire_3d.html` / `trajectoire_capture_3d.html` — scène 3D interactive + panneau infos + spectrogramme docké/zoomable

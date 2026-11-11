@@ -60,10 +60,10 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     const double spin_patch_rpm = e.spin_rpm;   // voie patch seule (avant fusion)
     if (mode == "fusion") {
         e.spin_peigne_rpm = estimate_spin_peigne(c, e);
-        e.spin_phase_rpm = estimate_spin_phase(c, e);
-        double sf = fusion_spin(e.spin_rpm, e.spin_phase_rpm, e.spin_peigne_rpm);
-        printf("mode fusion : patch=%.0f, phase=%.0f, peigne=%.0f rpm -> spin retenu=%.0f rpm\n",
-               e.spin_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, sf);
+        e.spin_phase_rpm = estimate_spin_phase_spec(c, e, nullptr, nullptr, &e.spin_exc_rpm);
+        double sf = fusion_spin(e.spin_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, e.spin_exc_rpm);
+        printf("mode fusion : patch=%.0f, phase=%.0f, peigne=%.0f, exc(beta)=%.0f rpm -> spin retenu=%.0f rpm\n",
+               e.spin_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, e.spin_exc_rpm, sf);
         e.spin_rpm = sf;
     }
     printf("capture %s : vBall=%.1f km/h radiale (%.1f corr. cos20), spin=%.0f rpm, alpha0=%+.2f deg, dAlpha=%+.2f deg, t0=%.3f s, %zu ech/canal\n",
@@ -120,8 +120,8 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
     printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
     // ligne machine (parsée par Python/GolfBall.py analyze_capture_cpp) : une seule ligne key=value, NaN -> "nan"
-    printf("ESTIM vball_kmh=%.2f vball_corr_kmh=%.2f spin_rpm=%.1f spin_patch_rpm=%.1f spin_phase_rpm=%.1f spin_peigne_rpm=%.1f vclub_radar_kmh=%.2f vclub_kmh=%.2f smash=%.4f alpha0_deg=%.3f dalpha_deg=%.3f t0_s=%.4f gfp_est_deg=%.2f backspin_est_rpm=%.1f sidespin_est_rpm=%.1f da_est_deg=%.3f portee_m=%.2f apex_m=%.2f z_final_m=%.2f temps_s=%.2f\n",
-           e.vball_kmh, e.vball_corr_kmh, e.spin_rpm, spin_patch_rpm, e.spin_phase_rpm, e.spin_peigne_rpm,
+    printf("ESTIM vball_kmh=%.2f vball_corr_kmh=%.2f spin_rpm=%.1f spin_patch_rpm=%.1f spin_phase_rpm=%.1f spin_peigne_rpm=%.1f spin_exc_rpm=%.1f vclub_radar_kmh=%.2f vclub_kmh=%.2f smash=%.4f alpha0_deg=%.3f dalpha_deg=%.3f t0_s=%.4f gfp_est_deg=%.2f backspin_est_rpm=%.1f sidespin_est_rpm=%.1f da_est_deg=%.3f portee_m=%.2f apex_m=%.2f z_final_m=%.2f temps_s=%.2f\n",
+           e.vball_kmh, e.vball_corr_kmh, e.spin_rpm, spin_patch_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, e.spin_exc_rpm,
            vclub_radar, vclub, (std::isnan(vclub_radar) ? NAN : e.vball_kmh / vclub_radar),
            e.alpha0_deg, e.dalpha_deg, e.t0_s, gfp_est, backspin_est, sidespin_est, da_est,
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
@@ -132,6 +132,7 @@ static int run_from_capture(const char* path, const char* clubType, double spinS
   + kv("Spin total radar", fmt0(e.spin_rpm, "rpm") + (mode == "fusion" ? "  (fusion)" : "  (patch)"))
   + kv("Spin phase (f inst)", fmt0(e.spin_phase_rpm, "rpm"))
   + kv("Spin peigne (raies)", fmt0(e.spin_peigne_rpm, "rpm"))
+  + kv("Spin excursion (β=4πr/λ)", fmt0(e.spin_exc_rpm, "rpm"))
   + kv("BackSpin estimé", fmt0nan(backspin_est, "rpm") + (std::isnan(backspin_est) ? "  — spin nul, non décomposable" : "  (vecteur modèle rescalé à spin total radar)"))
   + kv("SideSpin estimé", fmt0nan(sidespin_est, "rpm"))
   + kv("GamaFacePath estimé", fmt1nan(gfp_est, "deg") + (std::isnan(gfp_est) ? "" : "  (ajusté sur courbure dAlpha=" + fmt1(da_est, "deg") + ")"))
