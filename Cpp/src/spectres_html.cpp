@@ -148,9 +148,13 @@ int main(int argc, char** argv) {
     EstRadar e = estimate(c);
     // analyses spin de Capture.h (avec spectres exposés pour affichage)
     vector<double> acLag, acVal, pfHz, pfDb;
-    e.spin_peigne_rpm = estimate_spin_peigne_ac(c, e, &acLag, &acVal);
-    e.spin_phase_rpm = estimate_spin_phase_spec(c, e, &pfHz, &pfDb, &e.spin_exc_rpm);
-    double spin_fus = fusion_spin(e.spin_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, e.spin_exc_rpm);
+    e.spin_peigne_rpm = estimate_spin_peigne_ac(c, e, &acLag, &acVal, &e.spin_peigne_conf);
+    e.spin_phase_rpm = estimate_spin_phase_spec(c, e, &pfHz, &pfDb, &e.spin_exc_rpm, &e.spin_exc_conf,
+                                                &e.spin_phase_conf);
+    double spin_fus = fusion_spin(e.spin_rpm, e.spin_patch_conf,
+                                  e.spin_phase_rpm, e.spin_phase_conf,
+                                  e.spin_peigne_rpm, e.spin_peigne_conf,
+                                  e.spin_exc_rpm, e.spin_exc_conf);
     double fD = e.vball_kmh * KV;                 // porteuse balle (Hz)
     double frot = spin_fus / 60.0;                // fréquence de rotation retenue (fusion)
     int i0 = (int)(e.t0_s * FS);
