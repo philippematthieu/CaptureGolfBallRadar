@@ -2,6 +2,32 @@
 
 Simulation complète : vol (traînée de White, Magnus/Smits & Smith, gravité) + 3 rebonds (Penner/Roh & Lee) + roulement, avec sorties texte, image 2D (SVG / PNG-CImg), **scène 3D interactive HTML** (three.js, rotation souris) et **analyse radar avancée** des captations (vitesse club, spin multi-voies, décomposition back/side spin).
 
+## 📑 Sommaire
+
+- [Compilation](#compilation-mac--linux-g-ou-clang)
+- [Commandes](#commandes)
+- [Options](#options)
+- [Analyse radar d'une captation — ce qui est estimé et comment](#analyse-radar-dune-captation---capture--ce-qui-est-estimé-et-comment)
+  - [Workflow détaillé : du spin total au back/side spin](#workflow-détaillé--du-spin-total-au-backside-spin-contraindre-par-la-courbure)
+    - [Étape 1 — Captation et mesures radar](#étape-1--captation-et-mesures-radar-captureh-estimate)
+    - [Étape 2 — Simulations multiples (balayage GamaFacePath)](#étape-2--simulations-multiples-avec-le-modèle-balayage-de-gamafacepath)
+    - [Étape 3 — Corrélation avec les mesures radar](#étape-3--corrélation-avec-les-mesures-radar)
+    - [Étape 4 — Simulation finale et génération HTML/JS](#étape-4--simulation-finale-et-génération-du-htmljs-plot3dh)
+- [Visualisation HTML 3D](#visualisation-html-3d-trajectoire_3dhtml--trajectoire_capture_3dhtml)
+- [`spectres_html` — les 8 panneaux](#spectres_html--les-8-panneaux-de-spectres-dune-captation)
+- [PNG de la densité spectrale](#png-de-la-densité-spectrale-dune-captation)
+- [Sorties produites](#sorties-produites-dans-cppsrc)
+- [Fichiers clés](#fichiers-clés)
+- [Genèse — discussions, théorie, étapes](#genèse--discussions-théorie-et-étapes-qui-ont-conduit-à-ce-code)
+  - [0. Méthode de travail — le processus créatif à deux](#0-méthode-de-travail--le-processus-créatif-à-deux)
+  - [1. Point de départ : le radar voit plus que la balle](#1-point-de-départ--le-radar-voit-plus-que-la-balle)
+  - [2. Théorie du signal réfléchi par une balle en rotation](#2-théorie-du-signal-réfléchi-par-une-balle-en-rotation)
+  - [3. Du spin total au back/side spin](#3-du-spin-total-au-backside-spin--contraindre-par-la-courbure)
+  - [4. De la mesure à la visualisation](#4-de-la-mesure-à-la-visualisation)
+  - [5. Validation : tableau de cohérence sur les 12 captations](#5-validation--tableau-de-cohérence-sur-les-12-captations)
+  - [6. Pièges rencontrés (et corrigés)](#6-pièges-rencontrés-et-corrigés)
+- [Tests](#tests)
+
 ## Compilation (Mac / Linux, g++ ou clang++)
 
 ```bash
@@ -185,7 +211,13 @@ Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendan
 
 Cette section retrace la démarche : les idées de départ, la théorie physique sous-jacente, les itérations de test, et comment chaque idée a été consolidée en code.
 
-> **Méthode de travail.** Ce que nous faisons est réalisé **de concert** : c'est l'utilisateur qui propose les idées et les « tricks » au fil de la lecture des résultats (ex. : passe-bande autour de f_D sur la voie patch pour rejeter l'écho club, 2ᵉ passe du ridge à bande restreinte [0,85·f_D, 1,10·f_D], fusion pondérée par confiance, rabais ×0,25 de la voie excursion, schéma vertical, étiquettes de données sur les flèches…) — l'assistant (Mistral Vibe) peut coder vite mais lui-même ne voit pas tous ces tricks ; il les code, les valide (`tests/test_synth_capture.py` + `sci/validate_all.py`), et l'utilisateur oriente et valide à chaque itération. Chaque amélioration est commitée et pushée individuellement.
+### 0. Méthode de travail — le processus créatif à deux
+
+Ce projet avance par une **collaboration homme–machine** où chacun a un rôle complémentaire, et dont les forces se cumulent :
+
+- **L'utilisateur (Philippe) — l'expert métier, la source des idées et des « tricks ».** C'est lui qui connaît le radar 10,525 GHz et le golf, et qui *voit* les spectrogrammes. C'est lui qui repère ce que le code ne « voit » pas : l'écho de la tête de club, très puissant et plus bas en fréquence, qui masque le début du vol de la balle (→ passe-bande autour de f_D sur la voie patch, puis 2ᵉ passe du ridge à bande restreinte [0,85·f_D, 1,10·f_D], puis ridge affiché restreint dès l'impact) ; le biais systématique de la voie excursion β sur balle réelle (→ rabais ×0,25 de sa confiance dans la fusion) ; la fusion pondérée par confiance ; le schéma vertical avec étiquettes de données sur les flèches… Il oriente, valide, demande les reverts, et fixe les priorités.
+- **L'assistant (Mistral Vibe, agent CLI de codage) — l'exécutant rapide et systématique.** Il code vite et sans fatigue, écrit les harnais de validation (`tests/test_synth_capture.py` sur captations synthétiques de vérité connue, `sci/validate_all.py` sur les 12 vraies captations, comparées aux valeurs de référence des noms de fichiers), mesure l'avant/après **chiffré** de chaque idée, documente (ce README, le schéma Mermaid) et commit/push chaque amélioration individuellement. Mais seul, il **loupe des tricks** : il ne lit pas un spectrogramme comme l'utilisateur, et l'idée de rejeter l'écho club par une bande restreinte autour de f_D ne lui serait pas venue spontanément.
+- **Le processus, itération par itération :** idée de l'utilisateur → implémentation par l'assistant → validation chiffrée (tests synthétiques + tableau des 12 captations) → revue des régressions (ex. cs111/cs124-2025 s'étaient dégradés quand la voie excursion prenait la main comme référence → d'où le rabais ×0,25) → commit + push. **Les chiffres tranchent** : au fil de ces itérations, vBall est passé de 8,1 % à **6,2 %** d'erreur moyenne, le spin de 44,4 % à **30,0 %**, la portée Python de 12,6 % à **11,6 %**.
 
 ### 1. Point de départ : le radar voit plus que la balle
 
