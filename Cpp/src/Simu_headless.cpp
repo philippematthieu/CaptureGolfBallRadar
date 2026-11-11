@@ -55,9 +55,9 @@ static std::string fmt0nan(double x, const char* u) {
 
 // mode captation fichier : ./simu_headless --capture ../sci/2019-02-24-F7-123m-....csv [club] [spinScale] [--mode standard|fusion] [--launch deg]
 // mode captation live carte son : ./simu_headless --live <secondes> [club] [spinScale] [--source fichier.wav pour rejouer un fichier au lieu de la carte son]
-static int run_from_capture(Capture c, const std::string& label, const char* clubType, double spinScale, bool openAfter, const std::string& mode, double launchOverrideDeg) {
+static int run_from_capture(Capture c, const std::string& label, const char* clubType, double spinScale, bool openAfter, const std::string& mode, double launchOverrideDeg, double caseDeg) {
     const char* path = label.c_str();
-    EstRadar e = estimate(c);
+    EstRadar e = estimate(c, caseDeg);
     const double spin_patch_rpm = e.spin_rpm;   // voie patch seule (avant fusion)
     if (mode == "fusion") {
         e.spin_peigne_rpm = estimate_spin_peigne_ac(c, e, nullptr, nullptr, &e.spin_peigne_conf);
@@ -77,8 +77,8 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
         e.launch_deg = launchOverrideDeg;   // --launch XX : override de la mesure (conf -1 = forcé)
         e.launch_conf = -1.0;
     }
-    printf("capture %s : vBall=%.1f km/h radiale (%.1f corr. cos20), spin=%.0f rpm, alpha0=%+.2f deg, dAlpha=%+.2f deg, launch=%.2f deg (conf %.2f), t0=%.3f s, %zu ech/canal\n",
-           path, e.vball_kmh, e.vball_corr_kmh, e.spin_rpm, e.alpha0_deg, e.dalpha_deg, e.launch_deg, e.launch_conf, e.t0_s, c.r1.size());
+    printf("capture %s : vBall=%.1f km/h radiale (%.1f corr. cos20%s), spin=%.0f rpm, alpha0=%+.2f deg, dAlpha=%+.2f deg, launch=%.2f deg (conf %.2f), caseangle=%.1f deg, t0=%.3f s, %zu ech/canal\n",
+           path, e.vball_kmh, e.vball_corr_kmh, e.case_deg != 0.0 ? "+case" : "", e.spin_rpm, e.alpha0_deg, e.dalpha_deg, e.launch_deg, e.launch_conf, e.case_deg, e.t0_s, c.r1.size());
     // club par défaut F7
     vector<Club> sac(13);
     sac[5] = Club("F7", 0.200, 20.0, 30, 0.83, 380.00, 420.0, 0.54, 122.3, 0.0, 0.0, -6.5);
@@ -137,11 +137,11 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
     printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
     // ligne machine (parsée par Python/GolfBall.py analyze_capture_cpp) : une seule ligne key=value, NaN -> "nan"
-    printf("ESTIM vball_kmh=%.2f vball_corr_kmh=%.2f spin_rpm=%.1f spin_patch_rpm=%.1f spin_phase_rpm=%.1f spin_peigne_rpm=%.1f spin_exc_rpm=%.1f spin_patch_conf=%.2f spin_phase_conf=%.2f spin_peigne_conf=%.2f spin_exc_conf=%.2f vclub_radar_kmh=%.2f vclub_kmh=%.2f smash=%.4f alpha0_deg=%.3f dalpha_deg=%.3f t0_s=%.4f launch_deg=%.2f launch_conf=%.2f gfp_est_deg=%.2f backspin_est_rpm=%.1f sidespin_est_rpm=%.1f da_est_deg=%.3f portee_m=%.2f apex_m=%.2f z_final_m=%.2f temps_s=%.2f\n",
+    printf("ESTIM vball_kmh=%.2f vball_corr_kmh=%.2f spin_rpm=%.1f spin_patch_rpm=%.1f spin_phase_rpm=%.1f spin_peigne_rpm=%.1f spin_exc_rpm=%.1f spin_patch_conf=%.2f spin_phase_conf=%.2f spin_peigne_conf=%.2f spin_exc_conf=%.2f vclub_radar_kmh=%.2f vclub_kmh=%.2f smash=%.4f alpha0_deg=%.3f dalpha_deg=%.3f t0_s=%.4f launch_deg=%.2f launch_conf=%.2f caseangle_deg=%.2f gfp_est_deg=%.2f backspin_est_rpm=%.1f sidespin_est_rpm=%.1f da_est_deg=%.3f portee_m=%.2f apex_m=%.2f z_final_m=%.2f temps_s=%.2f\n",
            e.vball_kmh, e.vball_corr_kmh, e.spin_rpm, spin_patch_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, e.spin_exc_rpm,
            e.spin_patch_conf, e.spin_phase_conf, e.spin_peigne_conf, e.spin_exc_conf,
            vclub_radar, vclub, (std::isnan(vclub_radar) ? NAN : e.vball_kmh / vclub_radar),
-           e.alpha0_deg, e.dalpha_deg, e.t0_s, e.launch_deg, e.launch_conf, gfp_est, backspin_est, sidespin_est, da_est,
+           e.alpha0_deg, e.dalpha_deg, e.t0_s, e.launch_deg, e.launch_conf, e.case_deg, gfp_est, backspin_est, sidespin_est, da_est,
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
     { std::string inf = kv("vBall radar", fmt1(e.vball_kmh, "km/h") + "  (" + fmt1(e.vball_corr_kmh, "corr. cos20") + ")")
   + kv("V club radar (passe-bande)", fmt1nan(vclub_radar, "km/h") + (std::isnan(vclub_radar) ? "  — lobe club non détecté" : ""))
@@ -157,6 +157,7 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
   + kv("alpha0", fmt1(e.alpha0_deg, "deg"))
   + kv("Delta alpha", fmt1(e.dalpha_deg, "deg")) + kv("Impact t0", fmt1(e.t0_s, "s"))
   + kv("Launch angle (fit ridge)", e.launch_deg > 0 ? fmt1(e.launch_deg, "deg") + "  (conf " + fmt1(e.launch_conf, "") + ")" : std::string("n/a"))
+  + kv("Case angle (valise)", fmt1(e.case_deg, "deg"))
   + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Hauteur max", fmt1(theBall.getMaxHeight(), "m"))
   + kv("z final", fmt1(mf.back()[2], "m"));
   write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf, spec_to_json(e)); }
@@ -195,6 +196,7 @@ int main(int argc, char *argv[]) {
     bool openAfter = false;
     std::string mode = "fusion";   // défaut : patch + phase + peigne fusionnés
     double launchOverrideDeg = NAN; // --launch XX en mode --capture/--live : force l'angle de décollage
+    double caseDeg = 0.0;           // --caseangle XX : inclinaison de la valise vers le haut (dé-projection v_r = V·cos(ψ−ε))
     std::string liveSource;         // --source f.wav en mode --live : rejoue un fichier au lieu de la carte son
     { std::vector<std::string> args2; for (int i = 1; i < argc; i++) { std::string a = argv[i];
         if (a == "--open" || a == "-o") openAfter = true;
@@ -202,6 +204,8 @@ int main(int argc, char *argv[]) {
         else if (a.rfind("--mode=", 0) == 0) mode = a.substr(7);
         else if (a == "--launch" && i + 1 < argc) launchOverrideDeg = strtod(argv[++i], NULL);
         else if (a.rfind("--launch=", 0) == 0) launchOverrideDeg = strtod(a.c_str() + 9, NULL);
+        else if (a == "--caseangle" && i + 1 < argc) caseDeg = strtod(argv[++i], NULL);
+        else if (a.rfind("--caseangle=", 0) == 0) caseDeg = strtod(a.c_str() + 12, NULL);
         else if (a == "--source" && i + 1 < argc) liveSource = argv[++i];
         else if (a.rfind("--source=", 0) == 0) liveSource = a.substr(9);
         else args2.push_back(a); } argc = (int)args2.size() + 1; for (size_t i = 0; i < args2.size(); i++) argv[i + 1] = strdup(args2[i].c_str()); }
@@ -233,6 +237,8 @@ int main(int argc, char *argv[]) {
                 "                  'standard' (patch Hilbert seul)\n"
                 "  --launch deg    (mode --capture) force l'angle de décollage de la simu au lieu du loft\n"
                 "                  du club ; sans --launch, le launch affiché est celui mesuré sur le ridge\n"
+                "  --caseangle deg inclinaison de la valise vers le haut (ex: 11) : v_r = V·cos(ψ−ε), le fit\n"
+                "                  mesure ψ−ε, ε est rajouté au launch estimé et à la correction de vBall\n"
                 "\n"
                 "sorties (dans le dossier courant):\n"
                 "  console: RESULT portee=... apex=... z_final=... temps=...\n"
@@ -251,7 +257,7 @@ int main(int argc, char *argv[]) {
     if (string(argv[1]) == "--capture") {
         if (argc < 3) { cout << "il manque le fichier de captation" << endl; return 1; }
         Capture c = load_capture(argv[2]);
-        return run_from_capture(c, argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0, openAfter, mode, launchOverrideDeg);
+        return run_from_capture(c, argv[2], argc > 3 ? argv[3] : "F7", argc > 4 ? strtod(argv[4], NULL) : 1.0, openAfter, mode, launchOverrideDeg, caseDeg);
     }
     if (string(argv[1]) == "--live") {
         double secs = argc > 2 ? strtod(argv[2], NULL) : 2.0;
@@ -265,7 +271,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "--source %s : replay fichier via le pipeline live (test)\n", liveSource.c_str());
         }
         if (c.r1.empty()) { fprintf(stderr, "ERREUR: aucune donnée audio\n"); return 2; }
-        return run_from_capture(c, liveSource.empty() ? "live_capture.wav" : liveSource, club, ss, openAfter, mode, launchOverrideDeg);
+        return run_from_capture(c, liveSource.empty() ? "live_capture.wav" : liveSource, club, ss, openAfter, mode, launchOverrideDeg, caseDeg);
     }
     for (unsigned i = 0; i < sac.size(); i++)
         if (sac[i].getType() == argv[1]) j = i;

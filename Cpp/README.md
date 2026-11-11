@@ -75,6 +75,7 @@ L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/a
 ./simu_headless --live 2.0 F7 1.0 --source fichier.wav  # rejoue un fichier via le pipeline live (test)
 # parité Python : live_capture.wav se relit avec --capture ou Python/GolfBall.py (même ligne ESTIM parsée)
 ./simu_headless --capture <fichier> F7 1.0 --launch 16.5  # force l'angle de décollage de la simu (conf=-1, prioritaire sur la mesure) ; sans --launch, la simu utilise le launch mesuré sur le ridge quand conf ≥ 0,5, sinon le loft du club (repli, comme le 16,5° de GolfBall.py) — fit balistique ±0,75° en synthétique
+./simu_headless --capture <fichier> F7 1.0 --caseangle 11  # valise inclinée de 11° vers le haut : v_r = V·cos(ψ−ε), le fit mesure ψ−ε et ε est rajouté (cs111 : 4° -> 15°), vBall corrigée aussi
 
 # spectres multi-panneaux d'une captation (8 panneaux, voir plus bas)
 ./spectres_html ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv -o

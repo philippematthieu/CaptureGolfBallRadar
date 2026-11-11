@@ -272,7 +272,8 @@ CAP_UNUSED static void spectrogram(const std::vector<double>& x, int nfft, int h
 // ---------------- estimation (conforme pipe_validation.py) -------------------
 struct EstRadar {
     double vball_kmh;      // radiale
-    double vball_corr_kmh; // corrigée cos(20°)
+    double vball_corr_kmh; // corrigée cos(20°) (et cos(case angle) si --caseangle)
+    double case_deg = 0;   // angle d'inclinaison de la valise/radar vers le haut (--caseangle)
     double spin_rpm;       // périodicité du patch
     double spin_peigne_rpm = 0; // peigne de raies micro-Doppler (autocorrélation du spectre autour de f_D)
     double spin_phase_rpm = 0;  // fréquence instantanée du signal analytique du lobe balle
@@ -358,8 +359,10 @@ CAP_UNUSED static void fill_spec(EstRadar& e, const std::vector<double>& sig, in
         }
 }
 
-CAP_UNUSED static EstRadar estimate(const Capture& c) {
+CAP_UNUSED static EstRadar estimate(const Capture& c, double caseDeg = 0.0) {
     EstRadar e; e.vball_kmh = 0; e.vball_corr_kmh = 0; e.spin_rpm = 0; e.alpha0_deg = 0; e.dalpha_deg = 0; e.t0_s = 0;
+    e.case_deg = caseDeg;
+    const double caseRad = caseDeg * M_PI / 180.0;   // inclinaison de la valise vers le haut (--caseangle)
     const int NFFT = 2048, HOP = NFFT / 2;
     std::vector<double> ridge, power, tg;
     spectrogram(c.r1, NFFT, HOP, ridge, power, tg);
@@ -389,7 +392,7 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
     } else {
         e.vball_kmh = (v1 > 0) ? v1 : v2;
     }
-    e.vball_corr_kmh = e.vball_kmh / cos(THETA_RADAR);
+    e.vball_corr_kmh = e.vball_kmh / (cos(THETA_RADAR) * cos(caseRad));   // correction azimut 20° + élévation valise
     // --- 2e passe : on restreint la recherche du ridge à ±20 % autour de f_D (vitesse à priori) ---
     // L'écho de la tête de club (fréquence plus basse, très puissant) décélère après l'impact et
     // accroche sinon le ridge des 1res frames post-impact ; en bande restreinte, le ridge suit
@@ -405,7 +408,7 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
             double vref = post[post.size() / 2] / KV;
             if (vref > 0) {
                 e.vball_kmh = vref;
-                e.vball_corr_kmh = vref / cos(THETA_RADAR);
+                e.vball_corr_kmh = vref / (cos(THETA_RADAR) * cos(caseRad));
             }
         }
     }
@@ -533,7 +536,9 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
                 double bestPsi = 0, bestSse = 1e18;
                 for (double psiDeg = 4.0; psiDeg <= 26.0; psiDeg += 0.25) {
                     double psi = psiDeg * M_PI / 180.0;
-                    // le modèle démarre au premier bin (t = tm[0], V0 = vrm[0]) pour aligner donnée et modèle
+                    // le modèle démarre au premier bin (t = tm[0], V0 = vrm[0]) pour aligner donnée et modèle.
+                    // Avec une valise inclinée de ε (--caseangle), le radar mesure v_r = V·cos(ψ−ε)·cos θ_h :
+                    // le fit retrouve alors ψ−ε, on rajoute ε après le fit (e.launch_deg = bestPsi + caseDeg).
                     double vx = vr0 * cos(psi), vy = vr0 * sin(psi), t = tm[0];
                     std::vector<double> Vm(tm.size(), 0.0);
                     for (size_t f = 0; f < tm.size(); f++) {
@@ -561,8 +566,15 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
                 }
                 double mean = 0; for (double v : vrm) mean += v; mean /= vrm.size();
                 double sst = 0; for (double v : vrm) { double d = v - mean; sst += d * d; }
-                e.launch_deg = bestPsi;
+                e.launch_deg = bestPsi + caseDeg;   // le fit mesure ψ−ε (ε = case angle) : on rajoute ε
+                if (e.launch_deg > 45.0) e.launch_deg = 45.0;
                 e.launch_conf = (sst > 0) ? std::max(0.0, std::min(1.0, 1.0 - bestSse / sst)) : 0.0;
+                // correction fine de vBall avec ψ et ε : cos γ = cos ε·cos(20°)·cos ψ + sin ε·sin ψ
+                if (caseDeg != 0.0 && e.launch_deg > 0) {
+                    double psi = e.launch_deg * M_PI / 180.0;
+                    double cg = cos(caseRad) * cos(THETA_RADAR) * cos(psi) + sin(caseRad) * sin(psi);
+                    if (cg > 0.3) e.vball_corr_kmh = e.vball_kmh / cg;
+                }
             }
         }
     }

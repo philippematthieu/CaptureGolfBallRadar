@@ -282,7 +282,7 @@ def default_simu_bin():
     return os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Cpp', 'src', 'simu_headless'))
 
 
-def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=300):
+def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=300, case_angle=None):
     """Analyse une captation avec le binaire C++ `simu_headless --capture` et parse sa ligne ESTIM.
 
     Parité C++ : le C++ est l'outil principal (plus rapide, et `--live <s>` enregistre directement
@@ -298,7 +298,10 @@ def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=
     bin_ = simu_bin or default_simu_bin()
     if not os.path.exists(bin_):
         raise FileNotFoundError(f"binaire C++ introuvable : {bin_} (compiler : voir Cpp/README.md)")
-    r = subprocess.run([bin_, '--capture', os.path.abspath(path), club, repr(float(spin_scale))],
+    cmd = [bin_, '--capture', os.path.abspath(path), club, repr(float(spin_scale))]
+    if case_angle is not None:
+        cmd += ['--caseangle', repr(float(case_angle))]
+    r = subprocess.run(cmd,
                        capture_output=True, text=True, timeout=timeout,
                        cwd=os.path.dirname(bin_))  # le binaire écrit ses HTML/SVG dans son cwd
     out = r.stdout + r.stderr
@@ -315,13 +318,14 @@ def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=
     return d
 
 
-def estimate_from_capture_full(path, club='F7', spin_scale=1.0, simu_bin=None):
+def estimate_from_capture_full(path, club='F7', spin_scale=1.0, simu_bin=None, case_angle=None):
     """Estimation complète d'une captation : essaie le binaire C++ (V club, spin fusion 3 voies,
     décomposition back/side par courbure dAlpha), sinon repli sur pipe_validation (vBall, spin patch, alpha0).
+    case_angle = inclinaison de la valise radar vers le haut en degrés (passé au C++ via --caseangle).
 
     Retourne (v0_ms, spin_rpm, azim_deg, side_rpm, info) — side_rpm = None si non décomposé (spin nul)."""
     try:
-        est = analyze_capture_cpp(path, club=club, spin_scale=spin_scale, simu_bin=simu_bin)
+        est = analyze_capture_cpp(path, club=club, spin_scale=spin_scale, simu_bin=simu_bin, case_angle=case_angle)
     except (FileNotFoundError, ValueError) as ex:
         print(f"analyse C++ indisponible ({ex}) -> repli sur pipe_validation")
         v_kmh, spin_rpm, a0 = estimate_from_capture(path)
@@ -486,6 +490,8 @@ if __name__ == '__main__':
     ap.add_argument('--club', default='F7', help="club pour l'analyse C++ de la captation (défaut F7)")
     ap.add_argument('--launch', type=float, default=None,
                     help='launch angle en degrés (défaut : mesuré sur la captation si --capture, sinon 16.5)')
+    ap.add_argument('--caseangle', type=float, default=None,
+                    help='inclinaison de la valise radar vers le haut en degrés (ex: 11), passée au C++ (--caseangle)')
     ap.add_argument('--elev', type=float, default=10.0, help='elevation caméra 3D en degrés (défaut 10 = vue golfeur)')
     ap.add_argument('--azim', type=float, default=180.0, help='azimut caméra 3D en degrés (défaut 180 = de derrière, comme le golfeur ; -60 = vue plongeante)')
     args = ap.parse_args()
@@ -507,7 +513,8 @@ if __name__ == '__main__':
                     print(f"  ../sci/{f}")
             raise SystemExit(2)
         # analyse complète : binaire C++ (V club, spin 3 voies, back/side par courbure) avec repli pipe_validation
-        v0_ms, spin_rpm, azim_deg, side_rpm, _est = estimate_from_capture_full(args.capture, club=args.club)
+        v0_ms, spin_rpm, azim_deg, side_rpm, _est = estimate_from_capture_full(args.capture, club=args.club,
+                                                                               case_angle=args.caseangle)
         if launch_deg is None:
             ld = float(_est.get('launch_deg', 0.0) or 0.0)
             lc = float(_est.get('launch_conf', 0.0) or 0.0)
