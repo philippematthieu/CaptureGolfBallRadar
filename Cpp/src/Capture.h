@@ -22,6 +22,11 @@
 #include <sstream>
 #include <algorithm>
 
+#ifdef __APPLE__
+#include <AudioToolbox/AudioToolbox.h>   // mode --live : entrée carte son (radar en mode audio)
+#include <unistd.h>
+#endif
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -163,6 +168,76 @@ CAP_UNUSED static Capture load_capture(const std::string& path) {
         }
         if (c.r2.empty()) c.r2 = c.r1;
     }
+    return c;
+}
+
+// ---------------- sauvegarde WAV 16 bits (pour relecture Python : parité) ------
+CAP_UNUSED static void save_wav(const std::string& path, const Capture& c) {
+    FILE* f = fopen(path.c_str(), "wb");
+    if (!f) { fprintf(stderr, "ERREUR: impossible d'écrire %s\n", path.c_str()); return; }
+    long nfr = (long)std::min(c.r1.size(), c.r2.size());
+    uint32_t dataSize = (uint32_t)(nfr * 2 * 2), fs = (uint32_t)c.fs;
+    uint16_t ch = 2, bits = 16, blockAlign = 4; uint32_t byteRate = fs * 4;
+    fwrite("RIFF", 1, 4, f); uint32_t riffSize = 36 + dataSize; fwrite(&riffSize, 4, 1, f);
+    fwrite("WAVEfmt ", 1, 8, f); uint32_t fmtSize = 16; fwrite(&fmtSize, 4, 1, f);
+    uint16_t audioFmt = 1; fwrite(&audioFmt, 2, 1, f); fwrite(&ch, 2, 1, f);
+    fwrite(&fs, 4, 1, f); fwrite(&byteRate, 4, 1, f); fwrite(&blockAlign, 2, 1, f); fwrite(&bits, 2, 1, f);
+    fwrite("data", 1, 4, f); fwrite(&dataSize, 4, 1, f);
+    for (long i = 0; i < nfr; i++) {
+        int16_t l = (int16_t)std::max(-32768.0, std::min(32767.0, c.r1[i] * 32767.0));
+        int16_t r = (int16_t)std::max(-32768.0, std::min(32767.0, c.r2[i] * 32767.0));
+        fwrite(&l, 2, 1, f); fwrite(&r, 2, 1, f);
+    }
+    fclose(f);
+}
+
+// ---------------- entrée live carte son (macOS, CoreAudio AudioQueue) ----------
+#ifdef __APPLE__
+static void capture_live_cb(void* ud, AudioQueueRef, AudioQueueBufferRef inBuffer, const AudioTimeStamp*, UInt32, const AudioStreamPacketDescription*) {
+    std::vector<float>* b = (std::vector<float>*)ud;
+    const float* p = (const float*)inBuffer->mAudioData;
+    UInt32 n = inBuffer->mAudioDataByteSize / sizeof(float);
+    b->insert(b->end(), p, p + n);
+}
+#endif
+// Enregistre `seconds` s sur l'entrée par défaut, stéréo 44,1 kHz float32.
+CAP_UNUSED static Capture record_live(double seconds) {
+    Capture c; c.fs = 44100.0;
+#ifdef __APPLE__
+    AudioStreamBasicDescription fmt;
+    memset(&fmt, 0, sizeof(fmt));
+    fmt.mSampleRate = 44100.0;
+    fmt.mFormatID = kAudioFormatLinearPCM;
+    fmt.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked;
+    fmt.mBitsPerChannel = 32;
+    fmt.mChannelsPerFrame = 2;
+    fmt.mFramesPerPacket = 1;
+    fmt.mBytesPerFrame = 2 * 4;
+    fmt.mBytesPerPacket = 2 * 4;
+    std::vector<float> buf;
+    AudioQueueRef queue = NULL;
+    OSStatus st = AudioQueueNewInput(&fmt, capture_live_cb, &buf, NULL, NULL, 0, &queue);
+    if (st != noErr) { fprintf(stderr, "ERREUR AudioQueueNewInput (%d) — périphérique audio absent ?\n", (int)st); return c; }
+    UInt32 bufBytes = (UInt32)(0.5 * 44100.0 * 2 * 4);   // buffers internes 0,5 s
+    for (int i = 0; i < 3; i++) {
+        AudioQueueBufferRef bbuf;
+        if (AudioQueueAllocateBuffer(queue, bufBytes, &bbuf) == noErr)
+            AudioQueueEnqueueBuffer(queue, bbuf, 0, NULL);
+    }
+    st = AudioQueueStart(queue, NULL);
+    if (st != noErr) { fprintf(stderr, "ERREUR AudioQueueStart (%d)\n", (int)st); AudioQueueDispose(queue, true); return c; }
+    fprintf(stderr, "enregistrement live %.1f s sur l'entrée par défaut (44,1 kHz stéréo) — frappez !\n", seconds);
+    usleep((useconds_t)(seconds * 1e6));
+    AudioQueueStop(queue, true);
+    AudioQueueDispose(queue, true);
+    long nfr = (long)buf.size() / 2;
+    c.r1.resize(nfr); c.r2.resize(nfr);
+    for (long i = 0; i < nfr; i++) { c.r1[i] = buf[2 * i]; c.r2[i] = buf[2 * i + 1]; }
+    fprintf(stderr, "live : %ld frames stéréo capturées\n", nfr);
+#else
+    (void)seconds;
+    fprintf(stderr, "ERREUR: --live (carte son) nécessite macOS (CoreAudio). Compilez sur mac avec -framework AudioToolbox.\n");
+#endif
     return c;
 }
 
