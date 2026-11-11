@@ -216,48 +216,48 @@ Une balle de diamètre d = 42,67 mm à 10,525 GHz (λ = 28,5 mm) tournant à ω 
 
 **Schéma du workflow et des itérations (fonctions utilisées) :**
 
-Légende : **bleu = partie réelle** (captation radar → mesures), **vert = partie simulée** (modèle inverse), **jaune = corrélation mesure ↔ simu**, **orange = itérations testées**, **rouge = testé puis reverti**, **vert foncé = version retenue**.
+Légende : **bleu = partie réelle** (captation radar → mesures), **vert = partie simulée** (modèle inverse), **jaune = corrélation mesure ↔ simu**, **orange = itérations testées**, **rouge = testé puis reverti**, **vert foncé = version retenue**. **Flèches** : l'étiquette `-->|"donnée"|` = la donnée transportée sur la connexion (qui entre / qui sort de chaque nœud).
 
 ```mermaid
 flowchart TD
-    subgraph REAL["📡 PARTIE RÉELLE — captation radar"]
+    subgraph REAL["📡 PARTIE RÉELLE — captation radar → mesures"]
         direction TB
-        R["Radar 10,525 GHz<br/>2 canaux R1 / R2"] --> W["Fichier WAV stéréo 44,1 kHz<br/>ou CSV 2 lignes ';'"]
-        W --> LC["load_capture()<br/>→ signaux bruts R1, R2"]
-        LC --> HP["FILTRAGE passe-haut ~50 km/h<br/>(élimine le bruit basse fréquence)"]
-        HP --> EST["estimate() — STFT 2048/1024<br/>ridge → vBall approximative (±8 %)<br/>t0 = frame d'énergie max<br/>R1 ∥ R2 en parallèle : appariement stéréo<br/>→ α₀, Δα (courbure mesurée)"]
-        EST --> VCLUB["estimate_club_speed()<br/>passe-bande autour de la vitesse club<br/>approximative vBall/1.35, sur [t0−0,3 s, t0]<br/>→ V club mesurée, smash"]
-        EST --> S1 & S2 & S3
-        S1["① voie patch<br/>enveloppe de Hilbert 250 ms<br/>spectre 50–200 Hz, score d'harmoniques"]
-        S2["② voie phase<br/>estimate_spin_phase_spec()<br/>signal analytique → f_inst detrendée → pic f_rot"]
-        S3["③ voie peigne<br/>estimate_spin_peigne_ac()<br/>Welch 8192 + autocorrélation<br/>autour de f_D ± 2 kHz"]
-        S4["④ voie excursion β<br/>fi lissée 300 ms post-impact<br/>detrend linéaire → Δf/(2·KS)"]
-        S1 & S2 & S3 & S4 --> FUS["fusion_spin() — 4 voies EN PARALLÈLE<br/>pondérée par confiance (pic/fond)<br/>réf = voie la + confiante, moyenne des voies à ±15 %<br/>→ spin_radar"]
+        R["Radar 10,525 GHz<br/>2 canaux R1 / R2"] -->|"écho radar brut"| W["Fichier WAV stéréo 44,1 kHz<br/>ou CSV 2 lignes ';'"]
+        W -->|"fichier"| LC["load_capture()<br/>→ signaux bruts R1, R2"]
+        LC -->|"samples R1, R2"| HP["FILTRAGE passe-haut ~50 km/h<br/>(élimine le bruit basse fréquence)"]
+        HP -->|"signaux filtrés"| EST["estimate() — STFT 2048/1024<br/>ridge → vBall (±8 %), t0 = frame d'énergie max<br/>R1 ∥ R2 : appariement stéréo<br/>→ α₀, Δα (courbure mesurée)"]
+        EST -->|"vBall, t0"| VCLUB["estimate_club_speed()<br/>passe-bande autour de vBall/1.35, sur [t0−0,3 s, t0]<br/>→ V club mesurée, smash"]
+        EST -->|"signal post-impact, f_D, t0"| S1 & S2 & S3 & S4
+        S1["① voie patch — identification par les ALVÉOLES (AM)<br/>enveloppe de Hilbert 250 ms<br/>spectre 50–200 Hz, score d'harmoniques"]
+        S2["② voie phase — démodulation FRÉQUENCE/PHASE<br/>estimate_spin_phase_spec()<br/>fi du signal analytique detrendée → pic f_rot"]
+        S3["③ voie peigne — recherche de PÉRIODICITÉ micro-Doppler<br/>(PAS l'écho radar / vitesse) : autocorr. du spectre<br/>autour de f_D ± 2 kHz → lag = f_rot"]
+        S4["④ voie excursion β — amplitude de l'excursion micro-Doppler<br/>fi lissée 300 ms, detrend linéaire → Δf/(2·KS)<br/>β SUPPOSÉ = 4πr/λ → norme du spin<br/>(l'angle/direction du vecteur spin = balayage SIMU ci-dessous)"]
+        S1 & S2 & S3 & S4 -->|"rpm + confiance (pic/fond)"| FUS["fusion_spin() — 4 voies EN PARALLÈLE<br/>pondérée par confiance<br/>réf = voie la + confiante, moyenne des voies à ±15 %<br/>→ spin_radar"]
     end
 
     subgraph SIMU["💻 PARTIE SIMULÉE — modèle inverse + itérations"]
         direction TB
         SWEEP["🔁 BOUCLE de balayage<br/>GamaFacePath g ∈ [−15°, +15°], pas 0,5°<br/>(61 itérations en série)"]
-        SWEEP --> PROBE["Ball probe(ClubV0=vclub, α₀, g)<br/>rescaleSpin(spin_radar / hypot(spinY,spinZ))<br/>runSimu() → trajectoire mf (RK4, dt=0,01 s)"]
-        PROBE --> DA["courbure azimutale SIMULÉE<br/>da = atan2(vy,vx) à ~150 ms post-impact"]
-        DA --> CORR["⚖️ CORRÉLATION mesure ↔ simu<br/>err(g) = |da_simulé − Δα_mesuré|"]
-        CORR --> NEXT{"encore un g ?"}
-        NEXT -- "oui → boucle" --> SWEEP
-        NEXT -- "non, les 61 err sont calculés" --> G["g* = argmin err(g)"]
+        SWEEP -->|"g"| PROBE["Ball probe(ClubV0=vclub, α₀, g)<br/>rescaleSpin(spin_radar / hypot(spinY,spinZ))<br/>runSimu() → trajectoire mf (RK4, dt=0,01 s)"]
+        PROBE -->|"mf [x,vx,y,vy,z,vz]"| DA["courbure azimutale SIMULÉE<br/>da = atan2(vy,vx) à ~150 ms post-impact"]
+        DA -->|"da(g) simulé"| CORR["⚖️ CORRÉLATION mesure ↔ simu<br/>err(g) = |da_simulé − Δα_mesuré|"]
+        CORR -->|"err(g)"| NEXT{"encore un g ?"}
+        NEXT -->|"oui : g += 0,5°"| SWEEP
+        NEXT -->|"non : les 61 err"| G["g* = argmin err(g)"]
         G --> IT1{"Itération 1 — cohérence<br/>backspin > spin_radar ?<br/>(cs104 : 6381 > 4927 → absurde)"}
-        IT1 -- "oui → rescale du vecteur<br/>k = spin_radar / hypot(spinY, spinZ)" --> VEC["backspin_est = spinY·k, sidespin_est = spinZ·k<br/>hypot(back, side) = spin_radar ✓<br/>(cs104 : 4920/−246 → 4927 ✓)"]
-        IT1 -- "non" --> VEC
+        IT1 -->|"oui → k = spin_radar/hypot(spinY,spinZ)"| VEC["backspin_est = spinY·k, sidespin_est = spinZ·k<br/>hypot(back, side) = spin_radar ✓<br/>(cs104 : 4920/−246 → 4927 ✓)"]
+        IT1 -->|"non"| VEC
         VEC --> IT2{"Itération 2 — signe de Δα<br/>test : err = |da + Δα|, fenêtre jusqu'à la chute<br/>(cs119 : g=+15° → −1,5°, side +700 → −73 rpm)"}
-        IT2 -- "version testée" --> T["meilleurs minimums intérieurs"]
-        T -- "REVERT demandé<br/>(trajectoire déjà correcte)" --> RET["✅ version retenue<br/>err = |da − Δα|, fenêtre 150 ms"]
-        IT2 -- "version initiale" --> RET
-        RET --> FINAL["Ball theBall(vclub, α₀, g*) + rescaleSpin<br/>runSimu() → trajectoire finale"]
-        FINAL --> OUT["write_traj_3d_html() + spec_to_json()<br/>→ trajectoire_capture_3d.html<br/>write_traj_svg() → trajectoire_capture.svg"]
+        IT2 -->|"version testée"| T["meilleurs minimums intérieurs"]
+        T -->|"REVERT demandé (trajectoire déjà correcte)"| RET["✅ version retenue<br/>err = |da − Δα|, fenêtre 150 ms"]
+        IT2 -->|"version initiale"| RET
+        RET -->|"vclub, α₀, g*, spin_radar"| FINAL["Ball theBall(...) + rescaleSpin<br/>runSimu() → trajectoire finale mf"]
+        FINAL -->|"mf + panneau d'infos + spectrogramme"| OUT["write_traj_3d_html() + spec_to_json()<br/>→ trajectoire_capture_3d.html<br/>write_traj_svg() → trajectoire_capture.svg"]
     end
 
-    FUS --> SWEEP
-    VCLUB --> SWEEP
-    EST --> SWEEP
+    FUS -->|"spin_radar (rpm)"| SWEEP
+    VCLUB -->|"vclub (km/h), smash"| SWEEP
+    EST -->|"α₀, Δα (deg)"| SWEEP
 
     style REAL fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
     style SIMU fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
