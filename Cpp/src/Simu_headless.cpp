@@ -200,7 +200,19 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
   + kv("Cross-check spin (loft depuis spin)", std::isnan(loftDynSpin) ? std::string("n/a") : fmt1(loftDynSpin, "deg") + "  |  spin prédit depuis loft(ψ) = " + fmt1(spinFromLoft, "rpm") + "  (ratio vs radar " + fmt1(spinLoftRatio, "") + ")")
   + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Hauteur max", fmt1(theBall.getMaxHeight(), "m"))
   + kv("z final", fmt1(mf.back()[2], "m"));
-  write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf, spec_to_json(e)); }
+  // panneau droit "Pour le golfeur" : distances, launch angle, GamaFacePath, etc.
+  std::string golfer =
+      "<div class='k'>Portée</div><div class='big'>" + fmt1(mf.back()[0], "m") + "</div>"
+    + "<div class='k'>Hauteur max (apex)</div><div class='v'>" + fmt1(theBall.getMaxHeight(), "m") + "</div>"
+    + "<div class='k'>Déviation latérale (z final)</div><div class='v'>" + fmt1(mf.back()[2], "m") + "</div>"
+    + "<div class='k'>Launch angle ψ</div><div class='v'>" + (e.launch_deg > 0 ? fmt1(e.launch_deg, "°") + (e.launch_conf < 0 ? " (forcé)" : "  (conf " + fmt1(e.launch_conf, "") + ")") : std::string("n/a")) + "</div>"
+    + "<div class='k'>Loft dynamique</div><div class='v'>" + (std::isnan(loftDynEst) ? std::string("n/a") : fmt1(loftDynEst, "°")) + "</div>"
+    + "<div class='k'>GamaFacePath estimé</div><div class='v'>" + fmt1nan(gfp_est, "°") + "</div>"
+    + "<div class='k'>Courbure Δα mesurée</div><div class='v'>" + fmt1(e.dalpha_deg, "°") + "</div>"
+    + "<div class='k'>vBall</div><div class='v'>" + fmt1(e.vball_corr_kmh, "km/h") + "</div>"
+    + "<div class='k'>Spin total</div><div class='v'>" + fmt1(e.spin_rpm, "rpm") + "</div>"
+    + "<div class='k'>Back / Side spin</div><div class='v'>" + fmt1nan(backspin_est, "") + " / " + fmt1nan(sidespin_est, "rpm") + "</div>";
+  write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf, spec_to_json(e), golfer); }
     printf("HTML 3D ecrit : trajectoire_capture_3d.html\n");
     if (openAfter) {
 #ifdef __APPLE__
