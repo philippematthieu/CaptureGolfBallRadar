@@ -1095,22 +1095,23 @@ CAP_UNUSED static double fusion_spin(double patch_rpm, double patch_conf,
                                      double peigne_rpm, double peigne_conf,
                                      double exc_rpm, double exc_conf,
                                      double sb_rpm = 0.0, double sb_conf = 0.0,
-                                     double dens_rpm = 0.0, double dens_conf = 0.0) {
-    const double v[6] = {patch_rpm, phase_rpm, peigne_rpm, exc_rpm, sb_rpm, dens_rpm};
+                                     double dens_rpm = 0.0, double dens_conf = 0.0,
+                                     double loft_rpm = 0.0, double loft_conf = 0.0) {
+    const double v[7] = {patch_rpm, phase_rpm, peigne_rpm, exc_rpm, sb_rpm, dens_rpm, loft_rpm};
     // la voie excursion a un biais SYSTEMATIQUE connu (β effectif < 4πr/λ sur balle réelle :
     // elle lit bas) : sa confiance SNR est rabattue pour ne pas prendre la main seule.
     const double EXC_CONF_DISCOUNT = 0.25;
-    const double c[6] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT, sb_conf, dens_conf};
+    const double c[7] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT, sb_conf, dens_conf, loft_conf};
     int ref = -1;
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 7; i++)
         if (v[i] > 0 && c[i] > 0 && (ref < 0 || c[i] > c[ref])) ref = i;
     if (ref < 0) {
-        for (int i = 0; i < 6; i++)
+        for (int i = 0; i < 7; i++)
             if (v[i] > 0) { ref = i; break; }
         return (ref < 0) ? 0.0 : v[ref];
     }
     double num = 0, den = 0;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 7; i++) {
         if (v[i] <= 0) continue;
         if (std::fabs(v[i] - v[ref]) / std::max(v[i], v[ref]) < 0.15) {
             double w = (c[i] > 0) ? c[i] : 1.0;
