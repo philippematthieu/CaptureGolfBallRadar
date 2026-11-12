@@ -141,19 +141,19 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
                e.launch_deg, loftDynEst, shaftLeanEst, loftStatic);
     }
     // --- cross-check spin : deuxième estimation du loft dynamique via spin_radar ---
-    // modèle : backspin = V0·cos(ψ)·sin(loft_dyn)·CoeffBackSpin / 9,549  =>  inversion
+    // modèle (Ball.cpp L64-66) : spinY_rpm = V0·cos(ψ)·sin(loft_dyn)·CoeffBackSpin  (le /9,549 et ×9,549 s'annulent)
     double loftDynSpin = NAN, spinFromLoft = NAN, spinLoftRatio = NAN, coeffBsEmp = NAN;
     if (e.spin_rpm > 0 && e.launch_deg > 0 && !std::isnan(loftDynEst)) {
         double V0 = e.vball_corr_kmh / 3.6;   // m/s (corrigée géométrie)
         double coeff = sac[j].getCoeffBackSpin();
         double cpsi = cos(e.launch_deg * M_PI / 180.0);
         double sld = sin(loftDynEst * M_PI / 180.0);
-        double arg = e.spin_rpm * 9.54929659643 / (V0 * cpsi * coeff);
+        double arg = e.spin_rpm / (V0 * cpsi * coeff);
         if (arg > -1.0 && arg < 1.0) loftDynSpin = asin(arg) * 180.0 / M_PI;
-        spinFromLoft = V0 * cpsi * sld * coeff / 9.54929659643;
+        spinFromLoft = V0 * cpsi * sld * coeff;
         spinLoftRatio = spinFromLoft / e.spin_rpm;
         if (V0 * cpsi * sld > 1e-9)
-            coeffBsEmp = e.spin_rpm * 9.54929659643 / (V0 * cpsi * sld);   // coefficient de backspin effectif calibré sur la mesure
+            coeffBsEmp = e.spin_rpm / (V0 * cpsi * sld);   // coefficient de backspin effectif calibré sur la mesure
         printf("cross-check spin : loft_dyn(spin)=%.2f° vs loft_dyn(ψ)=%.2f° | spin prédit depuis loft(ψ)=%.0f rpm vs spin radar=%.0f rpm (ratio %.2f) | coeff backspin effectif=%.0f (club: %.0f)\n",
                loftDynSpin, loftDynEst, spinFromLoft, e.spin_rpm, spinLoftRatio, coeffBsEmp, coeff);
     }
@@ -224,7 +224,7 @@ int main(int argc, char *argv[]) {
     sac[2]  = Club("H3",  0.250 , 20.0, 18   , 0.80 ,  322.00 ,       500.0 ,        0.54,  136.8,   0.0,           0.0,        -2.5);
     sac[3]  = Club("F5",  0.200 , 20.0, 23   , 0.85 ,  335.00 ,       420.0 ,        0.54,  127.1,   0.0,           0.0,        -5.0);
     sac[4]  = Club("F6",  0.200 , 20.0, 26   , 0.83 ,  355.00 ,       420.0 ,        0.54,  125.5,   0.0,           0.0,        -5.0);
-    sac[5]  = Club("F7",  0.200 , 20.0, 30   , 0.83 ,  380.00 ,       420.0 ,        0.54,  122.3,   0.0,           0.0,        -6.5);
+    sac[5]  = Club("F7",  0.200 , 20.0, 30   , 0.83 ,  380.00 ,     420.0 ,        0.54,  122.3,   0.0,           0.0,        -6.5);
     sac[6]  = Club("F8",  0.200 , 20.0, 34.5 , 0.83 ,  340.00 ,       420.0 ,        0.53,  120.0,   0.0,           0.0,        -8.0);
     sac[7]  = Club("F9",  0.200 , 20.0, 39   , 0.83 ,  400.99 ,       308.0 ,        0.53,  115.9,   0.0,           0.0,        -8.0);
     sac[8]  = Club("PW",  0.200 , 20.0, 44   , 0.78 ,  438.24 ,       280.0 ,        0.52,  112.7,   0.0,           0.0,       -12.0);
