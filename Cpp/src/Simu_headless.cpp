@@ -121,6 +121,27 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
         backspin_est = syb * k;
         sidespin_est = szb * k;
     }
+    // --- loft dynamique estimé depuis ψ (inversion de launchAngle = loft_dyn + atan(v0p/v0n)) ---
+    // v0n = Vclub·cos(loft_dyn)·(1+e)/(1+m/M), v0p = −Vclub·sin(loft_dyn)/(1+m/M+2,5) : on balaie le shaft lean
+    // et on retient celui dont le launch calculé colle à ψ (mesuré ou forcé --launch_deg).
+    double loftDynEst = NAN, shaftLeanEst = NAN;
+    if (e.launch_deg > 0) {
+        double target = e.launch_deg * M_PI / 180.0;
+        double loftStatic = sac[j].getLoft();
+        double vc = vclub / 3.6, m = 0.04545, M = sac[j].getPoids(), ec = sac[j].getEcoeff();
+        double best = 1e18;
+        for (double sl = -20.0; sl <= 10.0001; sl += 0.25) {
+            double ld = (loftStatic + sl) * M_PI / 180.0;
+            double v0n = vc * cos(ld) * (1.0 + ec) / (1.0 + m / M);
+            double v0p = -vc * sin(ld) / (1.0 + m / M + 2.5);
+            double err = std::fabs(ld + atan(v0p / v0n) - target);
+            if (err < best) { best = err; shaftLeanEst = sl; loftDynEst = loftStatic + sl; }
+        }
+        printf("loft dynamique estimé depuis ψ=%.2f° : loft_dyn=%.2f° (shaft lean=%.2f° vs loft statique %.1f°)\n",
+               e.launch_deg, loftDynEst, shaftLeanEst, loftStatic);
+    }
+    if (!std::isnan(shaftLeanEst))
+        sac[j].setShaftLeanImpDegre(shaftLeanEst);         // le club reflète le loft dynamique estimé (avant de construire la balle)
     Ball theBall("Decathlon", 320, 3, sac[j], 18.0, 0.01);
     if (!std::isnan(launchOverrideDeg))
         theBall.setLaunchAngleDegre(launchOverrideDeg);   // --launch XX : force l'angle de decollage (prioritaire)
@@ -137,11 +158,11 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
     printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
     // ligne machine (parsée par Python/GolfBall.py analyze_capture_cpp) : une seule ligne key=value, NaN -> "nan"
-    printf("ESTIM vball_kmh=%.2f vball_corr_kmh=%.2f spin_rpm=%.1f spin_patch_rpm=%.1f spin_phase_rpm=%.1f spin_peigne_rpm=%.1f spin_exc_rpm=%.1f spin_patch_conf=%.2f spin_phase_conf=%.2f spin_peigne_conf=%.2f spin_exc_conf=%.2f vclub_radar_kmh=%.2f vclub_kmh=%.2f smash=%.4f alpha0_deg=%.3f dalpha_deg=%.3f t0_s=%.4f launch_deg=%.2f launch_conf=%.2f caseangle_deg=%.2f gfp_est_deg=%.2f backspin_est_rpm=%.1f sidespin_est_rpm=%.1f da_est_deg=%.3f portee_m=%.2f apex_m=%.2f z_final_m=%.2f temps_s=%.2f\n",
+    printf("ESTIM vball_kmh=%.2f vball_corr_kmh=%.2f spin_rpm=%.1f spin_patch_rpm=%.1f spin_phase_rpm=%.1f spin_peigne_rpm=%.1f spin_exc_rpm=%.1f spin_patch_conf=%.2f spin_phase_conf=%.2f spin_peigne_conf=%.2f spin_exc_conf=%.2f vclub_radar_kmh=%.2f vclub_kmh=%.2f smash=%.4f alpha0_deg=%.3f dalpha_deg=%.3f t0_s=%.4f launch_deg=%.2f launch_conf=%.2f caseangle_deg=%.2f loft_dyn_est_deg=%.2f shaftlean_est_deg=%.2f gfp_est_deg=%.2f backspin_est_rpm=%.1f sidespin_est_rpm=%.1f da_est_deg=%.3f portee_m=%.2f apex_m=%.2f z_final_m=%.2f temps_s=%.2f\n",
            e.vball_kmh, e.vball_corr_kmh, e.spin_rpm, spin_patch_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, e.spin_exc_rpm,
            e.spin_patch_conf, e.spin_phase_conf, e.spin_peigne_conf, e.spin_exc_conf,
            vclub_radar, vclub, (std::isnan(vclub_radar) ? NAN : e.vball_kmh / vclub_radar),
-           e.alpha0_deg, e.dalpha_deg, e.t0_s, e.launch_deg, e.launch_conf, e.case_deg, gfp_est, backspin_est, sidespin_est, da_est,
+           e.alpha0_deg, e.dalpha_deg, e.t0_s, e.launch_deg, e.launch_conf, e.case_deg, loftDynEst, shaftLeanEst, gfp_est, backspin_est, sidespin_est, da_est,
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
     { std::string inf = kv("vBall radar", fmt1(e.vball_kmh, "km/h") + "  (" + fmt1(e.vball_corr_kmh, "corr. cos20") + ")")
   + kv("V club radar (passe-bande)", fmt1nan(vclub_radar, "km/h") + (std::isnan(vclub_radar) ? "  — lobe club non détecté" : ""))
@@ -158,6 +179,7 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
   + kv("Delta alpha", fmt1(e.dalpha_deg, "deg")) + kv("Impact t0", fmt1(e.t0_s, "s"))
   + kv("Launch angle (fit ridge)", e.launch_deg > 0 ? fmt1(e.launch_deg, "deg") + "  (conf " + fmt1(e.launch_conf, "") + ")" : std::string("n/a"))
   + kv("Case angle (valise)", fmt1(e.case_deg, "deg"))
+  + kv("Loft dynamique estimé (depuis ψ)", std::isnan(loftDynEst) ? std::string("n/a") : fmt1(loftDynEst, "deg") + "  (shaft lean " + fmt1(shaftLeanEst, "deg") + ")")
   + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Hauteur max", fmt1(theBall.getMaxHeight(), "m"))
   + kv("z final", fmt1(mf.back()[2], "m"));
   write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf, spec_to_json(e)); }

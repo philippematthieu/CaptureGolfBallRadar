@@ -533,52 +533,41 @@ CAP_UNUSED static EstRadar estimate(const Capture& c, double caseDeg = 0.0) {
             if (tm.size() >= 5 && vr0 > 0) {
                 double w = e.spin_rpm * 2.0 * M_PI / 60.0;           // backspin (rad/s), voie patch
                 const double dt = 0.002;
-                // FIT CONJOINT (ψ, ε) : grille 2D. Le radar mesure v_r = V·cos(ψ−ε)·cos θ_h.
-                // ε entre par la dé-projection V0 = v_r0 / cos(ψ−ε) (qui change la traînée ∝ V0²),
-                // ψ par la forme du vol (g·sinψ, etc.) : les deux sont alors identifiables.
-                // --caseangle_deg fixe ε (grille 1D sur ψ seul) et rend la main à l'utilisateur.
-                double bestPsi = 0, bestEps = 0, bestSse = 1e18;
-                double epsStep = (caseDeg != 0.0) ? 1.0 : 1.0;
-                double epsLo = (caseDeg != 0.0) ? caseDeg : 0.0;
-                double epsHi = (caseDeg != 0.0) ? caseDeg : 20.0;
-                for (double epsDeg = epsLo; epsDeg <= epsHi + 1e-9; epsDeg += epsStep) {
-                    double eps = epsDeg * M_PI / 180.0;
-                    for (double psiDeg = 4.0; psiDeg <= 26.0; psiDeg += 0.25) {
-                        double psi = psiDeg * M_PI / 180.0;
-                        double V0 = vr0 / std::max(cos(psi - eps), 0.3);
-                        // le modèle démarre au premier bin (t = tm[0]) pour aligner donnée et modèle
-                        double vx = V0 * cos(psi), vy = V0 * sin(psi), t = tm[0];
-                        std::vector<double> Vm(tm.size(), 0.0);
-                        for (size_t f = 0; f < tm.size(); f++) {
-                            while (t < tm[f]) {
-                                double V = sqrt(vx * vx + vy * vy);
-                                double Re = V * BALL_D / mu;   // mu cinématique : Re = V·d/ν (comme flightg Scilab et EquationODEFlight)
-                                double Cd = 0.36 + 24.0 / Re + 6.0 / (1.0 + sqrt(Re));   // White
-                                double Cm = Cl1 * pow(BALL_D / 2, 2) * pow(w / std::max(V, 1e-6), 0.4);
-                                double FD = 0.5 * rho * Cd * Ab * V * V;               // traînée ∝ V²
-                                // Magnus comme flight_ode (Python) : F_M = 0.5·ρ·Cm·A·V·(ω×v), |ω×v| = ω·V
-                                double kM = 0.5 * rho * Cm * Ab * V * w;
-                                // accélération = −g + (forces aéro)/m  (g n'est PAS divisé par m)
-                                vx += (-FD * vx / V - kM * vy) / mm * dt;
-                                vy += (-9.81 + (-FD * vy / V + kM * vx) / mm) * dt;
-                                t += dt;
-                            }
-                            Vm[f] = sqrt(vx * vx + vy * vy);
+                // Le radar mesure v_r = V·cos(ψ−ε)·cos θ_h : le fit retrouve φ = ψ−ε (V0 = v_r0, échelle libre c).
+                // On rapporte ensuite launch_deg = φ + ε avec ε = --caseangle_deg (géométrie valise connue).
+                double bestPsi = 0, bestSse = 1e18;
+                for (double psiDeg = 4.0; psiDeg <= 26.0; psiDeg += 0.25) {
+                    double psi = psiDeg * M_PI / 180.0;
+                    // le modèle démarre au premier bin (t = tm[0], V0 = vrm[0]) pour aligner donnée et modèle
+                    double vx = vr0 * cos(psi), vy = vr0 * sin(psi), t = tm[0];
+                    std::vector<double> Vm(tm.size(), 0.0);
+                    for (size_t f = 0; f < tm.size(); f++) {
+                        while (t < tm[f]) {
+                            double V = sqrt(vx * vx + vy * vy);
+                            double Re = V * BALL_D / mu;   // mu cinématique : Re = V·d/ν (comme flightg Scilab et EquationODEFlight)
+                            double Cd = 0.36 + 24.0 / Re + 6.0 / (1.0 + sqrt(Re));   // White
+                            double Cm = Cl1 * pow(BALL_D / 2, 2) * pow(w / std::max(V, 1e-6), 0.4);
+                            double FD = 0.5 * rho * Cd * Ab * V * V;               // traînée ∝ V²
+                            // Magnus comme flight_ode (Python) : F_M = 0.5·ρ·Cm·A·V·(ω×v), |ω×v| = ω·V
+                            double kM = 0.5 * rho * Cm * Ab * V * w;
+                            // accélération = −g + (forces aéro)/m  (g n'est PAS divisé par m)
+                            vx += (-FD * vx / V - kM * vy) / mm * dt;
+                            vy += (-9.81 + (-FD * vy / V + kM * vx) / mm) * dt;
+                            t += dt;
                         }
-                        // échelle libre c sur v_r_model = c · V_model · cos(ψ−ε)
-                        double num = 0, den = 0;
-                        for (size_t f = 0; f < tm.size(); f++) { double m = Vm[f] * cos(psi - eps); num += vrm[f] * m; den += m * m; }
-                        double c = (den > 0) ? num / den : 0;
-                        double sse = 0;
-                        for (size_t f = 0; f < tm.size(); f++) { double m = Vm[f] * cos(psi - eps); double d = vrm[f] - c * m; sse += d * d; }
-                        if (sse < bestSse) { bestSse = sse; bestPsi = psiDeg; bestEps = epsDeg; }
+                        Vm[f] = sqrt(vx * vx + vy * vy);
                     }
+                    double num = 0, den = 0;
+                    for (size_t f = 0; f < tm.size(); f++) { num += vrm[f] * Vm[f]; den += Vm[f] * Vm[f]; }
+                    double c = (den > 0) ? num / den : 0;
+                    double sse = 0;
+                    for (size_t f = 0; f < tm.size(); f++) { double d = vrm[f] - c * Vm[f]; sse += d * d; }
+                    if (sse < bestSse) { bestSse = sse; bestPsi = psiDeg; }
                 }
                 double mean = 0; for (double v : vrm) mean += v; mean /= vrm.size();
                 double sst = 0; for (double v : vrm) { double d = v - mean; sst += d * d; }
-                e.launch_deg = bestPsi;              // vrai ψ (ε séparé par le fit conjoint)
+                e.launch_deg = bestPsi + caseDeg;   // le fit mesure ψ−ε : on rajoute ε (--caseangle_deg)
                 if (e.launch_deg > 45.0) e.launch_deg = 45.0;
-                if (caseDeg == 0.0) e.case_deg = bestEps;   // ε mesuré par le fit (0 si --caseangle_deg forcé)
                 e.launch_conf = (sst > 0) ? std::max(0.0, std::min(1.0, 1.0 - bestSse / sst)) : 0.0;
                 // correction fine de vBall avec ψ et ε : cos γ = cos ε·cos(20°)·cos ψ + sin ε·sin ψ
                 if (e.case_deg != 0.0 && e.launch_deg > 0) {
