@@ -42,9 +42,7 @@ def launch_from_est(est, case_angle=None):
     ou case angle renseigné (géométrie connue), sinon repli 16.5°. Retourne (deg, tag)."""
     ld = float(est.get('launch_deg', 0.0) or 0.0)
     lc = float(est.get('launch_conf', 0.0) or 0.0)
-    ca = float(est.get('caseangle_deg', 0.0) or 0.0)
-    if case_angle is not None:
-        ca = float(case_angle)
+    ca = float(case_angle) if case_angle is not None else 0.0   # seulement le case angle CLI compte pour le repli
     if ld > 0 and (lc >= 0.5 or ca != 0.0):
         return ld, f'{ld:.1f}(c{lc:.2f})'
     return LAUNCH_DEG, f'{LAUNCH_DEG:.1f}*repli'
