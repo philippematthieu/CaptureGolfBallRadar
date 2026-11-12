@@ -96,6 +96,50 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
     // vitesse club estimée = vBall / 1.35 (smash typique)
     sac[j].setClubV0Kmh(vclub);
     sac[j].setAlphaClubPathDegre(e.alpha0_deg);
+    // --- loft dynamique estimé depuis ψ (inversion de launchAngle = loft_dyn + atan(v0p/v0n)) ---
+    // v0n = Vclub·cos(loft_dyn)·(1+e)/(1+m/M), v0p = −Vclub·sin(loft_dyn)/(1+m/M+2,5) : on balaie le shaft lean
+    // et on retient celui dont le launch calculé colle à ψ (mesuré ou forcé --launch_deg).
+    double loftDynEst = NAN, shaftLeanEst = NAN;
+    if (e.launch_deg > 0) {
+        double target = e.launch_deg * M_PI / 180.0;
+        double loftStatic = sac[j].getLoft();
+        double vc = vclub / 3.6, m = 0.04545, M = sac[j].getPoids(), ec = sac[j].getEcoeff();
+        double best = 1e18;
+        for (double sl = -20.0; sl <= 10.0001; sl += 0.25) {
+            double ld = (loftStatic + sl) * M_PI / 180.0;
+            double v0n = vc * cos(ld) * (1.0 + ec) / (1.0 + m / M);
+            double v0p = -vc * sin(ld) / (1.0 + m / M + 2.5);
+            double err = std::fabs(ld + atan(v0p / v0n) - target);
+            if (err < best) { best = err; shaftLeanEst = sl; loftDynEst = loftStatic + sl; }
+        }
+        printf("loft dynamique estimé depuis ψ=%.2f° : loft_dyn=%.2f° (shaft lean=%.2f° vs loft statique %.1f°)\n",
+               e.launch_deg, loftDynEst, shaftLeanEst, loftStatic);
+    }
+    // --- 7e voie spin : spin prédit depuis loft(ψ) = V0·cos(ψ)·sin(loft_dyn)·CoeffBackSpin ---
+    // Valide SEULEMENT si loft_dyn est strictement intérieur aux butées du balayage [12°, 35°]
+    // (aux butées, ψ est mal estimé et le spin-loft explose, ex. +160 %) ; la confiance reflète
+    // la distance aux bords : pleine à >= 6° du bord, nulle au bord.
+    double spinFromLoft = NAN, loftConf = 0.0;
+    if (e.launch_deg > 0 && !std::isnan(loftDynEst)) {
+        double V0 = e.vball_corr_kmh / 3.6;   // m/s (corrigée géométrie)
+        double coeff = sac[j].getCoeffBackSpin();
+        double cpsi = cos(e.launch_deg * M_PI / 180.0);
+        spinFromLoft = V0 * cpsi * sin(loftDynEst * M_PI / 180.0) * coeff;
+        if (mode == "fusion" && loftDynEst > 12.0 && loftDynEst < 35.0 && spinFromLoft > 0) {
+            double margin = std::min(loftDynEst - 12.0, 35.0 - loftDynEst);
+            loftConf = 10.0 * std::max(0.0, std::min(1.0, margin / 6.0));
+            double sf2 = fusion_spin(spin_patch_rpm, e.spin_patch_conf,
+                                     e.spin_phase_rpm, e.spin_phase_conf,
+                                     e.spin_peigne_rpm, e.spin_peigne_conf,
+                                     e.spin_exc_rpm, e.spin_exc_conf,
+                                     e.spin_sideband_rpm, e.spin_sideband_conf,
+                                     e.spin_dens_rpm, e.spin_dens_conf,
+                                     spinFromLoft, loftConf);
+            printf("voie loft(ψ)=%.0f rpm (conf %.1f, loft_dyn=%.1f°) -> spin retenu=%.0f rpm\n",
+                   spinFromLoft, loftConf, loftDynEst, sf2);
+            e.spin_rpm = sf2;
+        }
+    }
     // décomposition back/side spin par modèle inverse contraint par la COURBURE de trajectoire :
     // pour chaque GamaFacePath on simule, on mesure la courbure azimutale sur ~150 ms post-impact
     // (même fenêtre que la mesure stéréo dAlpha), et on retient le g qui colle à dAlpha radar.
@@ -126,36 +170,17 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
         backspin_est = syb * k;
         sidespin_est = szb * k;
     }
-    // --- loft dynamique estimé depuis ψ (inversion de launchAngle = loft_dyn + atan(v0p/v0n)) ---
-    // v0n = Vclub·cos(loft_dyn)·(1+e)/(1+m/M), v0p = −Vclub·sin(loft_dyn)/(1+m/M+2,5) : on balaie le shaft lean
-    // et on retient celui dont le launch calculé colle à ψ (mesuré ou forcé --launch_deg).
-    double loftDynEst = NAN, shaftLeanEst = NAN;
-    if (e.launch_deg > 0) {
-        double target = e.launch_deg * M_PI / 180.0;
-        double loftStatic = sac[j].getLoft();
-        double vc = vclub / 3.6, m = 0.04545, M = sac[j].getPoids(), ec = sac[j].getEcoeff();
-        double best = 1e18;
-        for (double sl = -20.0; sl <= 10.0001; sl += 0.25) {
-            double ld = (loftStatic + sl) * M_PI / 180.0;
-            double v0n = vc * cos(ld) * (1.0 + ec) / (1.0 + m / M);
-            double v0p = -vc * sin(ld) / (1.0 + m / M + 2.5);
-            double err = std::fabs(ld + atan(v0p / v0n) - target);
-            if (err < best) { best = err; shaftLeanEst = sl; loftDynEst = loftStatic + sl; }
-        }
-        printf("loft dynamique estimé depuis ψ=%.2f° : loft_dyn=%.2f° (shaft lean=%.2f° vs loft statique %.1f°)\n",
-               e.launch_deg, loftDynEst, shaftLeanEst, loftStatic);
-    }
     // --- cross-check spin : deuxième estimation du loft dynamique via spin_radar ---
     // modèle (Ball.cpp L64-66) : spinY_rpm = V0·cos(ψ)·sin(loft_dyn)·CoeffBackSpin  (le /9,549 et ×9,549 s'annulent)
-    double loftDynSpin = NAN, spinFromLoft = NAN, spinLoftRatio = NAN, coeffBsEmp = NAN;
-    if (e.spin_rpm > 0 && e.launch_deg > 0 && !std::isnan(loftDynEst)) {
+    // (loftDynEst et spinFromLoft ont été calculés plus haut, avant la fusion 7 voies)
+    double loftDynSpin = NAN, spinLoftRatio = NAN, coeffBsEmp = NAN;
+    if (e.spin_rpm > 0 && e.launch_deg > 0 && !std::isnan(loftDynEst) && !std::isnan(spinFromLoft)) {
         double V0 = e.vball_corr_kmh / 3.6;   // m/s (corrigée géométrie)
         double coeff = sac[j].getCoeffBackSpin();
         double cpsi = cos(e.launch_deg * M_PI / 180.0);
         double sld = sin(loftDynEst * M_PI / 180.0);
         double arg = e.spin_rpm / (V0 * cpsi * coeff);
         if (arg > -1.0 && arg < 1.0) loftDynSpin = asin(arg) * 180.0 / M_PI;
-        spinFromLoft = V0 * cpsi * sld * coeff;
         spinLoftRatio = spinFromLoft / e.spin_rpm;
         if (V0 * cpsi * sld > 1e-9)
             coeffBsEmp = e.spin_rpm / (V0 * cpsi * sld);   // coefficient de backspin effectif calibré sur la mesure
@@ -180,13 +205,13 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
     printf("RESULT depuis captation : portee=%.1f m  apex=%.1f m  z_final=%+.1f m  temps=%.1f s\n",
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
     // ligne machine (parsée par Python/GolfBall.py analyze_capture_cpp) : une seule ligne key=value, NaN -> "nan"
-    printf("ESTIM vball_kmh=%.2f vball_corr_kmh=%.2f spin_rpm=%.1f spin_patch_rpm=%.1f spin_phase_rpm=%.1f spin_peigne_rpm=%.1f spin_exc_rpm=%.1f spin_patch_conf=%.2f spin_phase_conf=%.2f spin_peigne_conf=%.2f spin_exc_conf=%.2f spin_sideband_rpm=%.1f spin_sideband_conf=%.2f spin_ci_rpm=%.1f spin_dens_rpm=%.1f spin_dens_conf=%.2f vclub_radar_kmh=%.2f vclub_kmh=%.2f smash=%.4f alpha0_deg=%.3f dalpha_deg=%.3f z_radar_m=%.3f dalpha_int_deg=%.3f t0_s=%.4f launch_deg=%.2f launch_conf=%.2f caseangle_deg=%.2f loft_dyn_est_deg=%.2f shaftlean_est_deg=%.2f loft_dyn_spin_deg=%.2f spin_from_loft_rpm=%.1f spin_loft_ratio=%.3f coeff_backspin_emp=%.1f gfp_est_deg=%.2f backspin_est_rpm=%.1f sidespin_est_rpm=%.1f da_est_deg=%.3f portee_m=%.2f apex_m=%.2f z_final_m=%.2f temps_s=%.2f\n",
+    printf("ESTIM vball_kmh=%.2f vball_corr_kmh=%.2f spin_rpm=%.1f spin_patch_rpm=%.1f spin_phase_rpm=%.1f spin_peigne_rpm=%.1f spin_exc_rpm=%.1f spin_patch_conf=%.2f spin_phase_conf=%.2f spin_peigne_conf=%.2f spin_exc_conf=%.2f spin_sideband_rpm=%.1f spin_sideband_conf=%.2f spin_ci_rpm=%.1f spin_dens_rpm=%.1f spin_dens_conf=%.2f vclub_radar_kmh=%.2f vclub_kmh=%.2f smash=%.4f alpha0_deg=%.3f dalpha_deg=%.3f z_radar_m=%.3f dalpha_int_deg=%.3f t0_s=%.4f launch_deg=%.2f launch_conf=%.2f caseangle_deg=%.2f loft_dyn_est_deg=%.2f shaftlean_est_deg=%.2f loft_dyn_spin_deg=%.2f spin_from_loft_rpm=%.1f spin_loft_ratio=%.3f coeff_backspin_emp=%.1f gfp_est_deg=%.2f backspin_est_rpm=%.1f sidespin_est_rpm=%.1f da_est_deg=%.3f portee_m=%.2f apex_m=%.2f z_final_m=%.2f temps_s=%.2f spin_loft_rpm=%.1f spin_loft_conf=%.2f\n",
            e.vball_kmh, e.vball_corr_kmh, e.spin_rpm, spin_patch_rpm, e.spin_phase_rpm, e.spin_peigne_rpm, e.spin_exc_rpm,
            e.spin_patch_conf, e.spin_phase_conf, e.spin_peigne_conf, e.spin_exc_conf,
            e.spin_sideband_rpm, e.spin_sideband_conf, e.spin_ci_rpm, e.spin_dens_rpm, e.spin_dens_conf,
            vclub_radar, vclub, (std::isnan(vclub_radar) ? NAN : e.vball_kmh / vclub_radar),
            e.alpha0_deg, e.dalpha_deg, e.z_radar_m, e.dalpha_int_deg, e.t0_s, e.launch_deg, e.launch_conf, e.case_deg, loftDynEst, shaftLeanEst, loftDynSpin, spinFromLoft, spinLoftRatio, coeffBsEmp, gfp_est, backspin_est, sidespin_est, da_est,
-           mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal());
+           mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal(), spinFromLoft, loftConf);
     { std::string inf = kv("vBall radar", fmt1(e.vball_kmh, "km/h") + "  (" + fmt1(e.vball_corr_kmh, "corr. cos20") + ")")
   + kv("V club radar (passe-bande)", fmt1nan(vclub_radar, "km/h") + (std::isnan(vclub_radar) ? "  — lobe club non détecté" : ""))
   + kv("V club modèle (vBall/1.35)", fmt1(vclub_model, "km/h"))
@@ -205,6 +230,7 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
   + kv("Loft dynamique estimé (depuis ψ)", std::isnan(loftDynEst) ? std::string("n/a") : fmt1(loftDynEst, "deg") + "  (shaft lean " + fmt1(shaftLeanEst, "deg") + ")")
   + kv("Cross-check spin (loft depuis spin)", std::isnan(loftDynSpin) ? std::string("n/a") : fmt1(loftDynSpin, "deg") + "  |  spin prédit depuis loft(ψ) = " + fmt1(spinFromLoft, "rpm") + "  (ratio vs radar " + fmt1(spinLoftRatio, "") + ")")
   + kv("Spin sideband (5e voie)", fmt1(e.spin_sideband_rpm, "rpm") + "  (conf " + fmt1(e.spin_sideband_conf, "") + ", IC ±" + fmt1(e.spin_ci_rpm, "rpm") + ")")
+  + kv("Spin loft ψ (7e voie)", std::isnan(spinFromLoft) ? std::string("n/a") : fmt1(spinFromLoft, "rpm") + "  (conf " + fmt1(loftConf, "") + ", loft_dyn(ψ) " + fmt1(loftDynEst, "deg") + ")")
   + kv("Portee", fmt1(mf.back()[0], "m")) + kv("Hauteur max", fmt1(theBall.getMaxHeight(), "m"))
   + kv("z final", fmt1(mf.back()[2], "m"));
   // panneau droit "Pour le golfeur" : distances, launch angle, GamaFacePath, etc.
