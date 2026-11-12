@@ -285,6 +285,8 @@ struct EstRadar {
     double spin_sideband_rpm = 0;   // 5e voie : espacement pic balle -> 1er sideband micro-Doppler, frame/frame
     double spin_sideband_conf = 0;  // fraction de frames avec un sideband valide
     double spin_ci_rpm = 0;         // intervalle de confiance de la voie sideband (IQR/2, en rpm)
+    double spin_dens_rpm = 0;       // 6e voie : densité spectrale lissée (accumulée) Scilab, écart porteuse->1er sideband
+    double spin_dens_conf = 0;
     double alpha0_deg;     // azimut initial (appariement stéréo)
     double z_radar_m = NAN;      // déplacement latéral stéréo intégré (D2−D1)·L/b, méthode Scilab testsFFT.sci
     double dalpha_int_deg = NAN; // pente de z_radar (version intégrée, lissée) vs dalpha_deg (instantané)
@@ -861,6 +863,60 @@ CAP_UNUSED static double estimate_spin_sideband(const Capture& c, const EstRadar
     return 60.0 * fmed;                                 // f_rot (Hz) -> rpm
 }
 
+// ---------------- voie "densité spectrale lissée" (méthode Scilab testsFFT.sci / animDensite) ------
+// On accumule la densité spectrale |STFT|² sur TOUTES les frames post-impact (grande fenêtre
+// effective, comme le "mean filtered PSD" de Scilab), puis on mesure directement l'écart entre le
+// pic porteuse f_D et le 1er sideband micro-Doppler au-dessus : f_rot = f_side − f_porteuse.
+CAP_UNUSED static double estimate_spin_dens_scilab(const Capture& c, const EstRadar& e,
+                                                   double* conf = nullptr, double* ci_rpm = nullptr) {
+    if (e.vball_kmh <= 0) return 0.0;
+    double fD = e.vball_kmh * KV;
+    int i0 = (int)(e.t0_s * FS);
+    int n1 = std::min((int)c.r1.size(), i0 + (int)(0.45 * FS));
+    if (n1 - i0 < 8192) return 0.0;
+    const int NFFT = 8192, HOP = 2048;
+    double df = FS / NFFT;
+    int k0 = std::max(1, (int)((fD - 600.0) / df)), k1 = std::min(NFFT / 2 - 1, (int)((fD + 600.0) / df));
+    int nb = k1 - k0 + 1;
+    if (nb < 40) return 0.0;
+    std::vector<double> acc(nb, 0.0), w(NFFT), re(NFFT), im(NFFT);
+    for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
+    int cnt = 0;
+    for (int st = i0; st + NFFT <= n1; st += HOP) {
+        for (int ch = 0; ch < 2; ch++) {
+            const std::vector<double>& x = (ch == 0) ? c.r1 : c.r2;
+            for (int i = 0; i < NFFT; i++) { re[i] = x[st + i] * w[i]; im[i] = 0; }
+            fft(re, im, false);
+            for (int k = k0; k <= k1; k++) acc[k - k0] += (re[k] * re[k] + im[k] * im[k]) / (ch == 0 ? 1.0 : 1.0);
+        }
+        cnt++;
+    }
+    if (cnt == 0) return 0.0;
+    for (int i = 0; i < nb; i++) acc[i] /= (2.0 * cnt);   // moyenne R1+R2 sur les frames
+    // pic porteuse = max de la densité accumulée
+    int kp = 0; double pmax = 0;
+    for (int k = 0; k < nb; k++) if (acc[k] > pmax) { pmax = acc[k]; kp = k; }
+    if (pmax <= 0) return 0.0;
+    // fond = médiane de la bande
+    std::vector<double> base(acc);
+    std::nth_element(base.begin(), base.begin() + nb / 2, base.end());
+    double med = base[nb / 2];
+    // detrend local (~150 Hz) pour enlever le lobe porteuse large
+    int win = std::max(3, (int)(150.0 / df) / 2);
+    // 1er sideband au-dessus du pic : max local dans +40..300 Hz au-dessus du pic, > 2×fond
+    int gapMin = std::max(2, (int)(40.0 / df)), gapMax = (int)(300.0 / df);
+    int kSide = -1; double pSide = 0;
+    for (int k = kp + gapMin; k <= std::min(kp + gapMax, nb - 2); k++) {
+        if (acc[k] > acc[k - 1] && acc[k] >= acc[k + 1] && acc[k] > 2.0 * med && acc[k] > 0.05 * pmax) {
+            if (acc[k] > pSide) { pSide = acc[k]; kSide = k; }
+        }
+    }
+    if (conf) *conf = (med > 0 && kSide > 0) ? pSide / med : 0.0;
+    if (kSide < 0) return 0.0;
+    if (ci_rpm) *ci_rpm = 60.0 * df;   // résolution d'un bin en rpm
+    return 60.0 * (kSide - kp) * df;   // f_rot (Hz) -> rpm
+}
+
 CAP_UNUSED static double estimate_spin_peigne(const Capture& c, const EstRadar& e) {
     return estimate_spin_peigne_ac(c, e, nullptr, nullptr);
 }
@@ -1021,22 +1077,23 @@ CAP_UNUSED static double fusion_spin(double patch_rpm, double patch_conf,
                                      double phase_rpm, double phase_conf,
                                      double peigne_rpm, double peigne_conf,
                                      double exc_rpm, double exc_conf,
-                                     double sb_rpm = 0.0, double sb_conf = 0.0) {
-    const double v[5] = {patch_rpm, phase_rpm, peigne_rpm, exc_rpm, sb_rpm};
+                                     double sb_rpm = 0.0, double sb_conf = 0.0,
+                                     double dens_rpm = 0.0, double dens_conf = 0.0) {
+    const double v[6] = {patch_rpm, phase_rpm, peigne_rpm, exc_rpm, sb_rpm, dens_rpm};
     // la voie excursion a un biais SYSTEMATIQUE connu (β effectif < 4πr/λ sur balle réelle :
     // elle lit bas) : sa confiance SNR est rabattue pour ne pas prendre la main seule.
     const double EXC_CONF_DISCOUNT = 0.25;
-    const double c[5] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT, sb_conf};
+    const double c[6] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT, sb_conf, dens_conf};
     int ref = -1;
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 6; i++)
         if (v[i] > 0 && c[i] > 0 && (ref < 0 || c[i] > c[ref])) ref = i;
     if (ref < 0) {
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 6; i++)
             if (v[i] > 0) { ref = i; break; }
         return (ref < 0) ? 0.0 : v[ref];
     }
     double num = 0, den = 0;
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
         if (v[i] <= 0) continue;
         if (std::fabs(v[i] - v[ref]) / std::max(v[i], v[ref]) < 0.15) {
             double w = (c[i] > 0) ? c[i] : 1.0;
