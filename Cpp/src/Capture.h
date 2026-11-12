@@ -286,6 +286,8 @@ struct EstRadar {
     double spin_sideband_conf = 0;  // fraction de frames avec un sideband valide
     double spin_ci_rpm = 0;         // intervalle de confiance de la voie sideband (IQR/2, en rpm)
     double alpha0_deg;     // azimut initial (appariement stéréo)
+    double z_radar_m = NAN;      // déplacement latéral stéréo intégré (D2−D1)·L/b, méthode Scilab testsFFT.sci
+    double dalpha_int_deg = NAN; // pente de z_radar (version intégrée, lissée) vs dalpha_deg (instantané)
     double dalpha_deg;     // courbure début-fin
     double t0_s;
     double launch_deg = 0;   // angle de lancement ψ estimé par fit balistique sur le ridge post-impact
@@ -593,6 +595,10 @@ CAP_UNUSED static EstRadar estimate(const Capture& c, double caseDeg = 0.0) {
     }
     std::vector<double> tt, al;
     double v_ms = e.vball_kmh / KV * 1000.0 / 3600.0;
+    // version intégrée (méthode Scilab testsFFT.sci L1474) : D1/D2 = cumtrapz(v_r) par canal,
+    // z_radar(t) = L·(D2−D1)/b = déplacement latéral vu par la stéréo, lissé par intégration
+    double D1 = 0.0, D2 = 0.0, dtFrame = (double)HOP / FS;
+    double zFirst = NAN, zLast = NAN, tFirst = NAN;
     for (size_t i = i0; i < ridge.size(); i++) {
         if (power[i] < 0.02 * power[i0]) continue;
         double f1 = ridge[i];
@@ -621,6 +627,13 @@ CAP_UNUSED static EstRadar estimate(const Capture& c, double caseDeg = 0.0) {
         double L = L0 + v_ms / cos(THETA_RADAR) * (tg[i] - tg[i0]);  // L(t) évolutif
         tt.push_back(tg[i]);
         al.push_back(atan((2.0 * L / B_BASE) * (fd / fc)) * 180.0 / M_PI);
+        // intégration des vitesses radiales par canal (méthode Scilab : D = v_r·t) -> z stéréo
+        double v1 = f1 / KV / 3.6, v2 = f2 / KV / 3.6;
+        D1 += v1 * dtFrame;
+        D2 += v2 * dtFrame;
+        double z = L * (D2 - D1) / B_BASE;      // déplacement latéral (m), signe = convention stéréo
+        if (std::isnan(zFirst)) { zFirst = z; tFirst = tg[i]; }
+        zLast = z;
     }
     fill_spec(e, c.r1, 512, 128);   // fenêtre 11,6 ms comme plot_spectro.py (ridge bien résolu en temps)
     if (al.size() >= 3) {
@@ -635,6 +648,14 @@ CAP_UNUSED static EstRadar estimate(const Capture& c, double caseDeg = 0.0) {
             e.alpha0_deg = a0[a0.size() / 2];
             e.dalpha_deg = af[af.size() / 2] - a0[a0.size() / 2];
         }
+    }
+    // sorties de la version intégrée (Scilab testsFFT.sci) : z latéral stéréo et sa pente
+    if (!std::isnan(zLast)) {
+        e.z_radar_m = zLast;
+        double Lfin = L0 + v_ms / cos(THETA_RADAR) * (tt.back() - tg[i0]);
+        double z0 = std::isnan(zFirst) ? 0.0 : zFirst;
+        double a0i = atan(z0 / L0), a1i = atan(zLast / Lfin);
+        e.dalpha_int_deg = (a1i - a0i) * 180.0 / M_PI;
     }
     return e;
 }
