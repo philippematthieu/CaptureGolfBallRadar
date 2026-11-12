@@ -282,6 +282,9 @@ struct EstRadar {
     double spin_phase_conf = 0;  // confiance voie phase   = pic / médiane spectre fi detrendée (40-200 Hz)
     double spin_peigne_conf = 0; // confiance voie peigne  = ac[best] / médiane ac (lags 45-200 Hz)
     double spin_exc_conf = 0;    // confiance voie excursion = Δf / (1.4826·MAD résidu fi lissée)
+    double spin_sideband_rpm = 0;   // 5e voie : espacement pic balle -> 1er sideband micro-Doppler, frame/frame
+    double spin_sideband_conf = 0;  // fraction de frames avec un sideband valide
+    double spin_ci_rpm = 0;         // intervalle de confiance de la voie sideband (IQR/2, en rpm)
     double alpha0_deg;     // azimut initial (appariement stéréo)
     double dalpha_deg;     // courbure début-fin
     double t0_s;
@@ -764,6 +767,79 @@ CAP_UNUSED static double estimate_spin_peigne_ac(const Capture& c, const EstRada
     }
     return 60.0 * lagf * df;                            // f_rot (Hz) -> rpm
 }
+// ---------------- voie sideband : espacement pic balle -> 1er sideband micro-Doppler, frame par frame
+// À l'instant t, le spectre autour de f_D(t) montre le lobe balle + des sidebands à f_D ± n·f_rot(t)
+// (modulation par le flash du patch). f_rot(t) = f_sideband − f_peak. On moyenne les spectres de
+// PUISSANCE de R1 et R2 (l'incohérence de phase des porteuses interdit de moyenner les complexes,
+// mais les puissances s'additionnent) -> médiane des écarts, IC = IQR/2.
+CAP_UNUSED static double estimate_spin_sideband(const Capture& c, const EstRadar& e,
+                                                double* conf = nullptr, double* ci_rpm = nullptr) {
+    if (e.vball_kmh <= 0) return 0.0;
+    double fD = e.vball_kmh * KV;
+    int i0 = (int)(e.t0_s * FS);
+    int n1 = std::min((int)c.r1.size(), i0 + (int)(0.35 * FS));
+    if (n1 - i0 < 4096) return 0.0;
+    const int NFFT = 2048, HOP = 512;
+    double df = FS / NFFT;
+    int kLo = std::max(1, (int)((fD - 250.0) / df)), kHi = std::min(NFFT / 2 - 1, (int)((fD + 450.0) / df));
+    int nb = kHi - kLo + 1;
+    if (nb < 20) return 0.0;
+    std::vector<double> w(NFFT);
+    for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
+    int gapMin = std::max(2, (int)(40.0 / df));        // sideband cherché au-delà de 40 Hz du pic
+    int gapMax = (int)(300.0 / df);                     // ... et à moins de 300 Hz
+    std::vector<double> cands;
+    int nbFrames = 0, nbValid = 0;
+    std::vector<double> re(NFFT), im(NFFT), p1(nb), p2(nb);
+    for (int st = i0; st + NFFT <= n1; st += HOP) {
+        nbFrames++;
+        for (int ch = 0; ch < 2; ch++) {
+            const std::vector<double>& x = (ch == 0) ? c.r1 : c.r2;
+            int m = std::min(NFFT, (int)x.size() - st);
+            if (m < NFFT) break;
+            for (int i = 0; i < NFFT; i++) { re[i] = x[st + i] * w[i]; im[i] = 0; }
+            fft(re, im, false);
+            for (int k = 0; k < nb; k++) {
+                double p = re[kLo + k] * re[kLo + k] + im[kLo + k] * im[kLo + k];
+                if (ch == 0) p1[k] = p; else p2[k] = p;
+            }
+        }
+        // pic balle = max de la puissance moyennée dans la bande
+        int kp = 0; double pmax = -1;
+        for (int k = 0; k < nb; k++) {
+            double p = 0.5 * (p1[k] + p2[k]);
+            if (p > pmax) { pmax = p; kp = k; }
+        }
+        if (pmax <= 0) continue;
+        // médiane du fond de la frame
+        std::vector<double> base(nb);
+        for (int k = 0; k < nb; k++) base[k] = 0.5 * (p1[k] + p2[k]);
+        std::nth_element(base.begin(), base.begin() + nb / 2, base.end());
+        double med = base[nb / 2];
+        // premier maximum local au-dessus du pic balle, à [gapMin, gapMax] bins au-dessus, > 1.5×fond
+        int kSide = -1;
+        for (int k = kp + gapMin; k <= std::min(kp + gapMax, nb - 2); k++) {
+            double p = 0.5 * (p1[k] + p2[k]);
+            double pm = 0.5 * (p1[k - 1] + p2[k - 1]), pp = 0.5 * (p1[k + 1] + p2[k + 1]);
+            if (p > pm && p >= pp && p > 1.5 * med && p > 0.15 * pmax) { kSide = k; break; }
+        }
+        if (kSide < 0) continue;
+        int d = kSide - kp;
+        if (d <= 0) continue;
+        cands.push_back(d * df);                        // f_rot (Hz)
+        nbValid++;
+    }
+    if (conf) *conf = (nbFrames > 0) ? (double)nbValid / nbFrames : 0.0;
+    if (cands.empty()) return 0.0;
+    std::sort(cands.begin(), cands.end());
+    double fmed = cands[cands.size() / 2];
+    if (ci_rpm && cands.size() >= 4) {
+        double q1 = cands[cands.size() / 4], q3 = cands[(3 * cands.size()) / 4];
+        *ci_rpm = 60.0 * (q3 - q1) / 2.0;
+    }
+    return 60.0 * fmed;                                 // f_rot (Hz) -> rpm
+}
+
 CAP_UNUSED static double estimate_spin_peigne(const Capture& c, const EstRadar& e) {
     return estimate_spin_peigne_ac(c, e, nullptr, nullptr);
 }
@@ -923,22 +999,23 @@ CAP_UNUSED static double estimate_spin_phase(const Capture& c, const EstRadar& e
 CAP_UNUSED static double fusion_spin(double patch_rpm, double patch_conf,
                                      double phase_rpm, double phase_conf,
                                      double peigne_rpm, double peigne_conf,
-                                     double exc_rpm, double exc_conf) {
-    const double v[4] = {patch_rpm, phase_rpm, peigne_rpm, exc_rpm};
+                                     double exc_rpm, double exc_conf,
+                                     double sb_rpm = 0.0, double sb_conf = 0.0) {
+    const double v[5] = {patch_rpm, phase_rpm, peigne_rpm, exc_rpm, sb_rpm};
     // la voie excursion a un biais SYSTEMATIQUE connu (β effectif < 4πr/λ sur balle réelle :
     // elle lit bas) : sa confiance SNR est rabattue pour ne pas prendre la main seule.
     const double EXC_CONF_DISCOUNT = 0.25;
-    const double c[4] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT};
+    const double c[5] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT, sb_conf};
     int ref = -1;
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 5; i++)
         if (v[i] > 0 && c[i] > 0 && (ref < 0 || c[i] > c[ref])) ref = i;
     if (ref < 0) {
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 5; i++)
             if (v[i] > 0) { ref = i; break; }
         return (ref < 0) ? 0.0 : v[ref];
     }
     double num = 0, den = 0;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         if (v[i] <= 0) continue;
         if (std::fabs(v[i] - v[ref]) / std::max(v[i], v[ref]) < 0.15) {
             double w = (c[i] > 0) ? c[i] : 1.0;
