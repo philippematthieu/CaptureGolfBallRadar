@@ -847,7 +847,16 @@ CAP_UNUSED static double estimate_spin_sideband(const Capture& c, const EstRadar
             if (p > pm && p >= pp && p > 1.5 * med && p > 0.15 * pmax) { kSide = k; break; }
         }
         if (kSide < 0) continue;
-        int d = kSide - kp;
+        // interpolation parabolique des deux pics (porteuse et sideband) : résolution sous-bin
+        // (sinon df = FS/2048 = 21,5 Hz = 1292 rpm/bin, trop grossier)
+        auto frac = [&](int k) {
+            double pm = 0.5 * (p1[k - 1] + p2[k - 1]), p = 0.5 * (p1[k] + p2[k]), pp = 0.5 * (p1[k + 1] + p2[k + 1]);
+            double den = pm - 2.0 * p + pp;
+            if (den >= 0) return 0.0;
+            double d = (pm - pp) / (2.0 * den);
+            return std::max(-0.5, std::min(0.5, d));
+        };
+        double d = (kSide + frac(kSide)) - (kp + frac(kp));
         if (d <= 0) continue;
         cands.push_back(d * df);                        // f_rot (Hz)
         nbValid++;
@@ -914,7 +923,15 @@ CAP_UNUSED static double estimate_spin_dens_scilab(const Capture& c, const EstRa
     if (conf) *conf = (med > 0 && kSide > 0) ? pSide / med : 0.0;
     if (kSide < 0) return 0.0;
     if (ci_rpm) *ci_rpm = 60.0 * df;   // résolution d'un bin en rpm
-    return 60.0 * (kSide - kp) * df;   // f_rot (Hz) -> rpm
+    // interpolation parabolique des deux pics : résolution sous-bin
+    auto frac = [&](int k) {
+        double den = acc[k - 1] - 2.0 * acc[k] + acc[k + 1];
+        if (den >= 0) return 0.0;
+        double d = (acc[k - 1] - acc[k + 1]) / (2.0 * den);
+        return std::max(-0.5, std::min(0.5, d));
+    };
+    double d = (kSide + frac(kSide)) - (kp + frac(kp));
+    return 60.0 * d * df;               // f_rot (Hz) -> rpm
 }
 
 CAP_UNUSED static double estimate_spin_peigne(const Capture& c, const EstRadar& e) {
