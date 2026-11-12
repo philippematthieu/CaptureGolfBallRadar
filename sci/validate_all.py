@@ -10,7 +10,8 @@ Pour chaque captation :
     ligne ESTIM : vBall, spin 3 voies fusionnées, V club, smash, alpha0/dAlpha,
     GamaFacePath balayé, back/side estimés, portée simulée) ;
   - rejoue la simu Python (GolfBall.simulate_golf_ball) avec les estimés
-    (launch 16.5° par défaut tant que le point 3 n'est pas fait) -> portée Python.
+    (launch = launch_deg mesuré sur le ridge par le C++ si conf >= 0,5 ou
+    --caseangle_deg renseigné, sinon repli 16.5°) -> portée Python.
 
 Sortie : table console + sci/validation.html (cellules colorees selon l'erreur).
 Le nom de fichier n'est utilisé QUE pour la comparaison, jamais dans les calculs.
@@ -33,7 +34,20 @@ import numpy as np  # noqa: E402
 import GolfBall as G  # noqa: E402
 import pipe_validation as pv  # noqa: E402
 
-LAUNCH_DEG = 16.5  # launch par défaut (point 3 = le mesurer sur le ridge)
+LAUNCH_DEG = 16.5  # repli si le launch mesuré est absent ou peu confiant (conf < 0,5 sans --caseangle_deg)
+
+
+def launch_from_est(est, case_angle=None):
+    """Launch retenu pour la simu Python : launch_deg mesuré (ESTIM) si conf >= 0,5
+    ou case angle renseigné (géométrie connue), sinon repli 16.5°. Retourne (deg, tag)."""
+    ld = float(est.get('launch_deg', 0.0) or 0.0)
+    lc = float(est.get('launch_conf', 0.0) or 0.0)
+    ca = float(est.get('caseangle_deg', 0.0) or 0.0)
+    if case_angle is not None:
+        ca = float(case_angle)
+    if ld > 0 and (lc >= 0.5 or ca != 0.0):
+        return ld, f'{ld:.1f}(c{lc:.2f})'
+    return LAUNCH_DEG, f'{LAUNCH_DEG:.1f}*repli'
 
 
 def parse_ref(fn):
@@ -57,13 +71,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', default=os.path.join(HERE, 'validation.html'))
     ap.add_argument('--glob', default='*-F7-*.csv')
+    ap.add_argument('--caseangle_deg', type=float, default=None,
+                    help='inclinaison de la valise radar vers le haut (ex: 11), passée au C++ (--caseangle_deg)')
     args = ap.parse_args()
 
     files = sorted(glob.glob(os.path.join(HERE, args.glob)))
     print(f'{len(files)} captations trouvées dans {HERE}\n')
     hdr = (f"{'fichier':<46} {'vRef':>4} {'vEst':>6} {'err%':>6} {'smash':>6} | "
            f"{'spinRef':>7} {'spinEst':>7} {'err%':>6} | {'backEst':>7} {'sideEst':>7} {'sideRef':>7} | "
-           f"{'g*':>5} {'dA':>6} | {'carRef':>6} {'carC++':>6} {'carPy':>6} {'err%':>6}")
+           f"{'g*':>5} {'dA':>6} {'psy':>9} | {'carRef':>6} {'carC++':>6} {'carPy':>6} {'err%':>6}")
     print(hdr)
     print('-' * len(hdr))
 
@@ -76,8 +92,8 @@ def main():
             print(f'{name:<46}  nom non reconnu')
             continue
         try:
-            est = G.analyze_capture_cpp(fn, club='F7')
-            v_est = est['vball_corr_kmh']          # corrigée cos20°
+            est = G.analyze_capture_cpp(fn, club='F7', case_angle=args.caseangle_deg)
+            v_est = est['vball_corr_kmh']          # corrigée cos20° (+ case angle si --caseangle_deg)
             spin_est = est['spin_rpm']
             back_est = est.get('backspin_est_rpm', float('nan'))
             side_est = est.get('sidespin_est_rpm', float('nan'))
@@ -85,8 +101,9 @@ def main():
             dalpha = est.get('dalpha_deg', 0.0)
             smash = est.get('smash', float('nan'))
             car_cpp = est.get('portee_m', float('nan'))
-            # rejoue en Python avec les estimés
-            t, y, b = G.simulate_golf_ball(v0_ms=v_est / 3.6, launch_deg=LAUNCH_DEG,
+            launch_used, launch_tag = launch_from_est(est, args.caseangle_deg)
+            # rejoue en Python avec les estimés (launch mesuré si fiable, sinon repli)
+            t, y, b = G.simulate_golf_ball(v0_ms=v_est / 3.6, launch_deg=launch_used,
                                            azim_deg=est.get('alpha0_deg', 0.0),
                                            spin_rpm=spin_est,
                                            side_rpm=0.0 if side_est != side_est else side_est)
@@ -100,10 +117,11 @@ def main():
         ev, es, ec = pct(v_est, ref['vball']), pct(spin_est, ref['backspin']), pct(car_py, ref['carry'])
         print(f"{name:<46} {ref['vball']:>4} {v_est:>6.1f} {ev:>+6.1f} {smash:>6.3f} | "
               f"{ref['backspin']:>7} {spin_est:>7.0f} {es:>+6.1f} | {back_est:>7.0f} {side_est:>+7.0f} {ref['sidespin']:>+7} | "
-              f"{gfp:>+5.1f} {dalpha:>+6.2f} | {ref['carry']:>6} {car_cpp:>6.1f} {car_py:>6.1f} {ec:>+6.1f}")
+              f"{gfp:>+5.1f} {dalpha:>+6.2f} {launch_tag:>9} | {ref['carry']:>6} {car_cpp:>6.1f} {car_py:>6.1f} {ec:>+6.1f}")
         rows.append(dict(name=name, ref=ref, est=est, v_est=v_est, spin_est=spin_est,
                          back_est=back_est, side_est=side_est, gfp=gfp, dalpha=dalpha,
                          smash=smash, car_cpp=car_cpp, car_py=car_py, z_py=z_py,
+                         launch_used=launch_used, launch_tag=launch_tag,
                          ev=ev, es=es, ec=ec))
 
     ok = [r for r in rows if not r.get('err')]
@@ -126,13 +144,14 @@ def main():
                 'td,th{border:1px solid #999;padding:3px 6px;text-align:right}td:first-child,th:first-child{text-align:left}'
                 '</style></head><body><h1>Validation des captations radar (simu_headless --capture, ligne ESTIM)</h1>'
                 f'<p>{len(files)} fichiers, {len(ok)} analysés, {n_fail} en erreur. '
-                f'launch Python = {LAUNCH_DEG}° (fixe). La référence vient du nom de fichier (comparaison seule).</p>'
+                f'launch Python = launch_deg mesuré (ESTIM) si conf &ge; 0,5 ou --caseangle_deg, sinon repli {LAUNCH_DEG}° (*). '
+                f'La référence vient du nom de fichier (comparaison seule).</p>'
                 '<table><tr><th>fichier</th><th>vBall ref</th><th>vBall est</th><th>smash</th>'
-                '<th>spin ref</th><th>spin est</th><th>back est</th><th>side est (ref)</th><th>g*</th><th>dAlpha</th>'
+                '<th>spin ref</th><th>spin est</th><th>back est</th><th>side est (ref)</th><th>g*</th><th>dAlpha</th><th>launch utilisé</th>'
                 '<th>carry ref</th><th>carry C++</th><th>carry Py</th><th>z final Py</th></tr>\n')
         for r in rows:
             if r.get('err'):
-                f.write(f'<tr><td>{r["name"]}</td><td colspan="13" style="background:#ffcdd2">ERREUR</td></tr>\n')
+                f.write(f'<tr><td>{r["name"]}</td><td colspan="14" style="background:#ffcdd2">ERREUR</td></tr>\n')
                 continue
             ref, est = r['ref'], r['est']
             f.write(f'<tr><td>{r["name"]}</td>'
@@ -142,6 +161,7 @@ def main():
                     f'<td>{r["back_est"]:.0f}</td>'
                     f'<td>{r["side_est"]:+.0f} (ref {ref["sidespin"]:+d})</td>'
                     f'<td>{r["gfp"]:+.1f}°</td><td>{r["dalpha"]:+.2f}°</td>'
+                    f'<td>{r["launch_tag"]}</td>'
                     f'<td>{ref["carry"]}</td><td>{r["car_cpp"]:.1f}</td>'
                     f'{cell(round(r["car_py"], 1), r["ec"])}'
                     f'<td>{r["z_py"]:+.1f} m</td></tr>\n')
