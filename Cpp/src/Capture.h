@@ -420,8 +420,10 @@ CAP_UNUSED static EstRadar estimate(const Capture& c, double caseDeg = 0.0) {
         }
     }
     // --- spin par périodicité du patch, avec score d'harmoniques (comme Python) ---
-    int nseg = (int)(0.25 * FS);
-    if ((i0 * HOP + nseg) < (int)c.r1.size() && nseg > NFFT) {
+    // fenêtre adaptative : tout le post-impact disponible, max 0,25 s (les captures courtes
+    // ex. cs113/cs118 = 0,237 s faisaient sinon sauter tout le bloc -> patch = 0)
+    int nseg = std::min((int)(0.25 * FS), (int)c.r1.size() - i0 * HOP);
+    if (nseg > NFFT) {
         int N = 1; while (N < nseg) N <<= 1;
         std::vector<double> seg(c.r1.begin() + i0 * HOP, c.r1.begin() + i0 * HOP + nseg);
         if (e.vball_kmh > 0) {
