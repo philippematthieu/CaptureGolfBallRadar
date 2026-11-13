@@ -125,6 +125,26 @@ static void write_traj_3d_html(const std::string& path,
     // sol vert carré (côté = side, centré sur la trajectoire en X, centré en Z)
     fprintf(f, "var sol=new THREE.Mesh(new THREE.PlaneGeometry(%.0f,%.0f),new THREE.MeshLambertMaterial({color:0x3a9d3a}));sol.rotation.x=-Math.PI/2;sol.position.set(%.0f,0,0);scene.add(sol);\n", side, side, side/2);
     fprintf(f, "var grid=new THREE.GridHelper(%.0f,%d,0x888888,0xcccccc);grid.position.set(%.0f,0.01,0);scene.add(grid);\n", side, gdiv, side/2);
+    // végétation procédurale (seed fixe = rendu déterministe) : arbres (tronc + 2 cônes) et buissons
+    // (sphères aplaties), avec corridor dégagé le long du vol : |z| < 7 m interdit pour x ∈ [-6, portee+14]
+    fprintf(f, "var side=%.0f;\n", side);
+    fputs("(function(){var seed=1234567;function rnd(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;}\n"
+          "var xmax=traj.length?traj[traj.length-1][0]:side;\n"
+          "function clearOfFlight(x,z){return !(x>-6&&x<xmax+14&&Math.abs(z)<7);}\n"
+          "var trunkM=new THREE.MeshLambertMaterial({color:0x6d4c2f});\n"
+          "var leafM=new THREE.MeshLambertMaterial({color:0x2f7d32});\n"
+          "var leafM2=new THREE.MeshLambertMaterial({color:0x43a047});\n"
+          "var bushM=new THREE.MeshLambertMaterial({color:0x66bb6a});\n"
+          "var nT=Math.round(side/5),nB=Math.round(side/2.5),i,x,z;\n"
+          "for(i=0;i<nT;i++){x=2+rnd()*(side-4);z=(rnd()-0.5)*(side-2);if(!clearOfFlight(x,z))continue;\n"
+          "var h=3.5+rnd()*3.5,r=0.18+rnd()*0.12;\n"
+          "var trunk=new THREE.Mesh(new THREE.CylinderGeometry(r,r*1.3,h,7),trunkM);trunk.position.set(x,h/2,z);scene.add(trunk);\n"
+          "var c1=new THREE.Mesh(new THREE.ConeGeometry(h*0.55,h*1.6,8),rnd()<0.5?leafM:leafM2);c1.position.set(x,h+h*0.7,z);scene.add(c1);\n"
+          "var c2=new THREE.Mesh(new THREE.ConeGeometry(h*0.38,h*1.2,8),leafM2);c2.position.set(x,h+h*1.5,z);scene.add(c2);}\n"
+          "for(i=0;i<nB;i++){x=2+rnd()*(side-4);z=(rnd()-0.5)*(side-2);\n"
+          "if(x>-4&&x<xmax+10&&Math.abs(z)<3)continue;\n"
+          "var br=0.5+rnd()*0.8;var b=new THREE.Mesh(new THREE.SphereGeometry(br,7,6),bushM);b.scale.y=0.55;b.position.set(x,br*0.5,z);scene.add(b);}\n"
+          "})();\n", f);
     // lumiere
     fprintf(f, "scene.add(new THREE.AmbientLight(0xffffff,0.7));var d=new THREE.DirectionalLight(0xffffff,0.8);d.position.set(-50,80,30);scene.add(d);\n");
     // courbe trajectoire
