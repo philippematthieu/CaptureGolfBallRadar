@@ -16,7 +16,7 @@ Pour chaque captation :
 Sortie : table console + sci/validation.html (cellules colorees selon l'erreur).
 Le nom de fichier n'est utilisé QUE pour la comparaison, jamais dans les calculs.
 
-Usage : .venv/bin/python sci/validate_all.py [--out sci/validation.html]
+Usage : .venv/bin/python Python/validate_all.py [--out sci/validation.html]
 Code de sortie : 1 si une captation échoue, 0 sinon.
 """
 import argparse
@@ -67,13 +67,13 @@ def pct(est, ref):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--out', default=os.path.join(HERE, 'validation.html'))
+    ap.add_argument('--out', default=os.path.join(ROOT, 'sci', 'validation.html'))
     ap.add_argument('--glob', default='*-F7-*.csv')
     ap.add_argument('--caseangle_deg', type=float, default=None,
                     help='inclinaison de la valise radar vers le haut (ex: 11), passée au C++ (--caseangle_deg)')
     args = ap.parse_args()
 
-    files = sorted(glob.glob(os.path.join(HERE, args.glob)))
+    files = sorted(glob.glob(os.path.join(ROOT, 'sci', args.glob)))
     print(f'{len(files)} captations trouvées dans {HERE}\n')
     hdr = (f"{'fichier':<46} {'vRef':>4} {'vEst':>6} {'err%':>6} {'smash':>6} | "
            f"{'spinRef':>7} {'spinEst':>7} {'err%':>6} | {'backEst':>7} {'sideEst':>7} {'sideRef':>7} | "
