@@ -288,10 +288,13 @@ def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=
     Parité C++ : le C++ est l'outil principal (plus rapide, et `--live <s>` enregistre directement
     la carte son radar, sauve `live_capture.wav`, puis analyse — ce fichier se relit ici avec --capture).
 
-    Retourne un dict de floats : vball_kmh, vball_corr_kmh, spin_rpm, spin_patch_rpm, spin_phase_rpm,
-    spin_peigne_rpm, spin_exc_rpm, spin_patch_conf, spin_phase_conf, spin_peigne_conf, spin_exc_conf,
-    vclub_radar_kmh, vclub_kmh, smash, alpha0_deg, dalpha_deg, t0_s, launch_deg, launch_conf, gfp_est_deg,
-    backspin_est_rpm, sidespin_est_rpm, da_est_deg, portee_m, apex_m, z_final_m, temps_s (+ '_stdout').
+    Retourne un dict de floats (parité C++ : tous les champs de la ligne ESTIM, parsés en key=value) :
+    vball_kmh, vball_corr_kmh, spin_rpm (fusion 7 voies), spin_patch_rpm, spin_phase_rpm, spin_peigne_rpm,
+    spin_exc_rpm, spin_sideband_rpm, spin_dens_rpm, spin_loft_rpm (+ _conf de chaque voie, spin_ci_rpm),
+    vclub_radar_kmh, vclub_kmh, smash, alpha0_deg, dalpha_deg, z_radar_m, dalpha_int_deg, t0_s,
+    launch_deg, launch_conf, caseangle_deg, loft_dyn_est_deg, shaftlean_est_deg, loft_dyn_spin_deg,
+    spin_from_loft_rpm, spin_loft_ratio, coeff_backspin_emp, gfp_est_deg, backspin_est_rpm,
+    sidespin_est_rpm, da_est_deg, portee_m, apex_m, z_final_m, temps_s, spin_loft_conf (+ '_stdout').
     Lève FileNotFoundError si le binaire manque, ValueError si la ligne ESTIM est absente."""
     import re
     import subprocess
@@ -342,9 +345,12 @@ def estimate_from_capture_full(path, club='F7', spin_scale=1.0, simu_bin=None, c
         side = None
     nan = float('nan')
     print(f"capture {os.path.basename(path)} (C++) : vBall={est['vball_kmh']:.1f} km/h radiale "
-          f"({v_corr:.1f} corr. cos20), spin={spin_rpm:.0f} rpm "
-          f"(patch={est.get('spin_patch_rpm', nan):.0f}, phase={est.get('spin_phase_rpm', nan):.0f}, "
-          f"peigne={est.get('spin_peigne_rpm', nan):.0f}, exc={est.get('spin_exc_rpm', nan):.0f}), "
+          f"({v_corr:.1f} corr. cos20), spin={spin_rpm:.0f} rpm (fusion 7 voies) "
+          f"[patch={est.get('spin_patch_rpm', nan):.0f}, phase={est.get('spin_phase_rpm', nan):.0f}, "
+          f"peigne={est.get('spin_peigne_rpm', nan):.0f}, exc={est.get('spin_exc_rpm', nan):.0f}, "
+          f"sideband={est.get('spin_sideband_rpm', nan):.0f} (conf {est.get('spin_sideband_conf', nan):.2f}, "
+          f"IC±{est.get('spin_ci_rpm', nan):.0f}), dens={est.get('spin_dens_rpm', nan):.0f}, "
+          f"loft={est.get('spin_loft_rpm', nan):.0f} (conf {est.get('spin_loft_conf', nan):.2f})], "
           f"Vclub={est.get('vclub_kmh', nan):.1f} km/h, "
           f"smash={est.get('smash', nan):.3f}, alpha0={azim:+.2f} deg, dAlpha={est.get('dalpha_deg', 0.0):+.2f} deg")
     if side is not None:
@@ -571,8 +577,11 @@ if __name__ == '__main__':
     if args.capture and _est:
         info.append(f"V club radar : {_est.get('vclub_kmh', nan):.1f} km/h   smash={_est.get('smash', nan):.3f}")
         info.append(f"vBall radar  : {_est.get('vball_kmh', nan):.1f} km/h  ({_est.get('vball_corr_kmh', nan):.1f} corr. cos20)")
-        info.append(f"spin 3 voies : patch={_est.get('spin_patch_rpm', 0):.0f}  phase={_est.get('spin_phase_rpm', 0):.0f}  "
-                    f"peigne={_est.get('spin_peigne_rpm', 0):.0f} rpm")
+        info.append(f"spin 7 voies : patch={_est.get('spin_patch_rpm', 0):.0f}  phase={_est.get('spin_phase_rpm', 0):.0f}  "
+                    f"peigne={_est.get('spin_peigne_rpm', 0):.0f}  exc={_est.get('spin_exc_rpm', 0):.0f}  "
+                    f"sideband={_est.get('spin_sideband_rpm', 0):.0f} (conf {_est.get('spin_sideband_conf', 0):.2f}, "
+                    f"IC±{_est.get('spin_ci_rpm', 0):.0f})  dens={_est.get('spin_dens_rpm', 0):.0f}  "
+                    f"loft={_est.get('spin_loft_rpm', 0):.0f} (conf {_est.get('spin_loft_conf', 0):.2f}) rpm")
         if side_rpm is not None:
             info.append(f"back/side est: {_est.get('backspin_est_rpm', 0):.0f} / {side_rpm:+.0f} rpm  "
                         f"(GamaFacePath={_est.get('gfp_est_deg', 0):+.1f} deg)")
