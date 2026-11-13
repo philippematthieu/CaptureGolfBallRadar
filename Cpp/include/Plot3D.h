@@ -50,7 +50,7 @@ static void ensureLibNextTo(const std::string& htmlPath) {
     size_t q = hdir.find_last_of("/\\");
     hdir = (q == std::string::npos) ? "." : hdir.substr(0, q);
     std::string ed = exeDir();
-    std::string cands[] = { ed, hdir, ".", "Cpp/src", "src", "../Cpp/src", "../src", "../../Cpp/src" };
+    std::string cands[] = { ed, hdir, ".", "Cpp", "..", "../..", "src", "../src", "../../Cpp" };
     for (const std::string& d : cands) {
         std::string s3 = d + "/lib/three.min.js", sO = d + "/lib/OrbitControls.js";
         if (exists(s3) && exists(sO)) {

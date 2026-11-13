@@ -1,5 +1,8 @@
 
 # Golf Ball Simulator in Scilab (Scilab, Python and cpp)
+
+> **Abstract — principe directeur.** *Mesurer directement ce que les radars savent réellement mesurer, puis utiliser le modèle physique pour identifier les grandeurs qui ne sont pas directement observables.* Un radar Doppler 10,525 GHz mesure des fréquences (vitesses radiales, micro-Doppler du patch, courbure stéréo R1/R2) — pas des angles de club ni un vecteur spin 3D. On estime donc d'abord, aussi précisément que possible, les observables radar (vBall, V club, smash, spin total par fusion multi-voies, α₀/Δα, launch angle ψ par fit balistique) ; puis le **modèle physique** (impact club→balle + vol traînée/Magnus/gravité) sert d'inverse : balayage de `GamaFacePath` contraint par la courbure mesurée pour décomposer back/side spin, loft dynamique déduit de ψ, etc. Chaque grandeur non observable est ainsi identifiée par cohérence mesure ↔ simulation, jamais inventée. Bilan sur 12 captations réelles : vBall 6,3 %, spin 20,5 %, portée 10,4 % d'erreur moyenne (détails dans `Cpp/README.md`).
+
 ## Simulateur Scilab
 <img src="sci/img/Pasted image 20250120171635.png"  width="560" height="380">
 
@@ -8,30 +11,31 @@
 ## Simulateur CPP
 Application `simu_headless --capture` (scène 3D interactive + panneau mesures radar + spectrogramme docké/zoomable) :
 ```shell
+cd Cpp/build
 ./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv F7 1.0 --
 ```
 Le **launch angle ψ est estimé directement depuis la captation** (fit balistique du ridge post-impact : fréquence instantanée du lobe balle lissée, vol 2D traînée de White + gravité + Magnus, ψ = argmin SSE à échelle libre — ±0,75° sur captations synthétiques de vérité connue). Options : `--launch_deg 16` pour forcer ψ, `--caseangle_deg 11` si la valise incline le radar vers le haut (v_r = V·cos(ψ−ε), ε rajouté au fit — les deux options sont exclusives), `--live 2.0` pour enregistrer la carte son (radar en entrée audio, sauve `live_capture.wav` puis analyse). ψ mesuré pilote la simu quand conf ≥ 0,5 (ou `--caseangle_deg` renseigné), sinon repli loft du club.
 
 <img src="sci/img/capture_simu_headless_20261110.png" width="980">
 
-**Spin total : fusion de 7 voies** (détail dans `Cpp/README.md` Genèse §3/§7) : ① patch (enveloppe de Hilbert), ② phase (fréquence instantanée), ③ peigne (autocorrélation du spectre), ④ excursion β (confiance ×0,25), ⑤ sideband micro-Doppler frame par frame (interpolation parabolique, gating IC), ⑥ densité spectrale lissée « façon Scilab » (rebasée par frame, chirp-aware, conf ×0,25), ⑦ loft(ψ) (spin modèle `V0·cosψ·sin(loft_dyn)·CoeffBackSpin`, active seulement si loft_dyn ∈ 12°–35°). La référence est la voie la plus confiante, moyenne pondérée des voies à ±15 %. **Bilan 12 captations** (`sci/validate_all.py`) : vBall 6,3 %, **spin 20,5 %** (18,2 % avec `--caseangle_deg 11`), portée 10,4 %. L'animation 3D montre à l'impact une **équerre** : tube orange = plan de la face (perpendiculaire au lancement), tube rouge + flèche = normale de la face, orientée du côté de la courbure.
+**Spin total : fusion de 7 voies** (détail dans `Cpp/README.md` Genèse §3/§7) : ① patch (enveloppe de Hilbert), ② phase (fréquence instantanée), ③ peigne (autocorrélation du spectre), ④ excursion β (confiance ×0,25), ⑤ sideband micro-Doppler frame par frame (interpolation parabolique, gating IC), ⑥ densité spectrale lissée « façon Scilab » (rebasée par frame, chirp-aware, conf ×0,25), ⑦ loft(ψ) (spin modèle `V0·cosψ·sin(loft_dyn)·CoeffBackSpin`, active seulement si loft_dyn ∈ 12°–35°). La référence est la voie la plus confiante, moyenne pondérée des voies à ±15 %. **Bilan 12 captations** (`Python/validate_all.py`) : vBall 6,3 %, **spin 20,5 %** (18,2 % avec `--caseangle_deg 11`), portée 10,4 %. L'animation 3D montre à l'impact une **équerre** : tube orange = plan de la face (perpendiculaire au lancement), tube rouge + flèche = normale de la face, orientée du côté de la courbure.
 
 ## Simulateur Python
 Animation 3D matplotlib `Python/GolfBall.py [capture.csv|wav]` (vol + 3 rebonds + roulement ; panneau d'infos : club, V club/smash, vBall radar, **spin total fusion 7 voies** (patch/phase/peigne/exc/sideband/dens/loft affichés) + back/side estimés, **launch angle ψ mesuré sur la captation**, portée, apex, déviation latérale z final) :
 
 ```python
-python GolfBall.py ../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --club F7
+python Python/GolfBall.py sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --club F7
 # options : --launch_deg 16 (ψ forcé, exclusif avec --caseangle_deg), --caseangle_deg 11 (valise inclinée)
 ```
 
 <img src="sci/img/Simulateur_Python.png" width="980">
 
 ### Spectres multi-panneaux d'une captation — `spectres_html` (C++)
-Générés par `./spectres_html ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv` (8 panneaux : spectrogramme R1, zoom lobe balle, peigne de raies micro-Doppler, lobe club, patch Hilbert, autocorrélation du spectre, spectre de la fréquence instantanée, barre d'infos) — capture PNG pleine page ci-dessous :
+Générés par `cd Cpp/build && ./spectres_html ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv` (8 panneaux : spectrogramme R1, zoom lobe balle, peigne de raies micro-Doppler, lobe club, patch Hilbert, autocorrélation du spectre, spectre de la fréquence instantanée, barre d'infos) — capture PNG pleine page ci-dessous :
 
 <img src="sci/img/spectres_html_F7-123m-cs111.png" width="980">
 
-[version interactive HTML](Cpp/src/spectres_2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.html) · [index de tous les spectres](Cpp/src/spectres_index.html)
+[version interactive HTML](Cpp/build/spectres_2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.html) · [index de tous les spectres](Cpp/build/spectres_index.html)
 
 
 
@@ -49,8 +53,8 @@ Au shoot : l'axe de spin ω est incliné de β → backspin = ω·cos β, sidesp
 <img src="sci/img/Pasted image 20250122083456.png"  width="280" height="190"> <img src="sci/img/Pasted image 20250122083851.png"  width="280" height="190">
 
 ### Densités spectrales régénérées en Python — 2 voies R1/R2, axe Y en km/h (f/19,49), ridge balle en cyan
-Commande : `python3 sci/plot_spectro.py sci/<capture.csv|wav> [sortie.png] [--nfft 512 --hop 128] [--hp 50] [--zoom 256] [--open]` — vue pleine 0–250 km/h par défaut (fenêtre STFT 512 = 11,6 ms, ridge cyan bien résolu en temps, impact pointillé, passe-haut 50 km/h qui rejette le lobe du club), `--hp 0` sans filtrage, `--zoom N` pour zoomer ±N Hz autour de vBall
-(ex. `sci/img/spectro_F7-*.png` ci-dessous, régénérés avec `pipe_validation.py` ; équivalent C++ sans dépendance : `Cpp/src/spectro_png.cpp`, image `sci/img/spectro_CPP_F7-137m-*.png`)
+Commande : `python3 Python/plot_spectro.py sci/<capture.csv|wav> [sortie.png] [--nfft 512 --hop 128] [--hp 50] [--zoom 256] [--open]` — vue pleine 0–250 km/h par défaut (fenêtre STFT 512 = 11,6 ms, ridge cyan bien résolu en temps, impact pointillé, passe-haut 50 km/h qui rejette le lobe du club), `--hp 0` sans filtrage, `--zoom N` pour zoomer ±N Hz autour de vBall
+(ex. `sci/img/spectro_F7-*.png` ci-dessous, régénérés avec `Python/pipe_validation.py` ; équivalent C++ sans dépendance : `Cpp/src/spectro_png.cpp` (binaire `Cpp/build/spectro_png`), image `sci/img/spectro_CPP_F7-137m-*.png`)
 <img src="sci/img/spectro_F7-113m-156kmh-11624trm-999trmcs-136.png"  width="300" height="236">
 <img src="sci/img/spectro_F7-123m-150kmh-5274trm-210trm-cs111.png"  width="300" height="236">
 <img src="sci/img/spectro_F7-124m-156kmh-5948trm-597trm-cs119.png"  width="300" height="236">
@@ -66,7 +70,7 @@ Commande : `python3 sci/plot_spectro.py sci/<capture.csv|wav> [sortie.png] [--nf
 Les deux images ci-dessous ne sont **pas des mesures** : c'est une captation **générée** par `Python/gen_capture_modele.py`
 pour être optimale en temps et en signal — c'est ce que le traitement *devrait* obtenir théoriquement.
 Config : fer 7, V₀ = 151 km/h, launch = 16,5°, spin total = 4000 rpm, side spin = 700 rpm (slice droite → β = 10,1°), cs = 115 km/h.
-Validation par `sci/pipe_validation.py` : spin retrouvé à −0,1 % (3996 vs 4000 rpm).
+Validation par `Python/pipe_validation.py` : spin retrouvé à −0,1 % (3996 vs 4000 rpm).
 
 Densité spectrale de la captation modèle à swing complet (config du coup réel 137m : 166 km/h, 4990/1312 rpm, cs 118) :
 <img src="sci/img/spectro_MODELE_137m-166kmh.png"  width="430" height="339">

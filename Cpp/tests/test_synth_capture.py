@@ -23,9 +23,8 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.dirname(HERE)
+ROOT = os.path.dirname(os.path.dirname(HERE))   # Cpp/tests -> racine du dépôt
 sys.path.insert(0, os.path.join(ROOT, 'Python'))
-sys.path.insert(0, os.path.join(ROOT, 'sci'))
 
 import numpy as np  # noqa: E402
 import GolfBall as G  # noqa: E402
@@ -51,12 +50,8 @@ def build_simu():
     """Compile simu_headless si le binaire manque (voir Cpp/README.md)."""
     if os.path.exists(SIMU):
         return
-    src = os.path.join(ROOT, 'Cpp', 'src')
-    print('compilation de simu_headless ...')
-    subprocess.run(['g++', '-O2', '-std=c++11', '-o', 'simu_headless',
-                    'Simu_headless.cpp', 'Ball.cpp', 'Club.cpp', 'EquationODE.cpp',
-                    'EquationODEFlight.cpp', 'EquationODERoll.cpp', 'EquationODEEventFlight.cpp',
-                    'EquationODEEventRoll.cpp', 'SolverODE.cpp'], cwd=src, check=True)
+    print('compilation de simu_headless (make -C Cpp) ...')
+    subprocess.run(['make', '-C', os.path.join(ROOT, 'Cpp'), 'build/simu_headless'], check=True)
 
 
 def check(label, ok, detail):
