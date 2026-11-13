@@ -64,6 +64,11 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
         e.spin_phase_rpm = estimate_spin_phase_spec(c, e, nullptr, nullptr, &e.spin_exc_rpm,
                                                      &e.spin_exc_conf, &e.spin_phase_conf);
         e.spin_sideband_rpm = estimate_spin_sideband(c, e, &e.spin_sideband_conf, &e.spin_ci_rpm);
+        // gating IC (version douce) : une voie sideband dispersée (IC grand devant la valeur,
+        // ex. cs111 IC±4049 rpm pour 5804) a une médiane peu fiable -> son poids est ramené
+        // à conf × max(0, 1 − IC/valeur). IC faible (synth ±30 rpm) -> facteur ~1, inchangé.
+        if (e.spin_sideband_rpm > 0 && e.spin_ci_rpm > 0)
+            e.spin_sideband_conf *= std::max(0.0, 1.0 - e.spin_ci_rpm / e.spin_sideband_rpm);
         e.spin_dens_rpm = estimate_spin_dens_scilab(c, e, &e.spin_dens_conf);
         double sf = fusion_spin(e.spin_rpm, e.spin_patch_conf,
                                 e.spin_phase_rpm, e.spin_phase_conf,
