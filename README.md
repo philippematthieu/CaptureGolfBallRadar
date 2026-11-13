@@ -12,7 +12,7 @@
 Application `simu_headless --capture` (scène 3D interactive + panneau mesures radar + spectrogramme docké/zoomable) :
 ```shell
 cd Cpp/build
-./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv F7 1.0 --
+./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv F7 1.0 --caseangle_deg 11 --open
 ```
 Le **launch angle ψ est estimé directement depuis la captation** (fit balistique du ridge post-impact : fréquence instantanée du lobe balle lissée, vol 2D traînée de White + gravité + Magnus, ψ = argmin SSE à échelle libre — ±0,75° sur captations synthétiques de vérité connue). Options : `--launch_deg 16` pour forcer ψ, `--caseangle_deg 11` si la valise incline le radar vers le haut (v_r = V·cos(ψ−ε), ε rajouté au fit — les deux options sont exclusives), `--live 2.0` pour enregistrer la carte son (radar en entrée audio, sauve `live_capture.wav` puis analyse). ψ mesuré pilote la simu quand conf ≥ 0,5 (ou `--caseangle_deg` renseigné), sinon repli loft du club.
 
@@ -24,8 +24,8 @@ Le **launch angle ψ est estimé directement depuis la captation** (fit balistiq
 Animation 3D matplotlib `Python/GolfBall.py [capture.csv|wav]` (vol + 3 rebonds + roulement ; panneau d'infos : club, V club/smash, vBall radar, **spin total fusion 7 voies** (patch/phase/peigne/exc/sideband/dens/loft affichés) + back/side estimés, **launch angle ψ mesuré sur la captation**, portée, apex, déviation latérale z final) :
 
 ```python
-python Python/GolfBall.py sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --club F7
-# options : --launch_deg 16 (ψ forcé, exclusif avec --caseangle_deg), --caseangle_deg 11 (valise inclinée)
+python Python/GolfBall.py sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --club F7 --caseangle_deg 11
+# options : --launch_deg 16 (ψ forcé, exclusif avec --caseangle_deg), --caseangle_deg 11 (valise inclinée vers le haut)
 ```
 
 <img src="sci/img/Simulateur_Python.png" width="980">
