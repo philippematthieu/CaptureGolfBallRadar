@@ -39,3 +39,6 @@ Python/golf_ball_flight_3d.mp4
 sci/FFT_Mat.txt
 Cpp/build/spectro_png
 Cpp/build/*.o
+Cpp/build/spectres_html
+Cpp/build/spectres_html_cimg
+Cpp/build/lib/
