@@ -21,7 +21,7 @@ Le **launch angle ψ est estimé directement depuis la captation** (fit balistiq
 Animation 3D matplotlib `Python/GolfBall.py [capture.csv|wav]` (vol + 3 rebonds + roulement ; panneau d'infos : club, V club/smash, vBall radar, **spin total fusion 7 voies** (patch/phase/peigne/exc/sideband/dens/loft affichés) + back/side estimés, **launch angle ψ mesuré sur la captation**, portée, apex, déviation latérale z final) :
 
 ```python
-python GolfBall.py ../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --club F7
+python Python/GolfBall.py sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --club F7
 # options : --launch_deg 16 (ψ forcé, exclusif avec --caseangle_deg), --caseangle_deg 11 (valise inclinée)
 ```
 
