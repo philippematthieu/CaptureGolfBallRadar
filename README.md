@@ -1,5 +1,8 @@
 
 # Golf Ball Simulator in Scilab (Scilab, Python and cpp)
+
+> **Abstract — principe directeur.** *Mesurer directement ce que les radars savent réellement mesurer, puis utiliser le modèle physique pour identifier les grandeurs qui ne sont pas directement observables.* Un radar Doppler 10,525 GHz mesure des fréquences (vitesses radiales, micro-Doppler du patch, courbure stéréo R1/R2) — pas des angles de club ni un vecteur spin 3D. On estime donc d'abord, aussi précisément que possible, les observables radar (vBall, V club, smash, spin total par fusion multi-voies, α₀/Δα, launch angle ψ par fit balistique) ; puis le **modèle physique** (impact club→balle + vol traînée/Magnus/gravité) sert d'inverse : balayage de `GamaFacePath` contraint par la courbure mesurée pour décomposer back/side spin, loft dynamique déduit de ψ, etc. Chaque grandeur non observable est ainsi identifiée par cohérence mesure ↔ simulation, jamais inventée. Bilan sur 12 captations réelles : vBall 6,3 %, spin 20,5 %, portée 10,4 % d'erreur moyenne (détails dans `Cpp/README.md`).
+
 ## Simulateur Scilab
 <img src="sci/img/Pasted image 20250120171635.png"  width="560" height="380">
 
