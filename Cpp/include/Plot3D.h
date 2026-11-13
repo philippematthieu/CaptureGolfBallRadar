@@ -87,7 +87,6 @@ static void write_traj_3d_html(const std::string& path,
     }
     // fairway toujours carré : côté >= distance parcourue par la balle (marge 10%, min 50 m)
     double side = std::max(xmax * 1.1, 50.0);
-    int gdiv = (int)std::max(2.0, std::round(side / 10.0)); // carreaux de ~10 m
     FILE* f = fopen(path.c_str(), "w");
     if (!f) return;
     fprintf(f, "<!DOCTYPE html><html><head><meta charset='utf-8'><title>%s</title>\n", titre.c_str());
@@ -122,12 +121,23 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "var scene=new THREE.Scene();scene.background=new THREE.Color(0xffffff);\n");
     fprintf(f, "var cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,2000);cam.position.set(-30,%.0f,%.0f);\n", zmax*1.2, side*0.4);
     fprintf(f, "var ctl=new THREE.OrbitControls(cam,renderer.domElement);ctl.target.set(%.0f,0,0);\n", side/2);
-    // sol vert carré (côté = side, centré sur la trajectoire en X, centré en Z)
-    fprintf(f, "var sol=new THREE.Mesh(new THREE.PlaneGeometry(%.0f,%.0f),new THREE.MeshLambertMaterial({color:0x3a9d3a}));sol.rotation.x=-Math.PI/2;sol.position.set(%.0f,0,0);scene.add(sol);\n", side, side, side/2);
-    fprintf(f, "var grid=new THREE.GridHelper(%.0f,%d,0x888888,0xcccccc);grid.position.set(%.0f,0.01,0);scene.add(grid);\n", side, gdiv, side/2);
-    // végétation procédurale (seed fixe = rendu déterministe) : arbres (tronc + 2 cônes) et buissons
-    // (sphères aplaties), avec corridor dégagé le long du vol : |z| < 7 m interdit pour x ∈ [-6, portee+14]
+    // sol vert carré valonné (côté = side, centré sur la trajectoire en X, centré en Z).
+    // Valonnement purement visuel : terrain PLAT (h=0) dans le corridor du vol (|z|<8 m) et près du
+    // départ (x<6 m), rampe progressive au-delà -> la balle ne flotte pas / ne coupe pas une colline.
+    // La grille 10 m est supprimée (elle traverserait les collines) ; la couleur varie avec l'altitude.
     fprintf(f, "var side=%.0f;\n", side);
+    fputs("function terrainH(x,z){var d=Math.abs(z),m=Math.max(0,Math.min(1,(d-8)/14)),t=Math.max(0,Math.min(1,(x+4)/10)),f=m*t;if(f<=0)return 0;"
+          "return f*(2.0*Math.sin(x*0.045+1.7)*Math.sin(z*0.05+0.3)+1.0*Math.sin(x*0.11+0.5)*Math.sin(z*0.093+2.1)+0.5*Math.sin((x+z)*0.16+4.0));}\n"
+          "var seg=Math.max(24,Math.min(110,Math.round(side/1.5)));\n"
+          "var gg=new THREE.PlaneGeometry(side,side,seg,seg);gg.rotateX(-Math.PI/2);\n"
+          "var gpos=gg.attributes.position,gcol=new Float32Array(gpos.count*3);\n"
+          "for(var vi=0;vi<gpos.count;vi++){var wx=gpos.getX(vi)+side/2,wz=gpos.getZ(vi),hh=terrainH(wx,wz);gpos.setY(vi,hh);"
+          "var c=0.55+0.45*Math.min(1,Math.abs(hh)/3);gcol[vi*3]=0.20+0.10*c;gcol[vi*3+1]=0.50+0.25*c;gcol[vi*3+2]=0.20+0.08*c;}\n"
+          "gg.setAttribute('color',new THREE.BufferAttribute(gcol,3));gg.computeVertexNormals();\n"
+          "var sol=new THREE.Mesh(gg,new THREE.MeshLambertMaterial({vertexColors:true}));sol.position.set(side/2,0,0);scene.add(sol);\n", f);
+    // végétation procédurale (seed fixe = rendu déterministe) : arbres (tronc + 2 cônes) et buissons
+    // (sphères aplaties), posés sur le terrain (terrainH), avec corridor dégagé le long du vol :
+    // |z| < 7 m interdit pour x ∈ [-6, portee+14]
     fputs("(function(){var seed=1234567;function rnd(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;}\n"
           "var xmax=traj.length?traj[traj.length-1][0]:side;\n"
           "function clearOfFlight(x,z){return !(x>-6&&x<xmax+14&&Math.abs(z)<7);}\n"
@@ -137,13 +147,13 @@ static void write_traj_3d_html(const std::string& path,
           "var bushM=new THREE.MeshLambertMaterial({color:0x66bb6a});\n"
           "var nT=Math.round(side/5),nB=Math.round(side/2.5),i,x,z;\n"
           "for(i=0;i<nT;i++){x=2+rnd()*(side-4);z=(rnd()-0.5)*(side-2);if(!clearOfFlight(x,z))continue;\n"
-          "var h=3.5+rnd()*3.5,r=0.18+rnd()*0.12;\n"
-          "var trunk=new THREE.Mesh(new THREE.CylinderGeometry(r,r*1.3,h,7),trunkM);trunk.position.set(x,h/2,z);scene.add(trunk);\n"
-          "var c1=new THREE.Mesh(new THREE.ConeGeometry(h*0.55,h*1.6,8),rnd()<0.5?leafM:leafM2);c1.position.set(x,h+h*0.7,z);scene.add(c1);\n"
-          "var c2=new THREE.Mesh(new THREE.ConeGeometry(h*0.38,h*1.2,8),leafM2);c2.position.set(x,h+h*1.5,z);scene.add(c2);}\n"
+          "var gy=terrainH(x,z),h=3.5+rnd()*3.5,r=0.18+rnd()*0.12;\n"
+          "var trunk=new THREE.Mesh(new THREE.CylinderGeometry(r,r*1.3,h,7),trunkM);trunk.position.set(x,gy+h/2,z);scene.add(trunk);\n"
+          "var c1=new THREE.Mesh(new THREE.ConeGeometry(h*0.55,h*1.6,8),rnd()<0.5?leafM:leafM2);c1.position.set(x,gy+h+h*0.7,z);scene.add(c1);\n"
+          "var c2=new THREE.Mesh(new THREE.ConeGeometry(h*0.38,h*1.2,8),leafM2);c2.position.set(x,gy+h+h*1.5,z);scene.add(c2);}\n"
           "for(i=0;i<nB;i++){x=2+rnd()*(side-4);z=(rnd()-0.5)*(side-2);\n"
           "if(x>-4&&x<xmax+10&&Math.abs(z)<3)continue;\n"
-          "var br=0.5+rnd()*0.8;var b=new THREE.Mesh(new THREE.SphereGeometry(br,7,6),bushM);b.scale.y=0.55;b.position.set(x,br*0.5,z);scene.add(b);}\n"
+          "var gy=terrainH(x,z),br=0.5+rnd()*0.8;var b=new THREE.Mesh(new THREE.SphereGeometry(br,7,6),bushM);b.scale.y=0.55;b.position.set(x,gy+br*0.5,z);scene.add(b);}\n"
           "})();\n", f);
     // lumiere
     fprintf(f, "scene.add(new THREE.AmbientLight(0xffffff,0.7));var d=new THREE.DirectionalLight(0xffffff,0.8);d.position.set(-50,80,30);scene.add(d);\n");
