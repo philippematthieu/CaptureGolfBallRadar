@@ -20,6 +20,7 @@ __pycache__/
 *.dvi
 *.bbl
 *.blg
+*.synctex
 *.synctex.gz
 *.def
 *.equ
