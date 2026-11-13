@@ -140,6 +140,29 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
             e.spin_rpm = sf2;
         }
     }
+    // [EXPÉRIMENT IMPASSE hauts-spins — ne pas merger, voir README Genèse §7]
+    // Hauts spins (> 8000 rpm) : 2*f_rot sort de la plage du peigne (lag <= 200 Hz), donc le
+    // peigne lit f_rot (spin vrai) tandis que les autres voies restent basses. Règle testée :
+    // peigne > 8000 && peigne > 2,0 x fusion-sans-peigne && aucune autre voie très confiante (<8).
+    // REJETÉE : cs113 (11624 rpm) et cs118 (4990 rpm) ont des voies identiques -> la règle
+    // explose cs118 à +109,5 %, moyenne 20,4 % -> 25,4 %.
+    if (mode == "fusion" && e.spin_peigne_rpm > 8000.0) {
+        double sfSansPeigne = fusion_spin(spin_patch_rpm, e.spin_patch_conf,
+                                          e.spin_phase_rpm, e.spin_phase_conf,
+                                          0.0, 0.0,
+                                          e.spin_exc_rpm, e.spin_exc_conf,
+                                          e.spin_sideband_rpm, e.spin_sideband_conf,
+                                          e.spin_dens_rpm, e.spin_dens_conf,
+                                          spinFromLoft, loftConf);
+        double maxConf = std::max(std::max(e.spin_patch_conf, e.spin_phase_conf),
+                                  std::max(std::max(e.spin_exc_conf * 0.25, e.spin_sideband_conf),
+                                           std::max(e.spin_dens_conf, loftConf)));
+        if (sfSansPeigne > 0 && e.spin_peigne_rpm > 2.0 * sfSansPeigne && maxConf < 8.0) {
+            printf("haut spin : peigne=%.0f rpm domine (fusion sans peigne=%.0f, maxConf autres=%.1f) -> spin retenu=%.0f rpm\n",
+                   e.spin_peigne_rpm, sfSansPeigne, maxConf, e.spin_peigne_rpm);
+            e.spin_rpm = e.spin_peigne_rpm;
+        }
+    }
     // décomposition back/side spin par modèle inverse contraint par la COURBURE de trajectoire :
     // pour chaque GamaFacePath on simule, on mesure la courbure azimutale sur ~150 ms post-impact
     // (même fenêtre que la mesure stéréo dAlpha), et on retient le g qui colle à dAlpha radar.
