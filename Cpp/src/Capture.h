@@ -770,6 +770,9 @@ CAP_UNUSED static double estimate_spin_peigne_ac(const Capture& c, const EstRada
         ac[lag] = s / (nb - lag);                        // normalisée (sinon pic artificiel à lag~0)
     }
     // score de fondamental : le lag f_rot explique aussi ses harmoniques k*f_rot
+    // score(lag) = sum_k ac[k*lag]/k ; on prend le PLUS PETIT lag dont le score atteint
+    // 85 % du max : sinon, quand la 1re raie est faible, le score favorise 2*f_rot.
+    // [EXPÉRIMENT IMPASSE hauts-spins — ne pas merger, voir README Genèse §7]
     int best = lag0; double bscore = -1e18;
     for (int lag = lag0; lag <= lag1; lag++) {
         double score = 0;
@@ -777,6 +780,11 @@ CAP_UNUSED static double estimate_spin_peigne_ac(const Capture& c, const EstRada
         if (score > bscore) { bscore = score; best = lag; }
     }
     if (bscore <= 0) return 0.0;
+    for (int lag = lag0; lag < best; lag++) {
+        double score = 0;
+        for (int k = 1; k <= 4 && k * lag <= lag1; k++) score += ac[k * lag] / k;
+        if (score >= 0.85 * bscore) { best = lag; break; }
+    }
     if (conf) {
         // confiance = pic fondamental / médiane de l'autocorrélation sur la plage cherchée
         std::vector<double> base(ac.begin() + lag0, ac.begin() + lag1 + 1);
