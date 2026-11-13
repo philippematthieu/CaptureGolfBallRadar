@@ -42,7 +42,7 @@ cd Cpp && make          # build dans build/ (en-têtes include/, libs externes t
 # spectro_png   : make build/spectro_png             (PNG densité spectrale, zéro dépendance)
 ```
 
-L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/avec XQuartz : remplacer `Simu_headless.cpp` par `Simu.cpp` et ajouter `-Dcimg_display=1` + les libs d'affichage.
+L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/avec XQuartz : remplacer `src/Simu_headless.cpp` par `src/Simu.cpp` et ajouter `-Dcimg_display=1` + les libs d'affichage.
 
 ## Commandes
 
@@ -188,6 +188,7 @@ Les panneaux 3, 6, 7 utilisent directement les analyseurs de `Capture.h` (pas de
 Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendance**) — style spectro_F7-*.png : **640×500**, 2 panneaux R1/R2, zoom Y ±512 Hz autour de vBall post-impact, axe X = temps (s), axe Y = km/h (f/19.49, limité à 350 km/h), colormap `hot`, ridge cyan, impact rouge. STFT 512 (Hann 11,6 ms), hop 128. Sortie PNG (writer maison, zlib stored) ou BMP 24 bits.
 
 ```bash
+cd Cpp/build
 ./spectro_png ../../sci/2019-02-24-F7-137m-166kmh-4990trm-1312trm-cs118.csv spectro_137.png -o
 ```
 
