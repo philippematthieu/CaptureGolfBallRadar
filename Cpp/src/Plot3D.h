@@ -73,7 +73,8 @@ static void write_traj_3d_html(const std::string& path,
                                const std::vector< std::vector<double> >& mf,
                                const std::string& titre,
                                const std::string& infosHtml = "",
-                               const std::string& specJson = "") {
+                               const std::string& specJson = "",
+                               const std::string& golferHtml = "") {
     if (mf.empty()) return;
     ensureLibNextTo(path);
     double xmax = 1, zmax = 1;
@@ -96,9 +97,14 @@ static void write_traj_3d_html(const std::string& path,
                "#panel .k{color:#9aa0b4;margin-top:6px}\n"
                "#panel .v{color:#fff;font-size:15px;font-weight:bold}\n"
                "#panel .hint{position:fixed;bottom:8px;left:12px;color:#889;font-size:11px}\n"
-               "#view{margin-left:250px}\n"
-               "#gl{margin-left:250px;display:block}\n"
-               "#specWrap{position:fixed;bottom:0;left:250px;right:0;background:#000;border-top:2px solid #555;box-sizing:border-box;z-index:5}\n"
+               "#panelR{position:fixed;right:0;top:0;width:230px;height:100%%;background:#16281e;color:#eee;padding:12px;box-sizing:border-box;overflow:auto;font-size:13px;z-index:10}\n"
+               "#panelR h1{font-size:15px;margin:4px 0 10px;color:#7bd88a}\n"
+               "#panelR .k{color:#9aa0b4;margin-top:6px}\n"
+               "#panelR .v{color:#fff;font-size:15px;font-weight:bold}\n"
+               "#panelR .big{color:#7bd88a;font-size:22px;font-weight:bold}\n"
+               "#view{margin-left:250px;margin-right:230px}\n"
+               "#gl{margin-left:250px;margin-right:230px;display:block}\n"
+               "#specWrap{position:fixed;bottom:0;left:250px;right:230px;background:#000;border-top:2px solid #555;box-sizing:border-box;z-index:5}\n"
                "#specHandle{position:absolute;top:-6px;left:0;right:0;height:12px;cursor:ns-resize;z-index:6}\n"
                "#specHandle:hover{background:rgba(138,180,255,0.25)}\n"
                "#spec{display:block;width:100%%;height:100%%}\n"
@@ -106,10 +112,12 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "<div id='panel'><h1>%s</h1>%s<div class='hint'>glisser=turn &middot; molette=zoom<br>vitesse anim: <input id='vit' type='range' min='1' max='30' value='8' style='width:110px'> <span id='vitv'>8</span>x%s</div></div>\n",
             titre.c_str(), infosHtml.c_str(),
             specJson.empty() ? "" : "<br>spectro: drag=zoom &middot; molette=zoom &middot; dblclick=clic-droit=reset");
+    if (!golferHtml.empty())
+        fprintf(f, "<div id='panelR'><h1>⛳ Pour le golfeur</h1>%s</div>\n", golferHtml.c_str());
     fprintf(f, "<script>\nvar traj=[");
     for (size_t i = 0; i < mf.size(); i += 2)
         fprintf(f, "[%g,%g,%g],", mf[i][0], mf[i][4], -mf[i][2]);  // (x, hauteur z, -latéral y)
-    fprintf(f, "];\nvar PW=250;var SH=0;var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth-PW,innerHeight-SH);renderer.domElement.id='gl';document.body.appendChild(renderer.domElement);\n");
+    fprintf(f, "];\nvar PW=250,PR=230;var SH=0;var renderer=new THREE.WebGLRenderer({antialias:true});renderer.setSize(innerWidth-PW-PR,innerHeight-SH);renderer.domElement.id='gl';document.body.appendChild(renderer.domElement);\n");
     fprintf(f, "var scene=new THREE.Scene();scene.background=new THREE.Color(0xffffff);\n");
     fprintf(f, "var cam=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,2000);cam.position.set(-30,%.0f,%.0f);\n", zmax*1.2, side*0.4);
     fprintf(f, "var ctl=new THREE.OrbitControls(cam,renderer.domElement);ctl.target.set(%.0f,0,0);\n", side/2);
@@ -130,7 +138,7 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "var ball=new THREE.Mesh(new THREE.SphereGeometry(0.8),new THREE.MeshLambertMaterial({color:0xffffff}));scene.add(ball);\n");
     fprintf(f, "var k=0;var VIT=8;document.getElementById('vit').oninput=function(){VIT=+this.value;document.getElementById('vitv').textContent=VIT;};\n");
     fprintf(f, "function anim(){ball.position.copy(pts[Math.floor(k)%%pts.length]);k+=0.15*VIT;ctl.update();renderer.render(scene,cam);requestAnimationFrame(anim);}anim();\n");
-    fprintf(f, "addEventListener('resize',function(){resize3D();if(typeof drawSpec==='function')drawSpec();});\nfunction resize3D(){cam.aspect=(innerWidth-PW)/(innerHeight-SH);cam.updateProjectionMatrix();renderer.setSize(innerWidth-PW,innerHeight-SH);}\n");
+    fprintf(f, "addEventListener('resize',function(){resize3D();if(typeof drawSpec==='function')drawSpec();});\nfunction resize3D(){cam.aspect=(innerWidth-PW-PR)/(innerHeight-SH);cam.updateProjectionMatrix();renderer.setSize(innerWidth-PW-PR,innerHeight-SH);}\n");
     // --- frame fixe en bas : densité spectrale (spectrogramme) si fournie ---
     if (!specJson.empty()) {
         fprintf(f, "var S=%s;SH=190;ML=56;\n", specJson.c_str());

@@ -33,13 +33,16 @@ Simulation complète : vol (traînée de White, Magnus/Smits & Smith, gravité) 
 ```bash
 cd Cpp/src
 
-# version de base (console + SVG + HTML 3D, aucune dépendance)
+# version de base (console + SVG + HTML 3D) — macOS : ajoute les frameworks audio pour le mode --live (carte son)
 g++ -O2 -std=c++11 -o simu_headless \
     Simu_headless.cpp Ball.cpp Club.cpp EquationODE.cpp EquationODEFlight.cpp \
-    EquationODERoll.cpp EquationODEEventFlight.cpp EquationODEEventRoll.cpp SolverODE.cpp
+    EquationODERoll.cpp EquationODEEventFlight.cpp EquationODEEventRoll.cpp SolverODE.cpp \
+    -framework AudioToolbox -framework CoreAudio -framework AudioUnit
+# sans le mode --live (autre plateforme) : compile aussi sans les frameworks (record_live retourne une erreur)
 
 # outil de visualisation multi-spectres d'une captation (HTML autonome, pur canvas 2D)
-g++ -O2 -std=c++11 -I. -o spectres_html spectres_html.cpp
+g++ -O2 -std=c++11 -I. -o spectres_html spectres_html.cpp \
+    -framework AudioToolbox -framework CoreAudio -framework AudioUnit   # macOS ; sinon sans les frameworks
 
 # PNG de densité spectrale (voir plus bas)
 g++ -O2 -std=c++11 -I. -o spectro_png spectro_png.cpp
@@ -66,6 +69,13 @@ L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/a
 ./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.wav --open
 ./simu_headless --capture ../../sci/2025-11-08-F7-131m-162kmh-9418trm-7102trm-cs124.csv F7 1.0
 ./simu_headless --capture <fichier> --mode standard     # ancien : patch Hilbert seul
+
+# radar branché en carte son : enregistre l'entrée audio live, sauve live_capture.wav, analyse comme --capture
+./simu_headless --live 2.0 F7 1.0                     # 2 s d'enregistrement sur l'entrée par défaut (macOS)
+./simu_headless --live 2.0 F7 1.0 --source fichier.wav  # rejoue un fichier via le pipeline live (test)
+# parité Python : live_capture.wav se relit avec --capture ou Python/GolfBall.py (même ligne ESTIM parsée)
+./simu_headless --capture <fichier> F7 1.0 --launch_deg 16.5  # force l'angle de décollage de la simu (conf=-1, prioritaire sur la mesure) ; sans --launch_deg, la simu utilise le launch mesuré sur le ridge quand conf ≥ 0,5, sinon le loft du club (repli, comme le 16,5° de GolfBall.py) — fit balistique ±0,75° en synthétique
+./simu_headless --capture <fichier> F7 1.0 --caseangle_deg 11  # valise inclinée de 11° vers le haut : v_r = V·cos(ψ−ε), le fit mesure ψ−ε et ε est rajouté (cs111 : 4° -> 15°), vBall corrigée aussi
 
 # spectres multi-panneaux d'une captation (8 panneaux, voir plus bas)
 ./spectres_html ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv -o
@@ -98,10 +108,12 @@ Toutes les briques sont dans `Capture.h` (header-only, FFT radix-2 maison) :
 | **t0 (impact)** | frame d'énergie max | `estimate()` |
 | **V club** | **passe-bande FFT autour de vBall/1.35** sur la fenêtre [t0−0,3 s, t0] (le lobe Doppler de la tête de club est dans le signal avant l'impact), crête au quantile 90 % | `estimate_club_speed()` |
 | **smash** | vBall / Vclub mesuré | (dans `Simu_headless.cpp`) |
-| **spin — 4 voies** | ① patch : segment 250 ms post-impact **filtré passe-bande autour de f_D = vBall·KV ± 1 kHz (vitesse à priori du ridge → rejette l'écho de la tête de club)**, puis enveloppe de Hilbert, spectre 50–200 Hz, score d'harmoniques · ② **phase** : signal analytique du lobe balle filtré autour de f_D, fréquence instantanée detrendée, pic à f_rot · ③ **peigne** : autocorrélation du spectre Welch autour de f_D ± 2 kHz (lag = f_rot) · ④ **excursion β** : excursion crête-crête de la fréquence instantanée lissée (300 ms post-impact, detrend linéaire), `spin = Δf/(2·KS)` avec β = 4πr/λ. Chaque voie sort aussi sa **confiance** = pic / fond (médiane spectrale ; pour l'excursion : Δf / (1,4826·MAD)) | `estimate()` (`spin_patch_conf`), `estimate_spin_phase_spec()` (params `exc_rpm`, `exc_conf`, `conf`), `estimate_spin_peigne_ac()` (param `conf`) |
-| **spin retenu** | `fusion_spin()` **pondérée par confiance** : référence = voie valide (rpm>0, conf>0) de plus grande confiance ; moyenne des voies cohérentes à ±15 % de la référence, pondérées par leur confiance ; seule la référence sinon. La confiance de la voie excursion est rabattue ×0,25 (biais systématique connu : β effectif < 4πr/λ sur balle réelle). Confiance exposée dans `ESTIM` (`spin_*_conf=`) | `fusion_spin()` (8 args) |
+| **spin — 6 voies** | ① patch : segment 250 ms post-impact **filtré passe-bande autour de f_D = vBall·KV ± 1 kHz (vitesse à priori du ridge → rejette l'écho de la tête de club)**, puis enveloppe de Hilbert, spectre 50–200 Hz, score d'harmoniques · ② **phase** : signal analytique du lobe balle filtré autour de f_D, fréquence instantanée detrendée, pic à f_rot · ③ **peigne** : autocorrélation du spectre Welch autour de f_D ± 2 kHz (lag = f_rot) · ④ **excursion β** : excursion crête-crête de la fréquence instantanée lissée (300 ms post-impact, detrend linéaire), `spin = Δf/(2·KS)` avec β = 4πr/λ · ⑤ **sideband** : frame par frame, espacement entre le pic balle f_D(t) et le 1ᵉʳ sideband micro-Doppler f_D+f_rot(t) (spectres de puissance R1+R2 moyennés), médiane des écarts, IC = IQR/2 (`spin_ci_rpm`) Chaque voie sort aussi sa **confiance** = pic / fond (médiane spectrale ; pour l'excursion : Δf / (1,4826·MAD)) | `estimate()` (`spin_patch_conf`), `estimate_spin_phase_spec()` (params `exc_rpm`, `exc_conf`, `conf`), `estimate_spin_peigne_ac()` (param `conf`) |
+| **spin retenu** | `fusion_spin()` **pondérée par confiance** : référence = voie valide (rpm>0, conf>0) de plus grande confiance ; moyenne des voies cohérentes à ±15 % de la référence, pondérées par leur confiance ; seule la référence sinon. La confiance de la voie excursion est rabattue ×0,25 (biais systématique connu : β effectif < 4πr/λ sur balle réelle). Confiance exposée dans `ESTIM` (`spin_*_conf=`) | `fusion_spin()` (12 args, 6 voies) |
 | **α₀, Δα** | appariement stéréo R1/R2 (Δf ≤ 30 Hz), α = atan((2L/B)·fd/fc), médianes début/fin | `estimate()` |
+| **loft dynamique / shaft lean** | inversion de `launchAngle = loft_dyn + atan(v0p/v0n)` (Penner) avec le ψ mesuré : balayage du shaft lean, rétention du launch calculé = ψ. `loft_dyn_est_deg`, `shaftlean_est_deg = loft_dyn_est − loft statique` ; appliqué au club (`setShaftLeanImpDegre`) avant la simu. Cross-check possible avec le spin : `loft_dyn = asin(spin·9,549/(V0·CoeffBackSpin))` | `run_from_capture` |
 | **back/side spin** | modèle inverse : balayage de `GamaFacePath` (−15°..+15°) avec `runSimu`, courbure azimutale sur ~150 ms post-impact ajustée au **Δα stéréo**, vecteur spin rescalé au spin total radar (donc `hypot(back,side) = spin_radar`) | `Simu_headless.cpp` |
+| **launch angle ψ** | **fit balistique du ridge post-impact** : signal analytique passe-bande (f_D ± 1 kHz) sur [t0, t0+0,45 s], fréquence instantanée lissée sur ~1,5 période de rotation (moyenne la modulation micro-Doppler ±β·f_rot), agrégée en 12 bins sur [0, 0,35 s] (bins de bord exclus) → v_r(t) mesurée. Le radar mesure v_r ≈ c·V(t) (facteur d'échelle c libre, THETA_RADAR quasi constant) : on intègre le vol 2D (traînée de White, gravité, Magnus comme `flight_ode`) pour chaque (ψ, ε) sur la grille 2D ψ ∈ [4°, 26°] pas 0,25° × ε ∈ [0°, 20°] pas 1° (**fit conjoint** : ε entre par la dé-projection V0 = v_r(t₀)/cos(ψ−ε), ψ par la forme du vol ; échelle libre c = least-squares sur v_r_model = c·V·cos(ψ−ε)), on retient le couple de SSE min ; `launch_deg` = ψ vrai, `case_deg` = ε mesuré, `launch_conf = 1 − SSE/SST`. `--caseangle_deg ε` fixe ε (grille 1D) et `--launch_deg` force ψ (exclusif avec `--caseangle_deg`) | `estimate()` (`launch_deg`, `launch_conf`, `case_deg`) |
 
 Le mode `--capture` enchaîne : mesures radar → V club (passe-bande, sinon modèle vBall/1.35) → spin fusion → ajustement GamaFacePath par courbure → `Ball::runSimu()` → HTML 3D + SVG. Le shaft lean reste au cas idéal du club (non identifiable au radar).
 
@@ -145,7 +157,7 @@ Le radar donne le spin **total** (norme) mais pas sa direction. Le modèle `Ball
 
 - **Vecteur spin retenu** : `(spinY(g*), spinZ(g*))` rescalé au spin total mesuré → `backspin_est = spinY·k`, `sidespin_est = spinZ·k` avec `k = spin_radar / hypot(spinY,spinZ)`, donc toujours `hypot(back, side) = spin_radar` (backspin ≤ spin total — cohérence garantie).
 - **Cohérences vérifiées** sur les 12 captures : smash 1,18–1,40 stable ; side spin détecté quand Δα ≠ 0 (ex. cs104 : −246 rpm vs réf −630) ; signe à surveiller (convention Δα stéréo vs repère simu).
-- **Limites** : shaft lean non identifiable au radar (cas idéal du club retenu) ; le launch angle (pente du ridge post-impact) serait la prochaine contrainte pour affiner loft dynamique.
+- **Limites** : shaft lean non identifiable au radar (cas idéal du club retenu) ; le launch angle ψ est maintenant mesuré par fit du ridge post-impact (étape 1, `launch_deg`/`launch_conf`) et peut contraindre le loft dynamique.
 
 #### Étape 4 — Simulation finale et génération du HTML/JS (`Plot3D.h`)
 
@@ -192,7 +204,7 @@ Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendan
 ## Sorties produites (dans `Cpp/src/`)
 
 - console : `RESULT portee=... m  apex=... m  z_final=... m  temps=... s`
-- console (mode `--capture`) : ligne machine **`ESTIM key=value ...`** (une seule ligne, `nan` pour les non-détectés) : `vball_kmh vball_corr_kmh spin_rpm spin_patch_rpm spin_phase_rpm spin_peigne_rpm spin_exc_rpm vclub_radar_kmh vclub_kmh smash alpha0_deg dalpha_deg t0_s gfp_est_deg backspin_est_rpm sidespin_est_rpm da_est_deg portee_m apex_m z_final_m temps_s` — parsée par `Python/GolfBall.py` (`analyze_capture_cpp`) pour rejouer la simu Python avec le side spin estimé
+- console (mode `--capture`) : ligne machine **`ESTIM key=value ...`** (une seule ligne, `nan` pour les non-détectés) : `vball_kmh vball_corr_kmh spin_rpm spin_patch_rpm spin_phase_rpm spin_peigne_rpm spin_exc_rpm spin_patch_conf spin_phase_conf spin_peigne_conf spin_exc_conf vclub_radar_kmh vclub_kmh smash alpha0_deg dalpha_deg t0_s launch_deg launch_conf caseangle_deg loft_dyn_est_deg shaftlean_est_deg loft_dyn_spin_deg spin_from_loft_rpm spin_loft_ratio coeff_backspin_emp gfp_est_deg backspin_est_rpm sidespin_est_rpm da_est_deg portee_m apex_m z_final_m temps_s` — parsée par `Python/GolfBall.py` (`analyze_capture_cpp`) pour rejouer la simu Python avec le side spin estimé et le launch angle mesuré (`--launch_deg` pour forcer, `--caseangle_deg` pour la valise inclinée — exclusifs)
 - `trajectoire_<club>.svg` — image 2D vectorielle (profil + dessus)
 - `trajectoire_<club>.png` / `.bmp` — image 2D raster (CImg, compile `-DUSE_CIMG`)
 - `trajectoire_3d.html` / `trajectoire_capture_3d.html` — scène 3D interactive + panneau infos + spectrogramme docké/zoomable
@@ -237,7 +249,7 @@ Une balle de diamètre d = 42,67 mm à 10,525 GHz (λ = 28,5 mm) tournant à ω 
 
 - **smash factor** : avec V club mesurée (étape 1) et vBall, le smash = vBall/vClub ≈ 1,2–1,4 est stable, mais il ne dit rien directement sur l'angle face/chemin — un smash plus faible peut venir d'un mauvais centrage, pas forcément d'un angle de face. Il contraint le modèle (via `ClubV0`) mais ne décompose pas le spin.
 - **shaft lean** : non identifiable au radar (aucune signature Doppler propre) → on garde le cas idéal du club, noté comme limite.
-- **launch angle** : la pente initiale du ridge post-impact le donnerait, ce qui contraindrait le loft dynamique (shaft lean) ; piste laissée pour plus tard.
+- **launch angle ψ** : mesuré (point 3, plus « à faire plus tard ») — fit balistique du ridge post-impact (fréquence instantanée du lobe balle lissée, vol 2D traînée+gravité+Magnus, ψ = argmin SSE à échelle libre près) : **±0,75°** sur captations synthétiques (16,5° → 17,25°, 16,0° → 16,75°) ; sur vraies captures le fit est plus bruité (confiance `launch_conf` exposée, parfois en butée de grille — d'où `--caseangle_deg ε` qui rajoute l'inclinaison valise au fit : cs111 4° → 15° avec ε=11°, et le repli loft/16,5° quand conf < 0,5 sans case angle). Il contraint désormais le loft dynamique (shaft lean) via le modèle inverse.
 - **courbure de trajectoire Δα** (mesurée stéréo, étape 1) : dépend directement du side spin via la force de Magnus latérale → c'est la contrainte retenue.
 
 **Première version (modèle inverse par balayage).** Pour chaque `GamaFacePath` g ∈ [−15°, +15°] (pas 0,5°), on construit un `Ball` probe avec `ClubV0 = vclub`, `AlphaClubPath = α₀`, on rescale son spin à `spin_radar`, on lance `runSimu()`, et on mesure la courbure azimutale simulée `da = atan2(vy,vx)` sur la même fenêtre (~150 ms post-impact) que la mesure stéréo. On retient `g* = argmin |da(g) − Δα|`. (Variante "descente de gradient / ODE" envisagée puis écartée : le balayage 1D de 61 simulations est déterministe, ~5 s, et suffit ici.)
@@ -246,7 +258,7 @@ Une balle de diamètre d = 42,67 mm à 10,525 GHz (λ = 28,5 mm) tournant à ω 
 
 **Itération 2 — signe de la courbure (testé puis reverti).** En comparant aux side spin de référence des noms de fichiers (toutes négatives, format `trm-…trm`), le signe semblant inversé entre Δα stéréo et le repère de la simu. Une version avec `err = |da + Δα|` et courbure mesurée jusqu'à la chute donnait de meilleurs minimums intérieurs (cs119 : g=+15° → −1,5°, side +700 → −73 rpm). Mais visuellement la trajectoire était déjà correcte (léger slice) → **revert** à la version `err = |da − Δα|`, fenêtre 150 ms, à la demande de l'utilisateur (commit revert). La question du signe reste ouverte (convention de repère stéréo vs simu à clarifier proprement).
 
-**Résultat retenu.** Side spin estimé quand Δα ≠ 0 (cs104 : −246 rpm vs réf −630 ; cs124-2025 : +1241 vs +7102) ; quand Δα ≈ 0 (bruit < 0,3°) le balayage donne g ≈ 0. La trajectoire 3D résultante courbe du bon côté (vérifié visuellement sur cs119). Limites actées : amplitude du side limitée par le spin total radar (souvent sous-estimé), shaft lean au cas idéal, launch angle comme prochaine contrainte.
+**Résultat retenu.** Side spin estimé quand Δα ≠ 0 (cs104 : −246 rpm vs réf −630 ; cs124-2025 : +1241 vs +7102) ; quand Δα ≈ 0 (bruit < 0,3°) le balayage donne g ≈ 0. La trajectoire 3D résultante courbe du bon côté (vérifié visuellement sur cs119). Limites actées : amplitude du side limitée par le spin total radar (souvent sous-estimé), shaft lean au cas idéal ; launch angle désormais mesuré par fit du ridge (point 3, ±1° en synthétique).
 
 **Schéma du workflow et des itérations (fonctions utilisées) :**
 
@@ -267,6 +279,7 @@ flowchart TD
         S3["③ voie peigne — recherche de PÉRIODICITÉ micro-Doppler<br/>(PAS l'écho radar / vitesse) : autocorr. du spectre<br/>autour de f_D ± 2 kHz → lag = f_rot"]
         S4["④ voie excursion β — amplitude de l'excursion micro-Doppler<br/>fi lissée 300 ms, detrend linéaire → Δf/(2·KS)<br/>β SUPPOSÉ = 4πr/λ → norme du spin<br/>(l'angle/direction du vecteur spin = balayage SIMU ci-dessous)"]
         S1 & S2 & S3 & S4 -->|"rpm + confiance (pic/fond)"| FUS["fusion_spin() — 4 voies EN PARALLÈLE<br/>pondérée par confiance (conf excursion ×0,25 : biais β)<br/>réf = voie la + confiante, moyenne des voies à ±15 %<br/>→ spin_radar"]
+        EST -->|"signal post-impact, f_D, t0, spin"| LAUNCH["⑤ launch angle ψ — fit balistique du ridge<br/>fi du signal analytique (passe-bande f_D ± 1 kHz)<br/>lissée ~1,5 T_rot, 12 bins sur 0,35 s → v_r(t)<br/>vol 2D (White + g + Magnus, comme flight_ode)<br/>ψ ∈ [4°,26°] pas 0,25°, c = least-squares<br/>ψ* = argmin SSE → launch_deg, launch_conf = 1 − SSE/SST"]
     end
 
     subgraph SIMU["💻 PARTIE SIMULÉE — modèle inverse + itérations"]
@@ -292,6 +305,7 @@ flowchart TD
     FUS -->|"spin_radar (rpm)"| SWEEP
     VCLUB -->|"vclub (km/h), smash"| SWEEP
     EST -->|"α₀, Δα (deg)"| SWEEP
+    LAUNCH -->|"launch_deg = ψ mesuré (fit ridge)"| FINAL
 
     style REAL fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
     style SIMU fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
@@ -320,5 +334,5 @@ Chaque capture a été relue (`spectres_*.html` + `--capture`) et comparée aux 
 
 ## Tests
 
-- `tests/test_synth_capture.py` — validation synthétique de bout en bout : génère des captations de vérité connue (`Python/gen_capture_modele.py`), les analyse avec `simu_headless --capture` (ligne `ESTIM`, via `GolfBall.analyze_capture_cpp`), compare vBall / spin / back-side / GamaFacePath aux vraies valeurs (tranche la convention de signe de Δα), puis rejoue la simu Python avec le side estimé. Lancer avec un Python numpy+scipy : `python3 tests/test_synth_capture.py` (code 0 si OK).
-- `sci/validate_all.py` — harnais de validation sur toutes les captations `sci/*-F7-*.csv` : analyse C++ (`ESTIM`) + rejoue la simu Python, compare à la référence du nom de fichier (portée, vBall, spin back/side) → table console + `sci/validation.html` coloré. `.venv/bin/python sci/validate_all.py` (code 1 si une captation échoue). Baseline courante (2ᵉ passe ridge à bande restreinte + passe-bande f_D sur la voie patch + fusion pondérée par confiance avec rabais excursion ×0,25) : **vBall 6,2 %, spin 30,0 %, portée Python 11,6 %**.
+- `tests/test_synth_capture.py` — validation synthétique de bout en bout : génère des captations de vérité connue (`Python/gen_capture_modele.py`), les analyse avec `simu_headless --capture` (ligne `ESTIM`, via `GolfBall.analyze_capture_cpp`), compare vBall / spin / back-side / GamaFacePath / **launch angle (±2°)** aux vraies valeurs (tranche la convention de signe de Δα), puis rejoue la simu Python avec le side estimé. Lancer avec un Python numpy+scipy : `python3 tests/test_synth_capture.py` (code 0 si OK). Dernier run : launch 16,5° → 17,25° et 16,0° → 16,75° (conf 1,00). Le fit utilise la même physique que `flightg` (Golfball.sci) / `EquationODEFlight.cpp` : traînée de White D = ½ρCdAV², gravité −g non divisée par m, Magnus F = ½ρ·A·(d/2)·Cm·V·(ω×v) avec Re = V·d/ν (ν cinématique).
+- `sci/validate_all.py` — harnais de validation sur toutes les captations `sci/*-F7-*.csv` : analyse C++ (`ESTIM`) + rejoue la simu Python, compare à la référence du nom de fichier (portée, vBall, spin back/side) → table console + `sci/validation.html` coloré. `.venv/bin/python sci/validate_all.py` (code 1 si une captation échoue). Baseline courante (2ᵉ passe ridge à bande restreinte + passe-bande f_D sur la voie patch + fusion pondérée par confiance avec rabais excursion ×0,25 + fit launch angle du ridge post-impact **réinjecté dans la simu Python de `validate_all.py`** quand conf ≥ 0,5 ou `--caseangle_deg`, sinon repli 16,5°) : **vBall 6,2 %, spin 30,0 %, portée Python 10,7 %** (10,0 % et vBall 5,7 % avec `--caseangle_deg 11`). Tag : `launch-angle-estime-depuis-captation`.
