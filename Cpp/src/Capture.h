@@ -875,65 +875,66 @@ CAP_UNUSED static double estimate_spin_sideband(const Capture& c, const EstRadar
 }
 
 // ---------------- voie "densité spectrale lissée" (méthode Scilab testsFFT.sci / animDensite) ------
-// On accumule la densité spectrale |STFT|² sur TOUTES les frames post-impact (grande fenêtre
-// effective, comme le "mean filtered PSD" de Scilab), puis on mesure directement l'écart entre le
-// pic porteuse f_D et le 1er sideband micro-Doppler au-dessus : f_rot = f_side − f_porteuse.
+// Accumulation de la densité |STFT|² sur toutes les frames post-impact, REBASÉE sur le pic
+// porteuse de CHAQUE frame (comme le f_pic par frame de Scilab) : la porteuse est un chirp
+// (traînée, ~-150 Hz sur 0,35 s), donc sans rebase le lobe étalé crée de faux pics à +16/+47 Hz.
+// Fenêtre 4096 (93 ms, chirp ~15 Hz/frame) + histogramme des offsets + parabolique.
 CAP_UNUSED static double estimate_spin_dens_scilab(const Capture& c, const EstRadar& e,
                                                    double* conf = nullptr, double* ci_rpm = nullptr) {
     if (e.vball_kmh <= 0) return 0.0;
     double fD = e.vball_kmh * KV;
     int i0 = (int)(e.t0_s * FS);
     int n1 = std::min((int)c.r1.size(), i0 + (int)(0.45 * FS));
-    if (n1 - i0 < 8192) return 0.0;
-    const int NFFT = 8192, HOP = 2048;
+    const int NFFT = 4096, HOP = 1024;
+    if (n1 - i0 < NFFT) return 0.0;
     double df = FS / NFFT;
     int k0 = std::max(1, (int)((fD - 600.0) / df)), k1 = std::min(NFFT / 2 - 1, (int)((fD + 600.0) / df));
     int nb = k1 - k0 + 1;
     if (nb < 40) return 0.0;
-    std::vector<double> acc(nb, 0.0), w(NFFT), re(NFFT), im(NFFT);
+    // histogramme des offsets relatifs au pic porteuse de la frame, +40..+300 Hz
+    int dMin = std::max(1, (int)(40.0 / df)), dMax = std::min((int)(300.0 / df), nb - 2);
+    int nd = dMax - dMin + 1;
+    if (nd < 10) return 0.0;
+    std::vector<double> acc(nd, 0.0), w(NFFT), re(NFFT), im(NFFT), pw(nb);
     for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
     int cnt = 0;
     for (int st = i0; st + NFFT <= n1; st += HOP) {
         for (int ch = 0; ch < 2; ch++) {
             const std::vector<double>& x = (ch == 0) ? c.r1 : c.r2;
+            if ((int)x.size() < st + NFFT) continue;
             for (int i = 0; i < NFFT; i++) { re[i] = x[st + i] * w[i]; im[i] = 0; }
             fft(re, im, false);
-            for (int k = k0; k <= k1; k++) acc[k - k0] += (re[k] * re[k] + im[k] * im[k]) / (ch == 0 ? 1.0 : 1.0);
+            for (int k = 0; k < nb; k++) pw[k] = re[k0 + k] * re[k0 + k] + im[k0 + k] * im[k0 + k];
+            // pic porteuse de CETTE frame (compense le chirp)
+            int kp = 0; double pmax = 0;
+            for (int k = 0; k < nb; k++) if (pw[k] > pmax) { pmax = pw[k]; kp = k; }
+            if (pmax <= 0) continue;
+            for (int d = dMin; d <= dMax; d++)
+                if (kp + d < nb) acc[d - dMin] += pw[kp + d];
+            cnt++;
         }
-        cnt++;
     }
     if (cnt == 0) return 0.0;
-    for (int i = 0; i < nb; i++) acc[i] /= (2.0 * cnt);   // moyenne R1+R2 sur les frames
-    // pic porteuse = max de la densité accumulée
-    int kp = 0; double pmax = 0;
-    for (int k = 0; k < nb; k++) if (acc[k] > pmax) { pmax = acc[k]; kp = k; }
-    if (pmax <= 0) return 0.0;
-    // fond = médiane de la bande
+    for (int i = 0; i < nd; i++) acc[i] /= cnt;
+    // fond = médiane de l'histogramme des offsets
     std::vector<double> base(acc);
-    std::nth_element(base.begin(), base.begin() + nb / 2, base.end());
-    double med = base[nb / 2];
-    // detrend local (~150 Hz) pour enlever le lobe porteuse large
-    int win = std::max(3, (int)(150.0 / df) / 2);
-    // 1er sideband au-dessus du pic : max local dans +40..300 Hz au-dessus du pic, > 2×fond
-    int gapMin = std::max(2, (int)(40.0 / df)), gapMax = (int)(300.0 / df);
+    std::nth_element(base.begin(), base.begin() + nd / 2, base.end());
+    double med = base[nd / 2];
+    // sideband = max local de l'histogramme, > 2×fond
     int kSide = -1; double pSide = 0;
-    for (int k = kp + gapMin; k <= std::min(kp + gapMax, nb - 2); k++) {
-        if (acc[k] > acc[k - 1] && acc[k] >= acc[k + 1] && acc[k] > 2.0 * med && acc[k] > 0.05 * pmax) {
-            if (acc[k] > pSide) { pSide = acc[k]; kSide = k; }
+    for (int k = 1; k < nd - 1; k++) {
+        if (acc[k] > acc[k - 1] && acc[k] >= acc[k + 1] && acc[k] > 2.0 * med && acc[k] > pSide) {
+            pSide = acc[k]; kSide = k;
         }
     }
     if (conf) *conf = (med > 0 && kSide > 0) ? pSide / med : 0.0;
     if (kSide < 0) return 0.0;
     if (ci_rpm) *ci_rpm = 60.0 * df;   // résolution d'un bin en rpm
-    // interpolation parabolique des deux pics : résolution sous-bin
-    auto frac = [&](int k) {
-        double den = acc[k - 1] - 2.0 * acc[k] + acc[k + 1];
-        if (den >= 0) return 0.0;
-        double d = (acc[k - 1] - acc[k + 1]) / (2.0 * den);
-        return std::max(-0.5, std::min(0.5, d));
-    };
-    double d = (kSide + frac(kSide)) - (kp + frac(kp));
-    return 60.0 * d * df;               // f_rot (Hz) -> rpm
+    // interpolation parabolique du pic d'offset : résolution sous-bin
+    double den = acc[kSide - 1] - 2.0 * acc[kSide] + acc[kSide + 1];
+    double fr = 0.0;
+    if (den < 0) fr = std::max(-0.5, std::min(0.5, (acc[kSide - 1] - acc[kSide + 1]) / (2.0 * den)));
+    return 60.0 * (kSide + fr + dMin) * df;   // f_rot (Hz) -> rpm
 }
 
 CAP_UNUSED static double estimate_spin_peigne(const Capture& c, const EstRadar& e) {
@@ -1103,7 +1104,9 @@ CAP_UNUSED static double fusion_spin(double patch_rpm, double patch_conf,
     // la voie excursion a un biais SYSTEMATIQUE connu (β effectif < 4πr/λ sur balle réelle :
     // elle lit bas) : sa confiance SNR est rabattue pour ne pas prendre la main seule.
     const double EXC_CONF_DISCOUNT = 0.25;
-    const double c[7] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT, sb_conf, dens_conf, loft_conf};
+    // la voie dens rebasée lit parfois 2*f_rot sur vraies captures (peigne imparfait) : rabais
+    const double DENS_CONF_DISCOUNT = 0.25;
+    const double c[7] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT, sb_conf, dens_conf * DENS_CONF_DISCOUNT, loft_conf};
     int ref = -1;
     for (int i = 0; i < 7; i++)
         if (v[i] > 0 && c[i] > 0 && (ref < 0 || c[i] > c[ref])) ref = i;
