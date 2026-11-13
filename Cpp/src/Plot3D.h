@@ -139,7 +139,7 @@ static void write_traj_3d_html(const std::string& path,
     // à la direction de lancement), centrée sur l'impact. a = faceDeg = α₀ + GamaFacePath ; la normale
     // de la face pointe selon (cos a, 0, -sin a), donc le plan de la face est dirigé selon (sin a, 0, cos a).
     if (std::isfinite(faceDeg))
-        fprintf(f, "var a=%.6f*Math.PI/180,p0=pts[0],L=8;"
+        fprintf(f, "var a=-%.6f*Math.PI/180,p0=pts[0],L=8;"  // signe - : dans le modèle, gfp>0 courbe la balle du cote oppose a la normale de face (Magnus), la fleche pointe du cote de la courbure
                    "var face=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.25,L,12),new THREE.MeshBasicMaterial({color:0xff8800}));"
                    "face.geometry.rotateX(Math.PI/2);face.rotation.y=a;"
                    "face.position.set(p0.x,0.2,p0.z);scene.add(face);\n", faceDeg);
