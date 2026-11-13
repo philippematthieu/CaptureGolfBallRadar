@@ -14,10 +14,10 @@ Le **launch angle ψ est estimé directement depuis la captation** (fit balistiq
 
 <img src="sci/img/capture_simu_headless_20261110.png" width="980">
 
-
+**Spin total : fusion de 7 voies** (détail dans `Cpp/README.md` Genèse §3/§7) : ① patch (enveloppe de Hilbert), ② phase (fréquence instantanée), ③ peigne (autocorrélation du spectre), ④ excursion β (confiance ×0,25), ⑤ sideband micro-Doppler frame par frame (interpolation parabolique, gating IC), ⑥ densité spectrale lissée « façon Scilab » (rebasée par frame, chirp-aware, conf ×0,25), ⑦ loft(ψ) (spin modèle `V0·cosψ·sin(loft_dyn)·CoeffBackSpin`, active seulement si loft_dyn ∈ 12°–35°). La référence est la voie la plus confiante, moyenne pondérée des voies à ±15 %. **Bilan 12 captations** (`sci/validate_all.py`) : vBall 6,3 %, **spin 20,5 %** (18,2 % avec `--caseangle_deg 11`), portée 10,4 %. L'animation 3D montre à l'impact une **équerre** : tube orange = plan de la face (perpendiculaire au lancement), tube rouge + flèche = normale de la face, orientée du côté de la courbure.
 
 ## Simulateur Python
-Animation 3D matplotlib `Python/GolfBall.py [capture.csv|wav]` (vol + 3 rebonds + roulement ; panneau d'infos : club, V club/smash, vBall radar, spin total + back/side estimés, **launch angle ψ mesuré sur la captation**, portée, apex, déviation latérale z final) :
+Animation 3D matplotlib `Python/GolfBall.py [capture.csv|wav]` (vol + 3 rebonds + roulement ; panneau d'infos : club, V club/smash, vBall radar, **spin total fusion 7 voies** (patch/phase/peigne/exc/sideband/dens/loft affichés) + back/side estimés, **launch angle ψ mesuré sur la captation**, portée, apex, déviation latérale z final) :
 
 ```python
 python GolfBall.py ../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --club F7
