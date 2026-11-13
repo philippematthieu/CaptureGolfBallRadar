@@ -273,13 +273,17 @@ flowchart TD
         LC -->|"samples R1, R2"| HP["FILTRAGE passe-haut ~50 km/h<br/>(élimine le bruit basse fréquence)"]
         HP -->|"signaux filtrés"| EST["estimate() — STFT 2048/1024, 2 passes<br/>1ʳᵉ pleine bande 1000–6000 Hz<br/>2ᵉ restreinte [0,85·f_D, 1,10·f_D] : rejette l'écho club<br/>→ vBall raffiné (±6 %), t0, R1 ∥ R2 : appariement stéréo<br/>→ α₀, Δα (courbure mesurée)"]
         EST -->|"vBall, t0"| VCLUB["estimate_club_speed()<br/>passe-bande autour de vBall/1.35, sur [t0−0,3 s, t0]<br/>→ V club mesurée, smash"]
-        EST -->|"signal post-impact, f_D, t0"| S1 & S2 & S3 & S4
+        EST -->|"signal post-impact, f_D, t0"| S1 & S2 & S3 & S4 & S5 & S6
         S1["① voie patch — identification par les ALVÉOLES (AM)<br/>passe-bande f_D ± 1 kHz (rejette l'écho club)<br/>puis enveloppe de Hilbert 250 ms<br/>spectre 50–200 Hz, score d'harmoniques"]
         S2["② voie phase — démodulation FRÉQUENCE/PHASE<br/>estimate_spin_phase_spec()<br/>fi du signal analytique detrendée → pic f_rot"]
-        S3["③ voie peigne — recherche de PÉRIODICITÉ micro-Doppler<br/>(PAS l'écho radar / vitesse) : autocorr. du spectre<br/>autour de f_D ± 2 kHz → lag = f_rot"]
+        S3["③ voie peigne — recherche de PÉRIODICITÉ micro-Doppler<br/>(PAS l'écho radar / vitesse) : autocorr. du spectre<br/>autour de f_D ± 2 kHz → lag = f_rot<br/>(lit ~2·f_rot : flash du patch 2×/tour)"]
         S4["④ voie excursion β — amplitude de l'excursion micro-Doppler<br/>fi lissée 300 ms, detrend linéaire → Δf/(2·KS)<br/>β SUPPOSÉ = 4πr/λ → norme du spin<br/>(l'angle/direction du vecteur spin = balayage SIMU ci-dessous)"]
-        S1 & S2 & S3 & S4 -->|"rpm + confiance (pic/fond)"| FUS["fusion_spin() — 4 voies EN PARALLÈLE<br/>pondérée par confiance (conf excursion ×0,25 : biais β)<br/>réf = voie la + confiante, moyenne des voies à ±15 %<br/>→ spin_radar"]
-        EST -->|"signal post-impact, f_D, t0, spin"| LAUNCH["⑤ launch angle ψ — fit balistique du ridge<br/>fi du signal analytique (passe-bande f_D ± 1 kHz)<br/>lissée ~1,5 T_rot, 12 bins sur 0,35 s → v_r(t)<br/>vol 2D (White + g + Magnus, comme flight_ode)<br/>ψ ∈ [4°,26°] pas 0,25°, c = least-squares<br/>ψ* = argmin SSE → launch_deg, launch_conf = 1 − SSE/SST"]
+        S5["⑤ voie sideband — 1ᵉʳ sideband micro-Doppler<br/>estimate_spin_sideband(), frame par frame (STFT 2048/512)<br/>pic porteuse + 1er max local à +40…300 Hz<br/>offset avec INTERPOLATION PARABOLIQUE (sous-bin)<br/>conf = fraction de frames valides, IC = IQR/2"]
+        S6["⑥ voie dens — DENSITÉ SPECTRALE LISSÉE « façon Scilab »<br/>estimate_spin_dens_scilab() (testsFFT.sci / animDensite)<br/>PSD |STFT|² accumulée sur TOUTES les frames post-impact<br/>écart pic porteuse → 1er sideband, parabolique"]
+        S1 & S2 & S3 & S4 & S5 & S6 -->|"rpm + confiance (pic/fond)"| FUS["fusion_spin() — 6 voies EN PARALLÈLE<br/>pondérée par confiance (conf excursion ×0,25 : biais β)<br/>réf = voie la + confiante, moyenne des voies à ±15 %<br/>→ spin_radar provisoire"]
+        EST -->|"signal post-impact, f_D, t0, spin"| LAUNCH["⑧ launch angle ψ — fit balistique du ridge<br/>fi du signal analytique (passe-bande f_D ± 1 kHz)<br/>lissée ~1,5 T_rot, 12 bins sur 0,35 s → v_r(t)<br/>vol 2D (White + g + Magnus, comme flight_ode)<br/>ψ ∈ [4°,26°] pas 0,25°, c = least-squares<br/>ψ* = argmin SSE → launch_deg, launch_conf = 1 − SSE/SST"]
+        LAUNCH -->|"launch_deg ψ"| S7["⑦ voie loft(ψ) — spin prédit par le modèle<br/>spin = V0·cosψ·sin(loft_dyn(ψ))·CoeffBackSpin<br/>loft_dyn(ψ) = balayage shaft lean inverse<br/>ACTIVE seulement si 12° < loft_dyn < 35° (hors butées)<br/>conf = 10 × min(1, distance aux bords / 6°)"]
+        S7 -->|"rpm + conf (0 si butée)"| FUS2["fusion_spin() 7 voies<br/>→ spin_radar FINAL"]
     end
 
     subgraph SIMU["💻 PARTIE SIMULÉE — modèle inverse + itérations"]
@@ -302,7 +306,8 @@ flowchart TD
         FINAL -->|"mf + panneau d'infos + spectrogramme"| OUT["write_traj_3d_html() + spec_to_json()<br/>→ trajectoire_capture_3d.html<br/>write_traj_svg() → trajectoire_capture.svg"]
     end
 
-    FUS -->|"spin_radar (rpm)"| SWEEP
+    FUS -->|"spin provisoire (6 voies)"| FUS2
+    FUS2 -->|"spin_radar FINAL (rpm)"| SWEEP
     VCLUB -->|"vclub (km/h), smash"| SWEEP
     EST -->|"α₀, Δα (deg)"| SWEEP
     LAUNCH -->|"launch_deg = ψ mesuré (fit ridge)"| FINAL
@@ -314,7 +319,13 @@ flowchart TD
     style IT2 fill:#ffe0b2
     style T fill:#ffcdd2
     style RET fill:#c8e6c9
+    style S5 fill:#e1f5fe
+    style S6 fill:#e1f5fe
+    style S7 fill:#e1f5fe
+    style FUS2 fill:#c8e6c9
 ```
+
+> Voies ⑤ (sideband, parabolique), ⑥ (dens lissée « Scilab ») et ⑦ (loft(ψ) gated 12–35°) ajoutées après la 1ʳᵉ version du schéma : détails, variantes testées et rejetées (pré-filtrage ±200 Hz, rebase per-frame, règle hauts spins peigne>8000) dans la **Genèse §7**. Bilan : spin 30,7 % → **20,4 %** d'erreur moyenne sur les 12 captations.
 
 ### 4. De la mesure à la visualisation
 
