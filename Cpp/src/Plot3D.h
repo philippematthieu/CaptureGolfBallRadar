@@ -135,13 +135,14 @@ static void write_traj_3d_html(const std::string& path,
     fprintf(f, "var solLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints(ptsSol),new THREE.LineDashedMaterial({color:0x333333,dashSize:1.5,gapSize:1}));solLine.computeLineDistances();scene.add(solLine);\n");
     // apex
     fprintf(f, "var ap=new THREE.Mesh(new THREE.SphereGeometry(1.2),new THREE.MeshBasicMaterial({color:0xff0000}));ap.position.set(traj[%d][0],traj[%d][1],traj[%d][2]);scene.add(ap);\n", iapex, iapex, iapex);
-    // face de club à l'impact : ligne grasse orange horizontale, orientée de faceDeg = α₀ + GamaFacePath
-    // (plan sol : x = portée, z = -latéral ; direction scène = (cos a, 0, -sin a))
+    // face de club à l'impact : ligne grasse orange HORIZONTALE = le PLAN de la face (perpendiculaire
+    // à la direction de lancement), centrée sur l'impact. a = faceDeg = α₀ + GamaFacePath ; la normale
+    // de la face pointe selon (cos a, 0, -sin a), donc le plan de la face est dirigé selon (sin a, 0, cos a).
     if (std::isfinite(faceDeg))
-        fprintf(f, "var a=%.6f*Math.PI/180,p0=pts[0],L=8,dir=new THREE.Vector3(Math.cos(a),0,-Math.sin(a));"
+        fprintf(f, "var a=%.6f*Math.PI/180,p0=pts[0],L=8;"
                    "var face=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.25,L,12),new THREE.MeshBasicMaterial({color:0xff8800}));"
-                   "face.geometry.rotateX(Math.PI/2);face.rotation.y=Math.PI/2-a;"
-                   "face.position.set(p0.x+dir.x*L/2,0.2,p0.z+dir.z*L/2);scene.add(face);\n", faceDeg);
+                   "face.geometry.rotateX(Math.PI/2);face.rotation.y=a;"
+                   "face.position.set(p0.x,0.2,p0.z);scene.add(face);\n", faceDeg);
     // balle animée
     fprintf(f, "var ball=new THREE.Mesh(new THREE.SphereGeometry(0.8),new THREE.MeshLambertMaterial({color:0xffffff}));scene.add(ball);\n");
     fprintf(f, "var k=0;var VIT=8;document.getElementById('vit').oninput=function(){VIT=+this.value;document.getElementById('vitv').textContent=VIT;};\n");
