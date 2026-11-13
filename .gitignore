@@ -29,12 +29,16 @@ __pycache__/
 *.fdb_latexmk
 texput.log
 # binaires produits localement
-Cpp/src/simu_headless
-Cpp/src/simu_headless_cimg
+Cpp/build/simu_headless
+Cpp/build/simu_headless_cimg
 Python/golf_ball_flight_3d.mp4
 
 # divers locaux
 .vscode/
 .venv/
 sci/FFT_Mat.txt
-Cpp/src/spectro_png
+Cpp/build/spectro_png
+Cpp/build/*.o
+Cpp/build/spectres_html
+Cpp/build/spectres_html_cimg
+Cpp/build/lib/

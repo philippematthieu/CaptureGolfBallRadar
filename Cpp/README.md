@@ -1,4 +1,6 @@
-# Simulateur de vol de balle de golf — C++ (`Cpp/src/`)
+# Simulateur de vol de balle de golf — C++ (`Cpp/`)
+
+Arborescence : `include/` (en-têtes), `src/` (sources .cpp), `third_party/` (CImg, BmpImg), `lib/` (three.js), `tests/`, `build/` (binaires + sorties générées), `Makefile`.
 
 Simulation complète : vol (traînée de White, Magnus/Smits & Smith, gravité) + 3 rebonds (Penner/Roh & Lee) + roulement, avec sorties texte, image 2D (SVG / PNG-CImg), **scène 3D interactive HTML** (three.js, rotation souris) et **analyse radar avancée** des captations (vitesse club, spin multi-voies, décomposition back/side spin).
 
@@ -31,33 +33,21 @@ Simulation complète : vol (traînée de White, Magnus/Smits & Smith, gravité) 
 ## Compilation (Mac / Linux, g++ ou clang++)
 
 ```bash
-cd Cpp/src
-
-# version de base (console + SVG + HTML 3D) — macOS : ajoute les frameworks audio pour le mode --live (carte son)
-g++ -O2 -std=c++11 -o simu_headless \
-    Simu_headless.cpp Ball.cpp Club.cpp EquationODE.cpp EquationODEFlight.cpp \
-    EquationODERoll.cpp EquationODEEventFlight.cpp EquationODEEventRoll.cpp SolverODE.cpp \
-    -framework AudioToolbox -framework CoreAudio -framework AudioUnit
-# sans le mode --live (autre plateforme) : compile aussi sans les frameworks (record_live retourne une erreur)
-
-# outil de visualisation multi-spectres d'une captation (HTML autonome, pur canvas 2D)
-g++ -O2 -std=c++11 -I. -o spectres_html spectres_html.cpp \
-    -framework AudioToolbox -framework CoreAudio -framework AudioUnit   # macOS ; sinon sans les frameworks
-
-# PNG de densité spectrale (voir plus bas)
-g++ -O2 -std=c++11 -I. -o spectro_png spectro_png.cpp
-
-# version avec image PNG via CImg (headless : -Dcimg_display=0 ; PNG si libpng, sinon BMP)
-g++ -O2 -std=c++11 -Dcimg_display=0 -DUSE_CIMG -I. -o simu_headless_cimg \
-    Simu_headless.cpp Ball.cpp Club.cpp EquationODE.cpp EquationODEFlight.cpp \
-    EquationODERoll.cpp EquationODEEventFlight.cpp EquationODEEventRoll.cpp SolverODE.cpp
+cd Cpp && make          # build dans build/ (en-têtes include/, libs externes third_party/)
+# équivalent manuel :
+#   g++ -O2 -std=c++11 -Iinclude -Ithird_party -o build/simu_headless src/Simu_headless.cpp src/Ball.cpp src/Club.cpp src/EquationODE.cpp src/EquationODEFlight.cpp src/EquationODERoll.cpp src/EquationODEEventFlight.cpp src/EquationODEEventRoll.cpp src/SolverODE.cpp -framework AudioToolbox -framework CoreAudio -framework AudioUnit   # macOS
+#   (sans les frameworks sur Linux : record_live retourne une erreur)
+# simu_headless_cimg : make build/simu_headless_cimg   (image PNG via CImg, -DUSE_CIMG -Dcimg_display=0)
+# spectres_html : make build/spectres_html           (8 panneaux de spectres)
+# spectro_png   : make build/spectro_png             (PNG densité spectrale, zéro dépendance)
 ```
 
-L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/avec XQuartz : remplacer `Simu_headless.cpp` par `Simu.cpp` et ajouter `-Dcimg_display=1` + les libs d'affichage.
+L'ancien `Simu.cpp` (avec `CImg::display_graph` en fenêtre) se compile sur PC/avec XQuartz : remplacer `src/Simu_headless.cpp` par `src/Simu.cpp` et ajouter `-Dcimg_display=1` + les libs d'affichage.
 
 ## Commandes
 
 ```bash
+cd Cpp/build   # les sorties (HTML/SVG) sont écrites dans ce répertoire
 ./simu_headless --help        # aide complète : usage, options, sorties, exemples (en couleur)
 
 # simulation "club" : Type ClubV0(km/h) AlphaClubPath(deg) GamaFacePath(deg) ShaftLean(deg) [spinScale]
@@ -198,10 +188,11 @@ Les panneaux 3, 6, 7 utilisent directement les analyseurs de `Capture.h` (pas de
 Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendance**) — style spectro_F7-*.png : **640×500**, 2 panneaux R1/R2, zoom Y ±512 Hz autour de vBall post-impact, axe X = temps (s), axe Y = km/h (f/19.49, limité à 350 km/h), colormap `hot`, ridge cyan, impact rouge. STFT 512 (Hann 11,6 ms), hop 128. Sortie PNG (writer maison, zlib stored) ou BMP 24 bits.
 
 ```bash
+cd Cpp/build
 ./spectro_png ../../sci/2019-02-24-F7-137m-166kmh-4990trm-1312trm-cs118.csv spectro_137.png -o
 ```
 
-## Sorties produites (dans `Cpp/src/`)
+## Sorties produites (dans `Cpp/build/`)
 
 - console : `RESULT portee=... m  apex=... m  z_final=... m  temps=... s`
 - console (mode `--capture`) : ligne machine **`ESTIM key=value ...`** (une seule ligne, `nan` pour les non-détectés) : `vball_kmh vball_corr_kmh spin_rpm spin_patch_rpm spin_phase_rpm spin_peigne_rpm spin_exc_rpm spin_patch_conf spin_phase_conf spin_peigne_conf spin_exc_conf vclub_radar_kmh vclub_kmh smash alpha0_deg dalpha_deg t0_s launch_deg launch_conf caseangle_deg loft_dyn_est_deg shaftlean_est_deg loft_dyn_spin_deg spin_from_loft_rpm spin_loft_ratio coeff_backspin_emp gfp_est_deg backspin_est_rpm sidespin_est_rpm da_est_deg portee_m apex_m z_final_m temps_s` — parsée par `Python/GolfBall.py` (`analyze_capture_cpp`) pour rejouer la simu Python avec le side spin estimé et le launch angle mesuré (`--launch_deg` pour forcer, `--caseangle_deg` pour la valise inclinée — exclusifs)
@@ -212,10 +203,10 @@ Outil séparé `spectro_png` (réutilise Capture.h + BmpImg.h, **zéro dépendan
 
 ## Fichiers clés
 
-- `Ball.{h,cpp}` modèle balle + rebonds/roulement, `Club.{h,cpp}` club, `EquationODE*.{h,cpp}` EDO, `SolverODE.{h,cpp}` RK4 + zero-crossing
-- `Simu_headless.cpp` main console (simu + mode `--capture` + génération HTML)
-- `Capture.h` lecture CSV/WAV, FFT, filtres passe-haut/passe-bande, estimation radar (vBall, V club, spin 3 voies, α₀/Δα, spectrogramme)
-- `PlotSVG.h` / `PlotCImg.h` / `Plot3D.h` sorties graphiques (SVG, PNG, HTML 3D), `spectres_html.cpp` visualisation multi-spectres, `lib/` three.js local
+- `include/Ball.h` + `src/Ball.cpp` modèle balle + rebonds/roulement, `include/Club.h` + `src/Club.cpp` club, `include/EquationODE*.h` + `src/EquationODE*.cpp` EDO, `include/SolverODE.h` + `src/SolverODE.cpp` RK4 + zero-crossing
+- `src/Simu_headless.cpp` main console (simu + mode `--capture` + génération HTML)
+- `include/Capture.h` lecture CSV/WAV, FFT, filtres passe-haut/passe-bande, estimation radar (vBall, V club, spin 3 voies, α₀/Δα, spectrogramme)
+- `include/PlotSVG.h` / `include/PlotCImg.h` / `include/Plot3D.h` sorties graphiques (SVG, PNG, HTML 3D), `src/spectres_html.cpp` visualisation multi-spectres, `Cpp/lib/` three.js local
 
 ---
 
@@ -228,7 +219,7 @@ Cette section retrace la démarche : les idées de départ, la théorie physique
 Ce projet avance par une **collaboration homme–machine** où chacun a un rôle complémentaire, et dont les forces se cumulent :
 
 - **L'utilisateur (Philippe) — l'expert métier, la source des idées et des « tricks ».** C'est lui qui connaît le radar 10,525 GHz et le golf, et qui *voit* les spectrogrammes. C'est lui qui repère ce que le code ne « voit » pas : l'écho de la tête de club, très puissant et plus bas en fréquence, qui masque le début du vol de la balle (→ passe-bande autour de f_D sur la voie patch, puis 2ᵉ passe du ridge à bande restreinte [0,85·f_D, 1,10·f_D], puis ridge affiché restreint dès l'impact) ; le biais systématique de la voie excursion β sur balle réelle (→ rabais ×0,25 de sa confiance dans la fusion) ; la fusion pondérée par confiance ; le schéma vertical avec étiquettes de données sur les flèches… Il oriente, valide, demande les reverts, et fixe les priorités.
-- **L'assistant (Mistral Vibe, agent CLI de codage) — l'exécutant rapide et systématique.** Il code vite et sans fatigue, écrit les harnais de validation (`tests/test_synth_capture.py` sur captations synthétiques de vérité connue, `sci/validate_all.py` sur les 12 vraies captations, comparées aux valeurs de référence des noms de fichiers), mesure l'avant/après **chiffré** de chaque idée, documente (ce README, le schéma Mermaid) et commit/push chaque amélioration individuellement. Mais seul, il **loupe des tricks** : il ne lit pas un spectrogramme comme l'utilisateur, et l'idée de rejeter l'écho club par une bande restreinte autour de f_D ne lui serait pas venue spontanément.
+- **L'assistant (Mistral Vibe, agent CLI de codage) — l'exécutant rapide et systématique.** Il code vite et sans fatigue, écrit les harnais de validation (`Cpp/tests/test_synth_capture.py` sur captations synthétiques de vérité connue, `Python/validate_all.py` sur les 12 vraies captations, comparées aux valeurs de référence des noms de fichiers), mesure l'avant/après **chiffré** de chaque idée, documente (ce README, le schéma Mermaid) et commit/push chaque amélioration individuellement. Mais seul, il **loupe des tricks** : il ne lit pas un spectrogramme comme l'utilisateur, et l'idée de rejeter l'écho club par une bande restreinte autour de f_D ne lui serait pas venue spontanément.
 - **Le processus, itération par itération :** idée de l'utilisateur → implémentation par l'assistant → validation chiffrée (tests synthétiques + tableau des 12 captations) → revue des régressions (ex. cs111/cs124-2025 s'étaient dégradés quand la voie excursion prenait la main comme référence → d'où le rabais ×0,25) → commit + push. **Les chiffres tranchent** : au fil de ces itérations, vBall est passé de 8,1 % à **6,2 %** d'erreur moyenne, le spin de 44,4 % à **30,0 %**, la portée Python de 12,6 % à **11,6 %**.
 
 ### 1. Point de départ : le radar voit plus que la balle
@@ -382,5 +373,5 @@ Chaque capture a été relue (`spectres_*.html` + `--capture`) et comparée aux 
 
 ## Tests
 
-- `tests/test_synth_capture.py` — validation synthétique de bout en bout : génère des captations de vérité connue (`Python/gen_capture_modele.py`), les analyse avec `simu_headless --capture` (ligne `ESTIM`, via `GolfBall.analyze_capture_cpp`), compare vBall / spin / back-side / GamaFacePath / **launch angle (±2°)** aux vraies valeurs (tranche la convention de signe de Δα), puis rejoue la simu Python avec le side estimé. Lancer avec un Python numpy+scipy : `python3 tests/test_synth_capture.py` (code 0 si OK). Dernier run : launch 16,5° → 17,25° et 16,0° → 16,75° (conf 1,00). Le fit utilise la même physique que `flightg` (Golfball.sci) / `EquationODEFlight.cpp` : traînée de White D = ½ρCdAV², gravité −g non divisée par m, Magnus F = ½ρ·A·(d/2)·Cm·V·(ω×v) avec Re = V·d/ν (ν cinématique).
-- `sci/validate_all.py` — harnais de validation sur toutes les captations `sci/*-F7-*.csv` : analyse C++ (`ESTIM`) + rejoue la simu Python, compare à la référence du nom de fichier (portée, vBall, spin back/side) → table console + `sci/validation.html` coloré. `.venv/bin/python sci/validate_all.py` (code 1 si une captation échoue). Baseline courante (2ᵉ passe ridge à bande restreinte + passe-bande f_D sur la voie patch + fusion pondérée par confiance avec rabais excursion ×0,25 + fit launch angle du ridge post-impact **réinjecté dans la simu Python de `validate_all.py`** quand conf ≥ 0,5 ou `--caseangle_deg`, sinon repli 16,5°). Baseline courante (7 voies spin : patch, phase, peigne, excursion ×0,25, sideband + parabolique, dens lissée, **loft(ψ) gated 12–35°**, voir Genèse §7) : **vBall 6,3 %, spin 20,4 %, portée Python 10,2 %** (20,0 % avec `--caseangle_deg 11`). Tags : `launch-angle-estime-depuis-captation`, branche `densite-spectrale-lissee-scilab` mergée dans `main`.
+- `Cpp/tests/test_synth_capture.py` — validation synthétique de bout en bout : génère des captations de vérité connue (`Python/gen_capture_modele.py`), les analyse avec `simu_headless --capture` (ligne `ESTIM`, via `GolfBall.analyze_capture_cpp`), compare vBall / spin / back-side / GamaFacePath / **launch angle (±2°)** aux vraies valeurs (tranche la convention de signe de Δα), puis rejoue la simu Python avec le side estimé. Lancer avec un Python numpy+scipy : `python3 Cpp/tests/test_synth_capture.py` (code 0 si OK). Dernier run : launch 16,5° → 17,25° et 16,0° → 16,75° (conf 1,00). Le fit utilise la même physique que `flightg` (Golfball.sci) / `EquationODEFlight.cpp` : traînée de White D = ½ρCdAV², gravité −g non divisée par m, Magnus F = ½ρ·A·(d/2)·Cm·V·(ω×v) avec Re = V·d/ν (ν cinématique).
+- `Python/validate_all.py` — harnais de validation sur toutes les captations `sci/*-F7-*.csv` : analyse C++ (`ESTIM`) + rejoue la simu Python, compare à la référence du nom de fichier (portée, vBall, spin back/side) → table console + `sci/validation.html` coloré. `.venv/bin/python Python/validate_all.py` (code 1 si une captation échoue). Baseline courante (2ᵉ passe ridge à bande restreinte + passe-bande f_D sur la voie patch + fusion pondérée par confiance avec rabais excursion ×0,25 + fit launch angle du ridge post-impact **réinjecté dans la simu Python de `validate_all.py`** quand conf ≥ 0,5 ou `--caseangle_deg`, sinon repli 16,5°). Baseline courante (7 voies spin : patch, phase, peigne, excursion ×0,25, sideband + parabolique, dens lissée, **loft(ψ) gated 12–35°**, voir Genèse §7) : **vBall 6,3 %, spin 20,4 %, portée Python 10,2 %** (20,0 % avec `--caseangle_deg 11`). Tags : `launch-angle-estime-depuis-captation`, branche `densite-spectrale-lissee-scilab` mergée dans `main`.
