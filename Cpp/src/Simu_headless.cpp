@@ -250,7 +250,8 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
     + "<div class='k'>vBall</div><div class='v'>" + fmt1(e.vball_corr_kmh, "km/h") + "</div>"
     + "<div class='k'>Spin total</div><div class='v'>" + fmt1(e.spin_rpm, "rpm") + "</div>"
     + "<div class='k'>Back / Side spin</div><div class='v'>" + fmt1nan(backspin_est, "") + " / " + fmt1nan(sidespin_est, "rpm") + "</div>";
-  write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf, spec_to_json(e), golfer); }
+  write_traj_3d_html("trajectoire_capture_3d.html", mf, "Trajectoire 3D depuis captation", inf, spec_to_json(e), golfer,
+                     e.alpha0_deg + (std::isnan(gfp_est) ? 0.0 : gfp_est)); } // face de club à l'impact = α₀ + GamaFacePath
     printf("HTML 3D ecrit : trajectoire_capture_3d.html\n");
     if (openAfter) {
 #ifdef __APPLE__
@@ -410,7 +411,8 @@ int main(int argc, char *argv[]) {
   + kv("BackSpin", fmt0nan(theBall.getSpinYOrgrpm(), "rpm")) + kv("SideSpin", fmt0nan(theBall.getSpinZOrgrpm(), "rpm"))
   + kv("Portee", fmt1(portee, "m")) + kv("Hauteur max", fmt1(apex, "m")) + kv("z final", fmt1(zfinal, "m"));
   { EstRadar es; auto sig = gen_signal_simu(mf, sac[j].getClubV0kmh()); fill_spec(es, sig, 512, 128);
-  write_traj_3d_html("trajectoire_3d.html", mf, titre3d, inf, spec_to_json(es)); }
+  write_traj_3d_html("trajectoire_3d.html", mf, titre3d, inf, spec_to_json(es), "",
+                     sac[j].getAlphaClubPathRadian() * 180.0 / M_PI + sac[j].getGamaFacePathRadian() * 180.0 / M_PI); }
   }
     cout << "HTML 3D ecrit : trajectoire_3d.html (ouvrir dans Safari, tourner avec la souris)" << endl;
     #ifdef USE_CIMG
