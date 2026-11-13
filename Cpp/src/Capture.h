@@ -22,6 +22,11 @@
 #include <sstream>
 #include <algorithm>
 
+#ifdef __APPLE__
+#include <AudioToolbox/AudioToolbox.h>   // mode --live : entrée carte son (radar en mode audio)
+#include <unistd.h>
+#endif
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -166,6 +171,76 @@ CAP_UNUSED static Capture load_capture(const std::string& path) {
     return c;
 }
 
+// ---------------- sauvegarde WAV 16 bits (pour relecture Python : parité) ------
+CAP_UNUSED static void save_wav(const std::string& path, const Capture& c) {
+    FILE* f = fopen(path.c_str(), "wb");
+    if (!f) { fprintf(stderr, "ERREUR: impossible d'écrire %s\n", path.c_str()); return; }
+    long nfr = (long)std::min(c.r1.size(), c.r2.size());
+    uint32_t dataSize = (uint32_t)(nfr * 2 * 2), fs = (uint32_t)c.fs;
+    uint16_t ch = 2, bits = 16, blockAlign = 4; uint32_t byteRate = fs * 4;
+    fwrite("RIFF", 1, 4, f); uint32_t riffSize = 36 + dataSize; fwrite(&riffSize, 4, 1, f);
+    fwrite("WAVEfmt ", 1, 8, f); uint32_t fmtSize = 16; fwrite(&fmtSize, 4, 1, f);
+    uint16_t audioFmt = 1; fwrite(&audioFmt, 2, 1, f); fwrite(&ch, 2, 1, f);
+    fwrite(&fs, 4, 1, f); fwrite(&byteRate, 4, 1, f); fwrite(&blockAlign, 2, 1, f); fwrite(&bits, 2, 1, f);
+    fwrite("data", 1, 4, f); fwrite(&dataSize, 4, 1, f);
+    for (long i = 0; i < nfr; i++) {
+        int16_t l = (int16_t)std::max(-32768.0, std::min(32767.0, c.r1[i] * 32767.0));
+        int16_t r = (int16_t)std::max(-32768.0, std::min(32767.0, c.r2[i] * 32767.0));
+        fwrite(&l, 2, 1, f); fwrite(&r, 2, 1, f);
+    }
+    fclose(f);
+}
+
+// ---------------- entrée live carte son (macOS, CoreAudio AudioQueue) ----------
+#ifdef __APPLE__
+static void capture_live_cb(void* ud, AudioQueueRef, AudioQueueBufferRef inBuffer, const AudioTimeStamp*, UInt32, const AudioStreamPacketDescription*) {
+    std::vector<float>* b = (std::vector<float>*)ud;
+    const float* p = (const float*)inBuffer->mAudioData;
+    UInt32 n = inBuffer->mAudioDataByteSize / sizeof(float);
+    b->insert(b->end(), p, p + n);
+}
+#endif
+// Enregistre `seconds` s sur l'entrée par défaut, stéréo 44,1 kHz float32.
+CAP_UNUSED static Capture record_live(double seconds) {
+    Capture c; c.fs = 44100.0;
+#ifdef __APPLE__
+    AudioStreamBasicDescription fmt;
+    memset(&fmt, 0, sizeof(fmt));
+    fmt.mSampleRate = 44100.0;
+    fmt.mFormatID = kAudioFormatLinearPCM;
+    fmt.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked;
+    fmt.mBitsPerChannel = 32;
+    fmt.mChannelsPerFrame = 2;
+    fmt.mFramesPerPacket = 1;
+    fmt.mBytesPerFrame = 2 * 4;
+    fmt.mBytesPerPacket = 2 * 4;
+    std::vector<float> buf;
+    AudioQueueRef queue = NULL;
+    OSStatus st = AudioQueueNewInput(&fmt, capture_live_cb, &buf, NULL, NULL, 0, &queue);
+    if (st != noErr) { fprintf(stderr, "ERREUR AudioQueueNewInput (%d) — périphérique audio absent ?\n", (int)st); return c; }
+    UInt32 bufBytes = (UInt32)(0.5 * 44100.0 * 2 * 4);   // buffers internes 0,5 s
+    for (int i = 0; i < 3; i++) {
+        AudioQueueBufferRef bbuf;
+        if (AudioQueueAllocateBuffer(queue, bufBytes, &bbuf) == noErr)
+            AudioQueueEnqueueBuffer(queue, bbuf, 0, NULL);
+    }
+    st = AudioQueueStart(queue, NULL);
+    if (st != noErr) { fprintf(stderr, "ERREUR AudioQueueStart (%d)\n", (int)st); AudioQueueDispose(queue, true); return c; }
+    fprintf(stderr, "enregistrement live %.1f s sur l'entrée par défaut (44,1 kHz stéréo) — frappez !\n", seconds);
+    usleep((useconds_t)(seconds * 1e6));
+    AudioQueueStop(queue, true);
+    AudioQueueDispose(queue, true);
+    long nfr = (long)buf.size() / 2;
+    c.r1.resize(nfr); c.r2.resize(nfr);
+    for (long i = 0; i < nfr; i++) { c.r1[i] = buf[2 * i]; c.r2[i] = buf[2 * i + 1]; }
+    fprintf(stderr, "live : %ld frames stéréo capturées\n", nfr);
+#else
+    (void)seconds;
+    fprintf(stderr, "ERREUR: --live (carte son) nécessite macOS (CoreAudio). Compilez sur mac avec -framework AudioToolbox.\n");
+#endif
+    return c;
+}
+
 // ---------------- spectrogramme + ridge --------------------------------------
 CAP_UNUSED static void spectrogram(const std::vector<double>& x, int nfft, int hop,
                         std::vector<double>& ridge, std::vector<double>& power,
@@ -197,7 +272,8 @@ CAP_UNUSED static void spectrogram(const std::vector<double>& x, int nfft, int h
 // ---------------- estimation (conforme pipe_validation.py) -------------------
 struct EstRadar {
     double vball_kmh;      // radiale
-    double vball_corr_kmh; // corrigée cos(20°)
+    double vball_corr_kmh; // corrigée cos(20°) (et cos(case angle) si --caseangle)
+    double case_deg = 0;   // angle d'inclinaison de la valise/radar vers le haut (--caseangle)
     double spin_rpm;       // périodicité du patch
     double spin_peigne_rpm = 0; // peigne de raies micro-Doppler (autocorrélation du spectre autour de f_D)
     double spin_phase_rpm = 0;  // fréquence instantanée du signal analytique du lobe balle
@@ -206,9 +282,18 @@ struct EstRadar {
     double spin_phase_conf = 0;  // confiance voie phase   = pic / médiane spectre fi detrendée (40-200 Hz)
     double spin_peigne_conf = 0; // confiance voie peigne  = ac[best] / médiane ac (lags 45-200 Hz)
     double spin_exc_conf = 0;    // confiance voie excursion = Δf / (1.4826·MAD résidu fi lissée)
+    double spin_sideband_rpm = 0;   // 5e voie : espacement pic balle -> 1er sideband micro-Doppler, frame/frame
+    double spin_sideband_conf = 0;  // fraction de frames avec un sideband valide
+    double spin_ci_rpm = 0;         // intervalle de confiance de la voie sideband (IQR/2, en rpm)
+    double spin_dens_rpm = 0;       // 6e voie : densité spectrale lissée (accumulée) Scilab, écart porteuse->1er sideband
+    double spin_dens_conf = 0;
     double alpha0_deg;     // azimut initial (appariement stéréo)
+    double z_radar_m = NAN;      // déplacement latéral stéréo intégré (D2−D1)·L/b, méthode Scilab testsFFT.sci
+    double dalpha_int_deg = NAN; // pente de z_radar (version intégrée, lissée) vs dalpha_deg (instantané)
     double dalpha_deg;     // courbure début-fin
     double t0_s;
+    double launch_deg = 0;   // angle de lancement ψ estimé par fit balistique sur le ridge post-impact
+    double launch_conf = 0;  // confiance du fit = 1 − SSE/SST
     // spectrogramme embarqué pour affichage fixe (densité 0..255, bande FMIN..FMAX Hz, axe Y en km/h via /KV)
     std::vector<unsigned char> spec;   // [nframes * nbin], ligne = frame temporelle
     int spec_nbin = 0, spec_nframe = 0, spec_hop = 0;
@@ -281,8 +366,10 @@ CAP_UNUSED static void fill_spec(EstRadar& e, const std::vector<double>& sig, in
         }
 }
 
-CAP_UNUSED static EstRadar estimate(const Capture& c) {
+CAP_UNUSED static EstRadar estimate(const Capture& c, double caseDeg = 0.0) {
     EstRadar e; e.vball_kmh = 0; e.vball_corr_kmh = 0; e.spin_rpm = 0; e.alpha0_deg = 0; e.dalpha_deg = 0; e.t0_s = 0;
+    e.case_deg = caseDeg;
+    const double caseRad = caseDeg * M_PI / 180.0;   // inclinaison de la valise vers le haut (--caseangle)
     const int NFFT = 2048, HOP = NFFT / 2;
     std::vector<double> ridge, power, tg;
     spectrogram(c.r1, NFFT, HOP, ridge, power, tg);
@@ -312,7 +399,7 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
     } else {
         e.vball_kmh = (v1 > 0) ? v1 : v2;
     }
-    e.vball_corr_kmh = e.vball_kmh / cos(THETA_RADAR);
+    e.vball_corr_kmh = e.vball_kmh / (cos(THETA_RADAR) * cos(caseRad));   // correction azimut 20° + élévation valise
     // --- 2e passe : on restreint la recherche du ridge à ±20 % autour de f_D (vitesse à priori) ---
     // L'écho de la tête de club (fréquence plus basse, très puissant) décélère après l'impact et
     // accroche sinon le ridge des 1res frames post-impact ; en bande restreinte, le ridge suit
@@ -328,7 +415,7 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
             double vref = post[post.size() / 2] / KV;
             if (vref > 0) {
                 e.vball_kmh = vref;
-                e.vball_corr_kmh = vref / cos(THETA_RADAR);
+                e.vball_corr_kmh = vref / (cos(THETA_RADAR) * cos(caseRad));
             }
         }
     }
@@ -395,6 +482,109 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
             }
         }
     }
+    // --- launch angle ψ : fit du vol 2D (traînée de White + gravité + Magnus, comme flight_ode)
+    // sur la fréquence instantanée f_i(t) du lobe balle (signal analytique passe-bande autour de
+    // f_D, lissée sur ~1,5 période de rotation pour moyenner la modulation micro-Doppler ±β·f_rot).
+    // Le radar mesure v_r(t) ≈ V(t)·cos(Φ), Φ quasi constant (cf. THETA_RADAR) : on fitte la FORME
+    // de V(t) à un facteur d'échelle libre c près, v_r_model(t) = c·V_model(t; V0, ψ).
+    if (e.vball_kmh > 0) {
+        const double rho = 1.292 * 273.15 / 293.15;             // kg/m³ à 20 °C (comme Golfball.sci)
+        const double Ab = M_PI * pow(BALL_D / 2, 2), mm = 0.04545, mu = 1.5e-5;  // mu = viscosité CINÉMATIQUE (m²/s)
+        const double Cl1 = 0.54;                                 // fer 7 (SAC)
+        double fD = e.vball_kmh * KV;
+        int i0s = (int)(e.t0_s * FS);
+        int n = std::min((int)(0.45 * FS), (int)c.r1.size() - i0s);
+        if (n > 8192) {
+            std::vector<double> seg(c.r1.begin() + i0s, c.r1.begin() + i0s + n);
+            std::vector<double> xf = bandpass(seg, fD, 2000.0);
+            int N = 1; while (N < n) N <<= 1;
+            std::vector<double> re(N, 0.0), im(N, 0.0);
+            for (int i = 0; i < n; i++) re[i] = xf[i];
+            fft(re, im, false);
+            std::vector<double> h(N, 0.0);
+            h[0] = 1.0; for (int k = 1; k < N / 2; k++) h[k] = 2.0; h[N / 2] = 1.0;
+            for (int k = 0; k < N; k++) { re[k] *= h[k]; im[k] *= h[k]; }
+            fft(re, im, true);
+            std::vector<double> fi(n - 1);
+            double prev = atan2(im[0], re[0]);
+            for (int i = 1; i < n; i++) {
+                double ph = atan2(im[i], re[i]);
+                double d = ph - prev;
+                while (d > M_PI) d -= 2.0 * M_PI;
+                while (d < -M_PI) d += 2.0 * M_PI;
+                fi[i - 1] = d * FS / (2.0 * M_PI);
+                prev = ph;
+            }
+            // lissage sur ~1,5 période de rotation (moyenne glissante) : enlève ±β·f_rot
+            double frot = std::max(e.spin_rpm, 1200.0) / 60.0;
+            int wsm = std::max(1, (int)(1.5 / frot * FS) / 2);
+            // agrégation en K bins sur [0, 0.35 s]
+            const int K = 12;
+            double tmax = std::min(0.35, (n - 1) / FS);
+            std::vector<double> tm, vrm;
+            for (int b = 0; b < K; b++) {
+                double ta = (b + 0.5) / K * tmax;
+                int ia = (int)(ta * FS), wa = std::max(1, (int)(0.5 / K * tmax * FS));
+                // bins tronqués par le lissage de bord (convolution 'same' à padding nul) : on les écarte
+                if (ia - wa < wsm + 1 || ia + wa > n - 2 - wsm - 1) continue;
+                double sm = 0; int c2 = 0;
+                for (int j = ia - wa; j <= ia + wa; j++) {
+                    double ss = 0; int c3 = 0;
+                    for (int q = j - wsm; q <= j + wsm; q++) { ss += fi[q]; c3++; }
+                    sm += ss / c3; c2++;
+                }
+                tm.push_back(ta);
+                vrm.push_back((sm / c2) / KV / 3.6);
+            }
+            double vr0 = vrm.empty() ? 0 : vrm[0];
+            if (tm.size() >= 5 && vr0 > 0) {
+                double w = e.spin_rpm * 2.0 * M_PI / 60.0;           // backspin (rad/s), voie patch
+                const double dt = 0.002;
+                // Le radar mesure v_r = V·cos(ψ−ε)·cos θ_h : le fit retrouve φ = ψ−ε (V0 = v_r0, échelle libre c).
+                // On rapporte ensuite launch_deg = φ + ε avec ε = --caseangle_deg (géométrie valise connue).
+                double bestPsi = 0, bestSse = 1e18;
+                for (double psiDeg = 4.0; psiDeg <= 26.0; psiDeg += 0.25) {
+                    double psi = psiDeg * M_PI / 180.0;
+                    // le modèle démarre au premier bin (t = tm[0], V0 = vrm[0]) pour aligner donnée et modèle
+                    double vx = vr0 * cos(psi), vy = vr0 * sin(psi), t = tm[0];
+                    std::vector<double> Vm(tm.size(), 0.0);
+                    for (size_t f = 0; f < tm.size(); f++) {
+                        while (t < tm[f]) {
+                            double V = sqrt(vx * vx + vy * vy);
+                            double Re = V * BALL_D / mu;   // mu cinématique : Re = V·d/ν (comme flightg Scilab et EquationODEFlight)
+                            double Cd = 0.36 + 24.0 / Re + 6.0 / (1.0 + sqrt(Re));   // White
+                            double Cm = Cl1 * pow(BALL_D / 2, 2) * pow(w / std::max(V, 1e-6), 0.4);
+                            double FD = 0.5 * rho * Cd * Ab * V * V;               // traînée ∝ V²
+                            // Magnus comme flight_ode (Python) : F_M = 0.5·ρ·Cm·A·V·(ω×v), |ω×v| = ω·V
+                            double kM = 0.5 * rho * Cm * Ab * V * w;
+                            // accélération = −g + (forces aéro)/m  (g n'est PAS divisé par m)
+                            vx += (-FD * vx / V - kM * vy) / mm * dt;
+                            vy += (-9.81 + (-FD * vy / V + kM * vx) / mm) * dt;
+                            t += dt;
+                        }
+                        Vm[f] = sqrt(vx * vx + vy * vy);
+                    }
+                    double num = 0, den = 0;
+                    for (size_t f = 0; f < tm.size(); f++) { num += vrm[f] * Vm[f]; den += Vm[f] * Vm[f]; }
+                    double c = (den > 0) ? num / den : 0;
+                    double sse = 0;
+                    for (size_t f = 0; f < tm.size(); f++) { double d = vrm[f] - c * Vm[f]; sse += d * d; }
+                    if (sse < bestSse) { bestSse = sse; bestPsi = psiDeg; }
+                }
+                double mean = 0; for (double v : vrm) mean += v; mean /= vrm.size();
+                double sst = 0; for (double v : vrm) { double d = v - mean; sst += d * d; }
+                e.launch_deg = bestPsi + caseDeg;   // le fit mesure ψ−ε : on rajoute ε (--caseangle_deg)
+                if (e.launch_deg > 45.0) e.launch_deg = 45.0;
+                e.launch_conf = (sst > 0) ? std::max(0.0, std::min(1.0, 1.0 - bestSse / sst)) : 0.0;
+                // correction fine de vBall avec ψ et ε : cos γ = cos ε·cos(20°)·cos ψ + sin ε·sin ψ
+                if (e.case_deg != 0.0 && e.launch_deg > 0) {
+                    double psi = e.launch_deg * M_PI / 180.0, er = e.case_deg * M_PI / 180.0;
+                    double cg = cos(er) * cos(THETA_RADAR) * cos(psi) + sin(er) * sin(psi);
+                    if (cg > 0.3) e.vball_corr_kmh = e.vball_kmh / cg;
+                }
+            }
+        }
+    }
     // --- alpha(t) par appariement stéréo : f2 cherché au voisinage de f1 (±300 Hz), |f1-f2|<=30 Hz ---
     // spectrogramme du canal 2 sur la même bande restreinte autour de f_D (rejette l'écho club)
     std::vector<double> ridge2, power2, tg2;
@@ -407,6 +597,10 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
     }
     std::vector<double> tt, al;
     double v_ms = e.vball_kmh / KV * 1000.0 / 3600.0;
+    // version intégrée (méthode Scilab testsFFT.sci L1474) : D1/D2 = cumtrapz(v_r) par canal,
+    // z_radar(t) = L·(D2−D1)/b = déplacement latéral vu par la stéréo, lissé par intégration
+    double D1 = 0.0, D2 = 0.0, dtFrame = (double)HOP / FS;
+    double zFirst = NAN, zLast = NAN, tFirst = NAN;
     for (size_t i = i0; i < ridge.size(); i++) {
         if (power[i] < 0.02 * power[i0]) continue;
         double f1 = ridge[i];
@@ -435,6 +629,13 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
         double L = L0 + v_ms / cos(THETA_RADAR) * (tg[i] - tg[i0]);  // L(t) évolutif
         tt.push_back(tg[i]);
         al.push_back(atan((2.0 * L / B_BASE) * (fd / fc)) * 180.0 / M_PI);
+        // intégration des vitesses radiales par canal (méthode Scilab : D = v_r·t) -> z stéréo
+        double v1 = f1 / KV / 3.6, v2 = f2 / KV / 3.6;
+        D1 += v1 * dtFrame;
+        D2 += v2 * dtFrame;
+        double z = L * (D2 - D1) / B_BASE;      // déplacement latéral (m), signe = convention stéréo
+        if (std::isnan(zFirst)) { zFirst = z; tFirst = tg[i]; }
+        zLast = z;
     }
     fill_spec(e, c.r1, 512, 128);   // fenêtre 11,6 ms comme plot_spectro.py (ridge bien résolu en temps)
     if (al.size() >= 3) {
@@ -449,6 +650,14 @@ CAP_UNUSED static EstRadar estimate(const Capture& c) {
             e.alpha0_deg = a0[a0.size() / 2];
             e.dalpha_deg = af[af.size() / 2] - a0[a0.size() / 2];
         }
+    }
+    // sorties de la version intégrée (Scilab testsFFT.sci) : z latéral stéréo et sa pente
+    if (!std::isnan(zLast)) {
+        e.z_radar_m = zLast;
+        double Lfin = L0 + v_ms / cos(THETA_RADAR) * (tt.back() - tg[i0]);
+        double z0 = std::isnan(zFirst) ? 0.0 : zFirst;
+        double a0i = atan(z0 / L0), a1i = atan(zLast / Lfin);
+        e.dalpha_int_deg = (a1i - a0i) * 180.0 / M_PI;
     }
     return e;
 }
@@ -581,6 +790,150 @@ CAP_UNUSED static double estimate_spin_peigne_ac(const Capture& c, const EstRada
     }
     return 60.0 * lagf * df;                            // f_rot (Hz) -> rpm
 }
+// ---------------- voie sideband : espacement pic balle -> 1er sideband micro-Doppler, frame par frame
+// À l'instant t, le spectre autour de f_D(t) montre le lobe balle + des sidebands à f_D ± n·f_rot(t)
+// (modulation par le flash du patch). f_rot(t) = f_sideband − f_peak. On moyenne les spectres de
+// PUISSANCE de R1 et R2 (l'incohérence de phase des porteuses interdit de moyenner les complexes,
+// mais les puissances s'additionnent) -> médiane des écarts, IC = IQR/2.
+CAP_UNUSED static double estimate_spin_sideband(const Capture& c, const EstRadar& e,
+                                                double* conf = nullptr, double* ci_rpm = nullptr) {
+    if (e.vball_kmh <= 0) return 0.0;
+    double fD = e.vball_kmh * KV;
+    int i0 = (int)(e.t0_s * FS);
+    int n1 = std::min((int)c.r1.size(), i0 + (int)(0.35 * FS));
+    if (n1 - i0 < 4096) return 0.0;
+    const int NFFT = 2048, HOP = 512;
+    double df = FS / NFFT;
+    int kLo = std::max(1, (int)((fD - 250.0) / df)), kHi = std::min(NFFT / 2 - 1, (int)((fD + 450.0) / df));
+    int nb = kHi - kLo + 1;
+    if (nb < 20) return 0.0;
+    std::vector<double> w(NFFT);
+    for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
+    int gapMin = std::max(2, (int)(40.0 / df));        // sideband cherché au-delà de 40 Hz du pic
+    int gapMax = (int)(300.0 / df);                     // ... et à moins de 300 Hz
+    std::vector<double> cands;
+    int nbFrames = 0, nbValid = 0;
+    std::vector<double> re(NFFT), im(NFFT), p1(nb), p2(nb);
+    for (int st = i0; st + NFFT <= n1; st += HOP) {
+        nbFrames++;
+        for (int ch = 0; ch < 2; ch++) {
+            const std::vector<double>& x = (ch == 0) ? c.r1 : c.r2;
+            int m = std::min(NFFT, (int)x.size() - st);
+            if (m < NFFT) break;
+            for (int i = 0; i < NFFT; i++) { re[i] = x[st + i] * w[i]; im[i] = 0; }
+            fft(re, im, false);
+            for (int k = 0; k < nb; k++) {
+                double p = re[kLo + k] * re[kLo + k] + im[kLo + k] * im[kLo + k];
+                if (ch == 0) p1[k] = p; else p2[k] = p;
+            }
+        }
+        // pic balle = max de la puissance moyennée dans la bande
+        int kp = 0; double pmax = -1;
+        for (int k = 0; k < nb; k++) {
+            double p = 0.5 * (p1[k] + p2[k]);
+            if (p > pmax) { pmax = p; kp = k; }
+        }
+        if (pmax <= 0) continue;
+        // médiane du fond de la frame
+        std::vector<double> base(nb);
+        for (int k = 0; k < nb; k++) base[k] = 0.5 * (p1[k] + p2[k]);
+        std::nth_element(base.begin(), base.begin() + nb / 2, base.end());
+        double med = base[nb / 2];
+        // premier maximum local au-dessus du pic balle, à [gapMin, gapMax] bins au-dessus, > 1.5×fond
+        int kSide = -1;
+        for (int k = kp + gapMin; k <= std::min(kp + gapMax, nb - 2); k++) {
+            double p = 0.5 * (p1[k] + p2[k]);
+            double pm = 0.5 * (p1[k - 1] + p2[k - 1]), pp = 0.5 * (p1[k + 1] + p2[k + 1]);
+            if (p > pm && p >= pp && p > 1.5 * med && p > 0.15 * pmax) { kSide = k; break; }
+        }
+        if (kSide < 0) continue;
+        // interpolation parabolique des deux pics (porteuse et sideband) : résolution sous-bin
+        // (sinon df = FS/2048 = 21,5 Hz = 1292 rpm/bin, trop grossier)
+        auto frac = [&](int k) {
+            double pm = 0.5 * (p1[k - 1] + p2[k - 1]), p = 0.5 * (p1[k] + p2[k]), pp = 0.5 * (p1[k + 1] + p2[k + 1]);
+            double den = pm - 2.0 * p + pp;
+            if (den >= 0) return 0.0;
+            double d = (pm - pp) / (2.0 * den);
+            return std::max(-0.5, std::min(0.5, d));
+        };
+        double d = (kSide + frac(kSide)) - (kp + frac(kp));
+        if (d <= 0) continue;
+        cands.push_back(d * df);                        // f_rot (Hz)
+        nbValid++;
+    }
+    if (conf) *conf = (nbFrames > 0) ? (double)nbValid / nbFrames : 0.0;
+    if (cands.empty()) return 0.0;
+    std::sort(cands.begin(), cands.end());
+    double fmed = cands[cands.size() / 2];
+    if (ci_rpm && cands.size() >= 4) {
+        double q1 = cands[cands.size() / 4], q3 = cands[(3 * cands.size()) / 4];
+        *ci_rpm = 60.0 * (q3 - q1) / 2.0;
+    }
+    return 60.0 * fmed;                                 // f_rot (Hz) -> rpm
+}
+
+// ---------------- voie "densité spectrale lissée" (méthode Scilab testsFFT.sci / animDensite) ------
+// On accumule la densité spectrale |STFT|² sur TOUTES les frames post-impact (grande fenêtre
+// effective, comme le "mean filtered PSD" de Scilab), puis on mesure directement l'écart entre le
+// pic porteuse f_D et le 1er sideband micro-Doppler au-dessus : f_rot = f_side − f_porteuse.
+CAP_UNUSED static double estimate_spin_dens_scilab(const Capture& c, const EstRadar& e,
+                                                   double* conf = nullptr, double* ci_rpm = nullptr) {
+    if (e.vball_kmh <= 0) return 0.0;
+    double fD = e.vball_kmh * KV;
+    int i0 = (int)(e.t0_s * FS);
+    int n1 = std::min((int)c.r1.size(), i0 + (int)(0.45 * FS));
+    if (n1 - i0 < 8192) return 0.0;
+    const int NFFT = 8192, HOP = 2048;
+    double df = FS / NFFT;
+    int k0 = std::max(1, (int)((fD - 600.0) / df)), k1 = std::min(NFFT / 2 - 1, (int)((fD + 600.0) / df));
+    int nb = k1 - k0 + 1;
+    if (nb < 40) return 0.0;
+    std::vector<double> acc(nb, 0.0), w(NFFT), re(NFFT), im(NFFT);
+    for (int i = 0; i < NFFT; i++) w[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / (NFFT - 1));
+    int cnt = 0;
+    for (int st = i0; st + NFFT <= n1; st += HOP) {
+        for (int ch = 0; ch < 2; ch++) {
+            const std::vector<double>& x = (ch == 0) ? c.r1 : c.r2;
+            for (int i = 0; i < NFFT; i++) { re[i] = x[st + i] * w[i]; im[i] = 0; }
+            fft(re, im, false);
+            for (int k = k0; k <= k1; k++) acc[k - k0] += (re[k] * re[k] + im[k] * im[k]) / (ch == 0 ? 1.0 : 1.0);
+        }
+        cnt++;
+    }
+    if (cnt == 0) return 0.0;
+    for (int i = 0; i < nb; i++) acc[i] /= (2.0 * cnt);   // moyenne R1+R2 sur les frames
+    // pic porteuse = max de la densité accumulée
+    int kp = 0; double pmax = 0;
+    for (int k = 0; k < nb; k++) if (acc[k] > pmax) { pmax = acc[k]; kp = k; }
+    if (pmax <= 0) return 0.0;
+    // fond = médiane de la bande
+    std::vector<double> base(acc);
+    std::nth_element(base.begin(), base.begin() + nb / 2, base.end());
+    double med = base[nb / 2];
+    // detrend local (~150 Hz) pour enlever le lobe porteuse large
+    int win = std::max(3, (int)(150.0 / df) / 2);
+    // 1er sideband au-dessus du pic : max local dans +40..300 Hz au-dessus du pic, > 2×fond
+    int gapMin = std::max(2, (int)(40.0 / df)), gapMax = (int)(300.0 / df);
+    int kSide = -1; double pSide = 0;
+    for (int k = kp + gapMin; k <= std::min(kp + gapMax, nb - 2); k++) {
+        if (acc[k] > acc[k - 1] && acc[k] >= acc[k + 1] && acc[k] > 2.0 * med && acc[k] > 0.05 * pmax) {
+            if (acc[k] > pSide) { pSide = acc[k]; kSide = k; }
+        }
+    }
+    if (conf) *conf = (med > 0 && kSide > 0) ? pSide / med : 0.0;
+    if (kSide < 0) return 0.0;
+    if (ci_rpm) *ci_rpm = 60.0 * df;   // résolution d'un bin en rpm
+    // interpolation parabolique des deux pics : résolution sous-bin
+    auto frac = [&](int k) {
+        double den = acc[k - 1] - 2.0 * acc[k] + acc[k + 1];
+        if (den >= 0) return 0.0;
+        double d = (acc[k - 1] - acc[k + 1]) / (2.0 * den);
+        return std::max(-0.5, std::min(0.5, d));
+    };
+    double d = (kSide + frac(kSide)) - (kp + frac(kp));
+    return 60.0 * d * df;               // f_rot (Hz) -> rpm
+}
+
 CAP_UNUSED static double estimate_spin_peigne(const Capture& c, const EstRadar& e) {
     return estimate_spin_peigne_ac(c, e, nullptr, nullptr);
 }
@@ -740,22 +1093,25 @@ CAP_UNUSED static double estimate_spin_phase(const Capture& c, const EstRadar& e
 CAP_UNUSED static double fusion_spin(double patch_rpm, double patch_conf,
                                      double phase_rpm, double phase_conf,
                                      double peigne_rpm, double peigne_conf,
-                                     double exc_rpm, double exc_conf) {
-    const double v[4] = {patch_rpm, phase_rpm, peigne_rpm, exc_rpm};
+                                     double exc_rpm, double exc_conf,
+                                     double sb_rpm = 0.0, double sb_conf = 0.0,
+                                     double dens_rpm = 0.0, double dens_conf = 0.0,
+                                     double loft_rpm = 0.0, double loft_conf = 0.0) {
+    const double v[7] = {patch_rpm, phase_rpm, peigne_rpm, exc_rpm, sb_rpm, dens_rpm, loft_rpm};
     // la voie excursion a un biais SYSTEMATIQUE connu (β effectif < 4πr/λ sur balle réelle :
     // elle lit bas) : sa confiance SNR est rabattue pour ne pas prendre la main seule.
     const double EXC_CONF_DISCOUNT = 0.25;
-    const double c[4] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT};
+    const double c[7] = {patch_conf, phase_conf, peigne_conf, exc_conf * EXC_CONF_DISCOUNT, sb_conf, dens_conf, loft_conf};
     int ref = -1;
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 7; i++)
         if (v[i] > 0 && c[i] > 0 && (ref < 0 || c[i] > c[ref])) ref = i;
     if (ref < 0) {
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < 7; i++)
             if (v[i] > 0) { ref = i; break; }
         return (ref < 0) ? 0.0 : v[ref];
     }
     double num = 0, den = 0;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 7; i++) {
         if (v[i] <= 0) continue;
         if (std::fabs(v[i] - v[ref]) / std::max(v[i], v[ref]) < 0.15) {
             double w = (c[i] > 0) ? c[i] : 1.0;

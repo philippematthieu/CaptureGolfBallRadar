@@ -282,12 +282,15 @@ def default_simu_bin():
     return os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Cpp', 'src', 'simu_headless'))
 
 
-def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=300):
+def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=300, case_angle=None):
     """Analyse une captation avec le binaire C++ `simu_headless --capture` et parse sa ligne ESTIM.
+
+    Parité C++ : le C++ est l'outil principal (plus rapide, et `--live <s>` enregistre directement
+    la carte son radar, sauve `live_capture.wav`, puis analyse — ce fichier se relit ici avec --capture).
 
     Retourne un dict de floats : vball_kmh, vball_corr_kmh, spin_rpm, spin_patch_rpm, spin_phase_rpm,
     spin_peigne_rpm, spin_exc_rpm, spin_patch_conf, spin_phase_conf, spin_peigne_conf, spin_exc_conf,
-    vclub_radar_kmh, vclub_kmh, smash, alpha0_deg, dalpha_deg, t0_s, gfp_est_deg,
+    vclub_radar_kmh, vclub_kmh, smash, alpha0_deg, dalpha_deg, t0_s, launch_deg, launch_conf, gfp_est_deg,
     backspin_est_rpm, sidespin_est_rpm, da_est_deg, portee_m, apex_m, z_final_m, temps_s (+ '_stdout').
     Lève FileNotFoundError si le binaire manque, ValueError si la ligne ESTIM est absente."""
     import re
@@ -295,7 +298,10 @@ def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=
     bin_ = simu_bin or default_simu_bin()
     if not os.path.exists(bin_):
         raise FileNotFoundError(f"binaire C++ introuvable : {bin_} (compiler : voir Cpp/README.md)")
-    r = subprocess.run([bin_, '--capture', os.path.abspath(path), club, repr(float(spin_scale))],
+    cmd = [bin_, '--capture', os.path.abspath(path), club, repr(float(spin_scale))]
+    if case_angle is not None:
+        cmd += ['--caseangle_deg', repr(float(case_angle))]
+    r = subprocess.run(cmd,
                        capture_output=True, text=True, timeout=timeout,
                        cwd=os.path.dirname(bin_))  # le binaire écrit ses HTML/SVG dans son cwd
     out = r.stdout + r.stderr
@@ -312,13 +318,14 @@ def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=
     return d
 
 
-def estimate_from_capture_full(path, club='F7', spin_scale=1.0, simu_bin=None):
+def estimate_from_capture_full(path, club='F7', spin_scale=1.0, simu_bin=None, case_angle=None):
     """Estimation complète d'une captation : essaie le binaire C++ (V club, spin fusion 3 voies,
     décomposition back/side par courbure dAlpha), sinon repli sur pipe_validation (vBall, spin patch, alpha0).
+    case_angle = inclinaison de la valise radar vers le haut en degrés (passé au C++ via --caseangle).
 
     Retourne (v0_ms, spin_rpm, azim_deg, side_rpm, info) — side_rpm = None si non décomposé (spin nul)."""
     try:
-        est = analyze_capture_cpp(path, club=club, spin_scale=spin_scale, simu_bin=simu_bin)
+        est = analyze_capture_cpp(path, club=club, spin_scale=spin_scale, simu_bin=simu_bin, case_angle=case_angle)
     except (FileNotFoundError, ValueError) as ex:
         print(f"analyse C++ indisponible ({ex}) -> repli sur pipe_validation")
         v_kmh, spin_rpm, a0 = estimate_from_capture(path)
@@ -481,13 +488,18 @@ if __name__ == '__main__':
     ap.add_argument('capture', nargs='?', default=None,
                     help="fichier de captation radar : .csv (2 lignes ';' = canaux R1/R2) ou .wav (stéréo 44,1 kHz)")
     ap.add_argument('--club', default='F7', help="club pour l'analyse C++ de la captation (défaut F7)")
-    ap.add_argument('--launch', type=float, default=16.5, help='launch angle en degrés (défaut 16.5)')
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument('--launch', '--launch_deg', dest='launch', type=float, default=None,
+                   help='launch angle ψ forcé en degrés, passé tel quel à la simu (défaut : mesuré sur la captation, sinon 16.5). '
+                        'EXCLUSIF avec --caseangle_deg (ψ forcé = on n\'y ajoute pas ε)')
+    g.add_argument('--caseangle_deg', '--caseangle', dest='caseangle_deg', type=float, default=None,
+                   help='inclinaison de la valise radar vers le haut en degrés (ex: 11), passée au C++ (--caseangle_deg)')
     ap.add_argument('--elev', type=float, default=10.0, help='elevation caméra 3D en degrés (défaut 10 = vue golfeur)')
     ap.add_argument('--azim', type=float, default=180.0, help='azimut caméra 3D en degrés (défaut 180 = de derrière, comme le golfeur ; -60 = vue plongeante)')
     args = ap.parse_args()
 
     v0_ms = None
-    launch_deg = args.launch
+    launch_deg = args.launch   # None -> mesuré sur la captation (launch_deg ESTIM), sinon 16.5
     azim_deg = 0.0
     spin_rpm = None
     side_rpm = None
@@ -503,10 +515,25 @@ if __name__ == '__main__':
                     print(f"  ../sci/{f}")
             raise SystemExit(2)
         # analyse complète : binaire C++ (V club, spin 3 voies, back/side par courbure) avec repli pipe_validation
-        v0_ms, spin_rpm, azim_deg, side_rpm, _est = estimate_from_capture_full(args.capture, club=args.club)
+        v0_ms, spin_rpm, azim_deg, side_rpm, _est = estimate_from_capture_full(args.capture, club=args.club,
+                                                                               case_angle=args.caseangle_deg)
+        if launch_deg is None:
+            ld = float(_est.get('launch_deg', 0.0) or 0.0)
+            lc = float(_est.get('launch_conf', 0.0) or 0.0)
+            ca = float(_est.get('caseangle_deg', 0.0) or 0.0)
+            if ld > 0 and (lc >= 0.5 or ca != 0.0):
+                launch_deg = ld   # conf suffisante, ou case angle renseigné (géométrie connue : fit+ε fiable)
+                print(f"-> launch angle mesuré sur la captation : {launch_deg:.2f} deg (conf={lc:.2f}, caseangle={ca:.1f})")
+            else:
+                launch_deg = 16.5   # fit absent ou peu confiant (butée de grille) -> défaut historique
+                print(f"-> launch angle fit peu fiable (mesuré={ld:.2f} deg, conf={lc:.2f}) "
+                      f"-> repli sur {launch_deg} deg (ou --launch/--caseangle_deg pour ajuster)")
         print(f"-> simulation lancée avec V0={v0_ms*3.6:.1f} km/h, spin={spin_rpm:.0f} rpm, "
               f"side={side_rpm if side_rpm is not None else 0:.0f} rpm, "
               f"azimut={azim_deg:+.2f} deg, launch={launch_deg} deg")
+
+    if launch_deg is None:
+        launch_deg = 16.5   # pas de captation -> défaut historique
 
     if not HAS_MPL:
         # mode headless : résultats texte uniquement (pas d'animation)

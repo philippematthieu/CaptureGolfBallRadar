@@ -40,6 +40,7 @@ public:
 	double getG();
 	double getV0BallInitms();
 	double getLaunchAngle();
+	void setLaunchAngleDegre(double deg);	// override de l'angle de decollage (ex: --launch mesuré sur captation)
 	double getImpactAngle();
 	std::vector<double>  getV0Initms();
 	std::vector<double>  getVCurrentms();
