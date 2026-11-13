@@ -265,7 +265,7 @@ def load_capture(path):
 
 def estimate_from_capture(path):
     """Estime (vBall km/h radiale, SpinTotal rpm, alpha0 deg) d'une captation via sci/pipe_validation.py."""
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'sci'))
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import pipe_validation as pv
     rows, fs = load_capture(path)
     res = [pv.estimate_channel(r) for r in rows[:2]]
@@ -279,7 +279,7 @@ def estimate_from_capture(path):
 
 def default_simu_bin():
     """Chemin du binaire C++ simu_headless (analyse radar avancée : V club, spin 3 voies, back/side)."""
-    return os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Cpp', 'src', 'simu_headless'))
+    return os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'Cpp', 'build', 'simu_headless'))
 
 
 def analyze_capture_cpp(path, club='F7', spin_scale=1.0, simu_bin=None, timeout=300, case_angle=None):
