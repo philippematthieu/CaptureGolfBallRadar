@@ -1,5 +1,7 @@
 # Simulateur de vol de balle de golf — C++ (`Cpp/`)
 
+Langue : **FR** · [EN](README_EN.md)
+
 Arborescence : `include/` (en-têtes), `src/` (sources .cpp), `third_party/` (CImg, BmpImg), `lib/` (three.js), `tests/`, `build/` (binaires + sorties générées), `Makefile`.
 
 Simulation complète : vol (traînée de White, Magnus/Smits & Smith, gravité) + 3 rebonds (Penner/Roh & Lee) + roulement, avec sorties texte, image 2D (SVG / PNG-CImg), **scène 3D interactive HTML** (three.js, rotation souris) et **analyse radar avancée** des captations (vitesse club, spin multi-voies, décomposition back/side spin).

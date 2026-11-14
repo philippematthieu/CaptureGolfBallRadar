@@ -1,5 +1,7 @@
 # Technical documentation
 
+Language: **EN** · [FR](README.md)
+
 > This document synthesizes the **hypotheses, models, trials, errors encountered**, experimental results, conclusions and remaining work around the golf launch monitor based on 10.525 GHz Doppler radars (44.1 kHz audio acquisition, aluminium-tape patched golf ball, Scilab frequency processing, 3D flight model).
 
 ## Fundamental technical documents
