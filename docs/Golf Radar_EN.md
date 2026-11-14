@@ -29,14 +29,18 @@ The objective is to build a system able to estimate, from the Doppler signals of
 
 The target principle is:
 
-$$\boxed{\text{Radar}\n\rightarrow
+$$
+\boxed{
+\text{Radar}
+\rightarrow
 (V_0, SpinTotal, \alpha(t))
 \rightarrow
 \beta
 \rightarrow
 (BackSpin, SideSpin)
 \rightarrow
-\text{3D trajectory}}
+\text{3D trajectory}
+}
 $$
 
 ```mermaid
@@ -661,7 +665,7 @@ $$
 
 The analyzed shots provided the following reference pairs:
 
-| BackSpin | SideSpin | SpinTotal | $|\beta|$ |
+| BackSpin | SideSpin | SpinTotal | $\|\beta\|$ |
 |---:|---:|---:|---:|
 | 5274 | 210 | 5278 | 2.28° |
 | 5948 | 597 | 5978 | 5.73° |
