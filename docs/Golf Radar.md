@@ -587,8 +587,7 @@ Mesure robuste début-fin :
 
 $$
 \boxed{
-\Delta\alpha_{BF}
-=
+\Delta\alpha_{BF} =
 median_{W_F}(\alpha)-median_{W_0}(\alpha)
 }
 $$
@@ -748,8 +747,7 @@ Force de traînée :
 
 $$
 \boxed{
-\mathbf F_D
-=
+\mathbf F_D =
 -\frac{1}{2}\rho A C_D V\mathbf V
 }
 $$
@@ -757,8 +755,7 @@ $$
 soit :
 
 $$
-\|\mathbf F_D\|
-=
+\|\mathbf F_D\| =
 \frac{1}{2}\rho A C_DV^2
 $$
 
@@ -784,8 +781,7 @@ Direction de Magnus :
 
 $$
 \boxed{
-\mathbf n_M
-=
+\mathbf n_M =
 \frac{\boldsymbol\omega\times\mathbf V}
 {\|\boldsymbol\omega\times\mathbf V\|}
 }
@@ -795,8 +791,7 @@ Force de portance :
 
 $$
 \boxed{
-\mathbf F_M
-=
+\mathbf F_M =
 \frac{1}{2}\rho A C_L V^2\mathbf n_M
 }
 $$
@@ -840,8 +835,7 @@ $$
 
 $$
 \boxed{
-m\frac{d\mathbf V}{dt}
-=
+m\frac{d\mathbf V}{dt} =
 \mathbf F_D+\mathbf F_M+\mathbf F_G
 }
 $$
@@ -862,16 +856,14 @@ Pour un candidat $\beta$ :
 
 $$
 \boxed{
-\omega_{side}
-=
+\omega_{side} =
 \omega_{total}\sin\beta
 }
 $$
 
 $$
 \boxed{
-\omega_{back}
-=
+\omega_{back} =
 \omega_{total}\cos\beta
 }
 $$
@@ -879,8 +871,7 @@ $$
 avec :
 
 $$
-\omega_{total}
-=
+\omega_{total} =
 SpinTotal_{RPM}\frac{2\pi}{60}
 $$
 
@@ -888,8 +879,7 @@ Donc :
 
 $$
 \boxed{
-\boldsymbol\omega(\beta)
-=
+\boldsymbol\omega(\beta) =
 SpinTotal_{RPM}\frac{2\pi}{60}
 \begin{bmatrix}
 0\\
@@ -919,8 +909,7 @@ On calcule :
 
 $$
 \boxed{
-\alpha_{sim}(t,\beta)
-=
+\alpha_{sim}(t,\beta) =
 atan2(V_z(t,\beta),V_x(t,\beta))
 }
 $$
@@ -929,8 +918,7 @@ Puis :
 
 $$
 \boxed{
-\Delta\alpha_{sim}(t,\beta)
-=
+\Delta\alpha_{sim}(t,\beta) =
 \alpha_{sim}(t,\beta)-\alpha_{sim}(t_0,\beta)
 }
 $$
@@ -945,8 +933,7 @@ Résidu :
 
 $$
 \boxed{
-e_k(\beta)
-=
+e_k(\beta) =
 \Delta\alpha_{radar}(t_k)
 -
 \Delta\alpha_{sim}(t_k,\beta)
@@ -957,8 +944,7 @@ Coût robuste :
 
 $$
 \boxed{
-J(\beta)
-=
+J(\beta) =
 \sum_k w_k\rho_H(e_k(\beta))
 }
 $$
@@ -1063,8 +1049,7 @@ La dérivation amplifie fortement le bruit.
 Préférer :
 
 $$
-\Delta\alpha_{BF}
-=
+\Delta\alpha_{BF} =
 median(\alpha_{fin})-median(\alpha_{debut})
 $$
 
@@ -1548,8 +1533,7 @@ Une amélioration importante consiste à utiliser deux estimateurs indépendants
 ## Par excursion Doppler
 
 $$
-SpinTotal_{edge}
-=
+SpinTotal_{edge} =
 \frac{60\lambda}{4\pi r}\Delta f_{spin}
 $$
 
@@ -1812,8 +1796,7 @@ $$
 
 $$
 \boxed{
-\mathbf F_M
-=
+\mathbf F_M =
 \frac{1}{2}\rho AC_LV^2
 \frac{\boldsymbol\omega\times\mathbf V}
 {\|\boldsymbol\omega\times\mathbf V\|}
