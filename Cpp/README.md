@@ -96,7 +96,7 @@ Toutes les briques sont dans `Capture.h` (header-only, FFT radix-2 maison) :
 
 | Mesure | Méthode | Fonction |
 |---|---|---|
-| **vBall** | ridge STFT (2048/1024) post-impact, médiane 50 ms, 2 canaux, correction cos20°. **2 passes** : 1ʳᵉ pleine bande 1000–6000 Hz, puis 2ᵉ restreinte à [0,85·f_D, 1,10·f_D] autour de la vitesse à priori — l'écho club (plus basse fréquence, très puissant, il décélère après l'impact) n'accroche plus le ridge des 1ʳᵉʳᵉˢ frames post-impact | `estimate()` |
+| **vBall** | ridge STFT (2048/1024) post-impact, médiane 50 ms, 2 canaux, correction cos19° (angle valise mesuré 2026-11-14). **2 passes** : 1ʳᵉ pleine bande 1000–6000 Hz, puis 2ᵉ restreinte à [0,85·f_D, 1,10·f_D] autour de la vitesse à priori — l'écho club (plus basse fréquence, très puissant, il décélère après l'impact) n'accroche plus le ridge des 1ʳᵉʳᵉˢ frames post-impact | `estimate()` |
 | **t0 (impact)** | frame d'énergie max | `estimate()` |
 | **V club** | **passe-bande FFT autour de vBall/1.35** sur la fenêtre [t0−0,3 s, t0] (le lobe Doppler de la tête de club est dans le signal avant l'impact), crête au quantile 90 % | `estimate_club_speed()` |
 | **smash** | vBall / Vclub mesuré | (dans `Simu_headless.cpp`) |

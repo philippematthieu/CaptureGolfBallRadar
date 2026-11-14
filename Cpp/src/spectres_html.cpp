@@ -221,7 +221,7 @@ int main(int argc, char** argv) {
                ".panneau .note{font-size:12px;color:#555;padding:4px 10px 8px} canvas{display:block;width:100%%}\n"
                "</style></head><body>\n");
     fprintf(f, "<h1>Spectres radar — %s</h1>\n", path.c_str());
-    fprintf(f, "<div class='infos'>vBall = <b>%.1f km/h</b> radiale (%.1f corr. cos20) &middot; f_D = %.0f Hz &middot; "
+    fprintf(f, "<div class='infos'>vBall = <b>%.1f km/h</b> radiale (%.1f corr. cos19) &middot; f_D = %.0f Hz &middot; "
                "spin patch = <b>%.0f rpm</b> &middot; spin phase = <b>%.0f rpm</b> &middot; spin peigne = <b>%.0f rpm</b> &middot; "
                "<b>fusion = %.0f rpm</b> (f_rot = %.2f Hz) &middot; t0 = %.3f s &middot; "
                "vClub passe-bande = <b>%s</b> km/h (modèle vBall/1.35 = %.1f) &middot; %zu éch/canal</div>\n",
