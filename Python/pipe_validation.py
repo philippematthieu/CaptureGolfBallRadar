@@ -25,7 +25,7 @@ KS   = 0.1567    # Hz / RPM      : excursion micro-Doppler 2 r w / lambda
 NFFT = 2048      # fenetre spectrogramme (46 ms, ~2x plus de frames pour le suivi court)
 HOP  = NFFT // 2 # recouvrement 50 %
 FMIN, FMAX = 1000.0, 6000.0   # passe-bande vitesse balle (Hz)
-THETA_DEG = 20.0              # angle effectif radar/balle observe
+THETA_DEG = 19.0              # angle de la valise mesuré 2026-11-14 (géométrie 3D : θ_eff ≈ 19,3° avec h=11 cm)
 ETA = 0.2                     # controle symetrie des bords micro-Doppler
 REL_DB = 30.0                 # seuil relatif (dB) pour les bords f+ / f-
 EDGE_MIN, EDGE_MAX = 100.0, 4000.0  # bandes de recherche des bords autour de f_c (Hz)

@@ -39,7 +39,7 @@ static const double BALL_D = 0.04267;  // diamètre balle (m), doc §10/§2
 static const double FS = 44100.0;
 static const double B_BASE = 0.30;     // baseline radars (m)
 static const double L0 = 1.50;         // distance initiale balle (m)
-static const double THETA_RADAR = 20.0 * M_PI / 180.0;  // biais géométrique radar (corrigé après)
+static const double THETA_RADAR = 19.0 * M_PI / 180.0;  // angle valise mesuré 2026-11-14 (θ_eff 3D ≈ 19,3°)
 
 // interpolation sous-bin parabolique du pic (comme pipe_validation.parabolic_peak)
 CAP_UNUSED static double parabolic_peak(const std::vector<double>& P, int k) {
@@ -272,7 +272,7 @@ CAP_UNUSED static void spectrogram(const std::vector<double>& x, int nfft, int h
 // ---------------- estimation (conforme pipe_validation.py) -------------------
 struct EstRadar {
     double vball_kmh;      // radiale
-    double vball_corr_kmh; // corrigée cos(20°) (et cos(case angle) si --caseangle)
+    double vball_corr_kmh; // corrigée cos(19°) (et cos(case angle) si --caseangle)
     double case_deg = 0;   // angle d'inclinaison de la valise/radar vers le haut (--caseangle)
     double spin_rpm;       // périodicité du patch
     double spin_peigne_rpm = 0; // peigne de raies micro-Doppler (autocorrélation du spectre autour de f_D)
@@ -578,7 +578,7 @@ CAP_UNUSED static EstRadar estimate(const Capture& c, double caseDeg = 0.0) {
                 e.launch_deg = bestPsi + caseDeg;   // le fit mesure ψ−ε : on rajoute ε (--caseangle_deg)
                 if (e.launch_deg > 45.0) e.launch_deg = 45.0;
                 e.launch_conf = (sst > 0) ? std::max(0.0, std::min(1.0, 1.0 - bestSse / sst)) : 0.0;
-                // correction fine de vBall avec ψ et ε : cos γ = cos ε·cos(20°)·cos ψ + sin ε·sin ψ
+                // correction fine de vBall avec ψ et ε : cos γ = cos ε·cos(19°)·cos ψ + sin ε·sin ψ
                 if (e.case_deg != 0.0 && e.launch_deg > 0) {
                     double psi = e.launch_deg * M_PI / 180.0, er = e.case_deg * M_PI / 180.0;
                     double cg = cos(er) * cos(THETA_RADAR) * cos(psi) + sin(er) * sin(psi);

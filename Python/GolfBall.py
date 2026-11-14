@@ -332,12 +332,12 @@ def estimate_from_capture_full(path, club='F7', spin_scale=1.0, simu_bin=None, c
     except (FileNotFoundError, ValueError) as ex:
         print(f"analyse C++ indisponible ({ex}) -> repli sur pipe_validation")
         v_kmh, spin_rpm, a0 = estimate_from_capture(path)
-        v0_ms = v_kmh / 3.6 / np.cos(np.radians(20.0))  # correction angle radar ~20°
+        v0_ms = v_kmh / 3.6 / np.cos(np.radians(19.0))  # correction angle valise mesuré 19° (2026-11-14)
         return v0_ms, spin_rpm, a0, None, {}
     v_corr = est.get('vball_corr_kmh', 0.0)
     if not np.isfinite(v_corr) or v_corr <= 0:
         v_corr = est['vball_kmh']
-    v0_ms = v_corr / 3.6  # vball_corr_kmh est déjà corrigée cos(20°) côté C++
+    v0_ms = v_corr / 3.6  # vball_corr_kmh est déjà corrigée cos(19°) côté C++
     spin_rpm = est.get('spin_rpm', 0.0) or 0.0
     azim = est.get('alpha0_deg', 0.0)
     side = est.get('sidespin_est_rpm')
@@ -345,7 +345,7 @@ def estimate_from_capture_full(path, club='F7', spin_scale=1.0, simu_bin=None, c
         side = None
     nan = float('nan')
     print(f"capture {os.path.basename(path)} (C++) : vBall={est['vball_kmh']:.1f} km/h radiale "
-          f"({v_corr:.1f} corr. cos20), spin={spin_rpm:.0f} rpm (fusion 7 voies) "
+          f"({v_corr:.1f} corr. cos19), spin={spin_rpm:.0f} rpm (fusion 7 voies) "
           f"[patch={est.get('spin_patch_rpm', nan):.0f}, phase={est.get('spin_phase_rpm', nan):.0f}, "
           f"peigne={est.get('spin_peigne_rpm', nan):.0f}, exc={est.get('spin_exc_rpm', nan):.0f}, "
           f"sideband={est.get('spin_sideband_rpm', nan):.0f} (conf {est.get('spin_sideband_conf', nan):.2f}, "
@@ -576,7 +576,7 @@ if __name__ == '__main__':
     info = [f"Club         : {args.club if args.capture else club_type}"]
     if args.capture and _est:
         info.append(f"V club radar : {_est.get('vclub_kmh', nan):.1f} km/h   smash={_est.get('smash', nan):.3f}")
-        info.append(f"vBall radar  : {_est.get('vball_kmh', nan):.1f} km/h  ({_est.get('vball_corr_kmh', nan):.1f} corr. cos20)")
+        info.append(f"vBall radar  : {_est.get('vball_kmh', nan):.1f} km/h  ({_est.get('vball_corr_kmh', nan):.1f} corr. cos19)")
         info.append(f"spin 7 voies : patch={_est.get('spin_patch_rpm', 0):.0f}  phase={_est.get('spin_phase_rpm', 0):.0f}  "
                     f"peigne={_est.get('spin_peigne_rpm', 0):.0f}  exc={_est.get('spin_exc_rpm', 0):.0f}  "
                     f"sideband={_est.get('spin_sideband_rpm', 0):.0f} (conf {_est.get('spin_sideband_conf', 0):.2f}, "
