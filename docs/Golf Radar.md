@@ -1,5 +1,7 @@
 # Mini Launch Monitor Golf par radar Doppler audio
 
+Langue : **FR** · [EN](Golf%20Radar_EN.md)
+
 ## Reconstruction de la vitesse, du spin total, de la direction initiale et estimation BackSpin / SideSpin
 
 > **Statut du document**

@@ -1,6 +1,8 @@
 
 # Golf Ball Simulator in Scilab (Scilab, Python and C++)
 
+Language: **EN** · [FR](README.md)
+
 > **Abstract — guiding principle.** *Directly measure what radars can actually measure, then use the physical model to identify the quantities that are not directly observable.* A 10.525 GHz Doppler radar measures frequencies (radial velocities, patch micro-Doppler, R1/R2 stereo curvature) — not club angles or a 3D spin vector. So we first estimate, as accurately as possible, the radar observables: ball speed (vBall), club head speed (V club), smash factor (smash = vBall/V club), total spin (rpm) by multi-channel fusion, initial azimuth (α₀) and azimuthal curvature (Δα), and launch angle (take-off angle ψ) by least-squares (fit) ballistic fitting; then the **physical model** (club→ball impact + flight with drag/Magnus/gravity) acts as an inverse: a sweep of the face/path angle (`GamaFacePath`) constrained by the measured curvature decomposes backspin/side spin, dynamic loft deduced from ψ, etc. Each non-observable quantity is thus identified by measurement ↔ simulation consistency, never invented. Results on 12 real captures: vBall 6.3 %, spin 20.5 %, carry 10.4 % mean error ([details in `Cpp/README_EN.md`](Cpp/README_EN.md)).
 
 ## Index

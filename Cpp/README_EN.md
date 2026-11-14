@@ -1,5 +1,7 @@
 # Golf ball flight simulator — C++ (`Cpp/`)
 
+Language: **EN** · [FR](README.md)
+
 Tree: `include/` (headers), `src/` (.cpp sources), `third_party/` (CImg, BmpImg), `lib/` (three.js), `tests/`, `build/` (binaries + generated outputs), `Makefile`.
 
 Full simulation: flight (White drag, Magnus/Smits & Smith, gravity) + 3 bounces (Penner/Roh & Lee) + roll, with text outputs, 2D image (SVG / PNG-CImg), **interactive 3D HTML scene** (three.js, mouse rotation, procedural trees/bushes and hilly terrain) and **advanced radar analysis** of captures (club speed, multi-channel spin, back/side spin decomposition).
