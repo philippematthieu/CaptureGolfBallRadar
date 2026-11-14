@@ -633,30 +633,36 @@ The golf terms `push`, `pull`, `draw`, `fade`, `hook`, `slice` must only be appl
 
 The radar measures:
 
-$$\boxed{SpinTotal}
+$$
+\boxed{SpinTotal}
 $$
 
 The model looks for:
 
-$$\boxed{\beta}
+$$
+\boxed{\beta}
 $$
 
 Then:
 
-$$\boxed{BackSpin=SpinTotal\cos\beta}
+$$
+\boxed{BackSpin=SpinTotal\cos\beta}
 $$
 
-$$\boxed{SideSpin=SpinTotal\sin\beta}
+$$
+\boxed{SideSpin=SpinTotal\sin\beta}
 $$
 
 and:
 
-$$\boxed{SpinTotal^2=BackSpin^2+SideSpin^2}
+$$
+\boxed{SpinTotal^2=BackSpin^2+SideSpin^2}
 $$
 
 If BackSpin and SideSpin are known from an external reference:
 
-$$\boxed{\beta_{ref}=atan2(SideSpin,BackSpin)}
+$$
+\boxed{\beta_{ref}=atan2(SideSpin,BackSpin)}
 $$
 
 ---
@@ -1442,7 +1448,8 @@ The current file names mostly contain absolute values or references whose sign m
 
 To validate:
 
-$$\boxed{sign(\Delta\alpha)\leftrightarrow sign(SideSpin)}
+$$
+\boxed{sign(\Delta\alpha)\leftrightarrow sign(SideSpin)}
 $$
 
 one must absolutely have shots with strong curvature **in both directions**.
