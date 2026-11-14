@@ -586,8 +586,7 @@ Robust start-end measurement:
 
 $$
 \boxed{
-\Delta\alpha_{BF}
-=
+\Delta\alpha_{BF} =
 median_{W_F}(\alpha)-median_{W_0}(\alpha)
 }
 $$
@@ -747,8 +746,7 @@ Drag force:
 
 $$
 \boxed{
-\mathbf F_D
-=
+\mathbf F_D =
 -\frac{1}{2}\rho A C_D V\mathbf V
 }
 $$
@@ -782,8 +780,7 @@ Magnus direction:
 
 $$
 \boxed{
-\mathbf n_M
-=
+\mathbf n_M =
 \frac{\boldsymbol\omega\times\mathbf V}
 {\|\boldsymbol\omega\times\mathbf V\|}
 }
@@ -793,8 +790,7 @@ Lift force:
 
 $$
 \boxed{
-\mathbf F_M
-=
+\mathbf F_M =
 \frac{1}{2}\rho A C_L V^2\mathbf n_M
 }
 $$
