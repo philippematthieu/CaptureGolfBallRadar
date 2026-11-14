@@ -1884,7 +1884,7 @@ Cette capacité à **ne pas inventer une mesure lorsque le signal ne la supporte
 
 ## 45. Bilan de la session de validation Python (mesures CSV 2019-02-24-F7 vs modèle)
 
-Tout le code corrigé/produit est dans le dépôt (`main`), le pipe est `sci/pipe_validation.py` (numpy pur, sans Scilab).
+Tout le code corrigé/produit est dans le dépôt (`main`), le pipe est `Python/pipe_validation.py` (numpy pur, sans Scilab).
 
 ### Ce qui fonctionne (validé sur les 9 CSV, refs = nom de fichier)
 
@@ -1896,7 +1896,7 @@ Tout le code corrigé/produit est dans le dépôt (`main`), le pipe est `sci/pip
 | α₀ (azimut) | résolu 9/9 (−3,1°…−0,2°) | appariement stéréo f₂ cherché au voisinage de f₁ (le ridge global de R2 reste sur le club = faux lobe) |
 | Smash factor | 1,26–1,42 mesuré vs 1,15–1,53 ref | cohérent fer 7 |
 | carry (nom) | cohérent avec le modèle | simu à ~150 km/h → portée totale 148 m (vol + roulement) |
-| Modèle de vol (`GolfBall.py`) | vérifié | 3 rebonds, portée 148 m, apex 8,2 m ; répond monotonement au SideSpin (\|Δα_sim\| de 0,09° à 3,92° pour β de 2,3° à 48,9°) |
+| Modèle de vol (`Python/GolfBall.py`) | vérifié | 3 rebonds, portée 148 m, apex 8,2 m ; répond monotonement au SideSpin (\|Δα_sim\| de 0,09° à 3,92° pour β de 2,3° à 48,9°) |
 
 ### Échecs / limites identifiés
 
@@ -1918,7 +1918,7 @@ Tout le code corrigé/produit est dans le dépôt (`main`), le pipe est `sci/pip
 - `sci/img/setup_radar.png` : schéma du setup (géométrie R1/R2, b, L₀, α, β, draw/slice) — dans le README.
 - `sci/img/spectro_F7-*.png` : 9 spectrogrammes (R1/R2, axe km/h, ridge balle, impact) — dans le README.
 - `sci/tableau_sidespin.md` : tableau SideSpin (markdown + bloc LaTeX `tab:sidespin`).
-- `sci/pipe_validation.py` : pipe de validation aveugle (MAE en sortie).
+- `Python/pipe_validation.py` : pipe de validation aveugle (MAE en sortie).
 
 ### Reste à faire (inchangé, priorités 1–7 du §42)
 
@@ -1934,7 +1934,7 @@ Config : **fer 7, V₀ = 151 km/h, launch = 16,5°, spin total = 4000 rpm, side 
 Signal généré : porteuse Doppler `f_D(t) = 19,49·V(t)·cos(α_radar)` (V(t) décroît par traînée, R1/R2 à ±2°),
 + modulation de phase du patch `exp(−i·(2r/λ)·sin(ωt))` avec ω = spin total, + pic club à t₀=100 ms, bruit ~28 dB.
 
-Validation par `pipe_validation.py` sur ce fichier seul :
+Validation par `Python/pipe_validation.py` sur ce fichier seul :
 - vitesse : 157,2 vs 151 km/h (+4,1 % radiale ; le cos20° ne s'applique pas ici, le signal modèle a peu de biais d'angle)
 - **spin : 3996 vs 4000 rpm → −0,1 %** (périodicité du patch parfaite sur signal propre)
 - α₀ = 0,00°, Δα = +0,01° (f_Δ constant dans ce signal ; pour tester la courbure il faudrait moduler f_Δ(t) ∝ sin α(t) avec α(t) courbé par le side spin — piste d'amélioration du signal modèle)
@@ -1947,10 +1947,10 @@ Leçon : sur un signal propre, le pipe retrouve le spin à 0,1 % — le bruit/é
 
 Tout le code produit est commité sur `main` du dépôt GitHub `philippematthieu/CaptureGolfBallRadar`.
 
-### 47.1 Port Python exclusif de `FFT_Mat.sce` + pipe des commandes GitHub
+### 47.1 Port Python exclusif de `sci/FFT_Mat.sce` + pipe des commandes GitHub
 
-- Port fidèle de `FFT_Mat.sce` en Python (STFT `animDensite/3`, `animHilbert`, `wfir`+`filter`, `padding3`, `TFCT`, `pWelch`, `peak_detect`, `envFIR`, `sgolay`, `TOC` CWT, `Info2`, `GetSwing`, `Freq2RpmSpin`) + port du pipe exact du README « Simples Scilab Commands » et de `testsFFT.sci:1029`.
-- **Résultat : mêmes vitesses que `pipe_validation.py`** (GetSwing : MAE 5,7 % radiale, ~1,9 % corrigée cos20° ; smash 1,23–1,39 cohérent), mais spin par excursion moins bon (41,4 % vs 19,9 % périodicité patch). Ni α₀/Δα ni β produits par le pipe Scilab (`SpinLR=0` hardcodé).
+- Port fidèle de `sci/FFT_Mat.sce` en Python (STFT `animDensite/3`, `animHilbert`, `wfir`+`filter`, `padding3`, `TFCT`, `pWelch`, `peak_detect`, `envFIR`, `sgolay`, `TOC` CWT, `Info2`, `GetSwing`, `Freq2RpmSpin`) + port du pipe exact du README « Simples Scilab Commands » et de `sci/testsFFT.sci:1029`.
+- **Résultat : mêmes vitesses que `Python/pipe_validation.py`** (GetSwing : MAE 5,7 % radiale, ~1,9 % corrigée cos20° ; smash 1,23–1,39 cohérent), mais spin par excursion moins bon (41,4 % vs 19,9 % périodicité patch). Ni α₀/Δα ni β produits par le pipe Scilab (`SpinLR=0` hardcodé).
 - Pièges de port notés : `frpowerspec` = |fft|² sans /N ; max restreint à la moitié basse (miroir HF sinon) ; `deltaF` oublie le 3,6 ; `wfir 're'` fuit à −24 dB.
 
 ### 47.2 Corrections Scilab commitées (commit 73ef2d8, mergé dans main)
@@ -1969,19 +1969,19 @@ Tout le code produit est commité sur `main` du dépôt GitHub `philippematthieu
 | Δα | ≈ 0 sur 5/9 réels (courbure sous le bruit sur 150 ms) ; slice modèle : Δα = −15,8° détecté |
 | signe Δα vs ref | 0/9 — artefact (2ᵉ `trm` du nom = valeur absolue, pas de signe) |
 
-### 47.4 Acquisition USB sur MacBook — `sci/acq_radar_usb.py` (commit b909942)
+### 47.4 Acquisition USB sur MacBook — `Python/acq_radar_usb.py` (commit b909942)
 
-`--list` / `--record N` / `--monitor` (détection impact auto) / `--selftest` ; WAV + CSV 2 lignes `;` compatibles `pipe_validation.py`. Dépendances Mac : `brew install portaudio` + `pip install sounddevice numpy scipy matplotlib`. Testé : record réel OK, selftest vBall=128 km/h spin=3642 rpm.
+`--list` / `--record N` / `--monitor` (détection impact auto) / `--selftest` ; WAV + CSV 2 lignes `;` compatibles `Python/pipe_validation.py`. Dépendances Mac : `brew install portaudio` + `pip install sounddevice numpy scipy matplotlib`. Testé : record réel OK, selftest vBall=128 km/h spin=3642 rpm.
 
 ### 47.5 Simulateur C++ corrigé et étendu (`Cpp/src/`, commits 61ffc82, fb2c4c6)
 
-Bugs corrigés (portés depuis Scilab/Python) : init `maxHeight`/`tempsTotal`, garde division/0 dans Roll, seuil arrêt 3 cm/s, `Cl1=0` après 1ᵉʳ rebond (Magnus coupée), `abs()` dans μ_critic, commentaire event `AltiSol`. Ajout : `Simu_headless.cpp` (main console sans CImg) + `Capture.h` (lecture CSV/WAV, FFT maison, estimation vBall/spin/α₀) + mode `--capture fichier.csv|wav`. Testé sur Mac : F7 122 km/h → 136 m/37,6 m apex avec spin, 95,6 m/9 m sans (signe Magnus OK) ; captation 123 m (CSV=WAV) → 143,6 km/h, 5006 rpm, α₀=−3,6° → portée 113,5 m. Cohérent Python (130 m, ~4 %).
+Bugs corrigés (portés depuis Scilab/Python) : init `maxHeight`/`tempsTotal`, garde division/0 dans Roll, seuil arrêt 3 cm/s, `Cl1=0` après 1ᵉʳ rebond (Magnus coupée), `abs()` dans μ_critic, commentaire event `AltiSol`. Ajout : `Cpp/src/Simu_headless.cpp` (main console sans CImg) + `Cpp/include/Capture.h` (lecture CSV/WAV, FFT maison, estimation vBall/spin/α₀) + mode `--capture fichier.csv|wav`. Testé sur Mac : F7 122 km/h → 136 m/37,6 m apex avec spin, 95,6 m/9 m sans (signe Magnus OK) ; captation 123 m (CSV=WAV) → 143,6 km/h, 5006 rpm, α₀=−3,6° → portée 113,5 m. Cohérent Python (130 m, ~4 %).
 
 ### 47.6 Doc LaTeX — `tex/Template.tex` + `tex/Template_fr.tex` (commits 8112408…da1dee3)
 
 Nouveau chapitre 6 « Radar Doppler Processing Pipeline » (TikZ : géométrie 2 radars + dérivation α = arctan((2L/b)(fΔ/fC)), patch, flowchart du pipe ; équations ; tableau comparatif Scilab vs Python ; spectrogrammes mesurés + captations modèle). Version FR traduite intégralement (babel french). Section Acknowledgments/Remerciements : projet posé en 2016, repris en 2026 avec l'IA (bugs, port Python, améliorations, traduction FR par IA Mistral Vibe). Compilation : 0 erreur, 0 overfull vbox (EN 52 p., FR 49 p.).
 
-### 47.7 Captation « gros slice » — `gen_capture_modele.py slice`
+### 47.7 Captation « gros slice » — `Python/gen_capture_modele.py slice`
 
 Config : 162 km/h, spin total 9418 rpm dont side 7102 (back 6185, **β = 48,9°**), courbure −8°/300 ms → `sci/2025-11-08-F7-131m-162kmh-9418trm-7102trm-cs124.csv` + `.wav`. Pipe dessus : Δα = −15,8° (signe slice OK). Simu depuis la captation : z_final = +8 m de déviation.
 
@@ -1999,7 +1999,7 @@ Config : 162 km/h, spin total 9418 rpm dont side 7102 (back 6185, **β = 48,9°*
 
 1. Meilleur vClub (anti-écrêtage carte son) + règle de rejet smash hors [1,10;1,55]
 2. Fenêtre 300 ms pour Δα + dataset signé gauche/droite (valider sign(Δα)↔sign(SideSpin))
-3. Coder l'inversion J(β) (boucle modèle) avec `GolfBall.py` comme simulateur de Δα_sim(t,β)
+3. Coder l'inversion J(β) (boucle modèle) avec `Python/GolfBall.py` comme simulateur de Δα_sim(t,β)
 4. 3ᵉ radar 10,525 GHz vertical (launch angle mesuré, vitesse 3D exacte)
 5. Optionnel : 4ᵉ radar (moindres carrés) ; NN de perception pré-entraîné sur le simulateur ; portage DSP complet sur Teensy 3.6
 
