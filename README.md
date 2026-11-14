@@ -3,6 +3,11 @@
 
 > **Abstract — principe directeur.** *Mesurer directement ce que les radars savent réellement mesurer, puis utiliser le modèle physique pour identifier les grandeurs qui ne sont pas directement observables.* Un radar Doppler 10,525 GHz mesure des fréquences (vitesses radiales, micro-Doppler du patch, courbure stéréo R1/R2) — pas des angles de club ni un vecteur spin 3D. On estime donc d'abord, aussi précisément que possible, les observables radar (vBall, V club, smash, spin total par fusion multi-voies, α₀/Δα, launch angle ψ par fit balistique) ; puis le **modèle physique** (impact club→balle + vol traînée/Magnus/gravité) sert d'inverse : balayage de `GamaFacePath` contraint par la courbure mesurée pour décomposer back/side spin, loft dynamique déduit de ψ, etc. Chaque grandeur non observable est ainsi identifiée par cohérence mesure ↔ simulation, jamais inventée. Bilan sur 12 captations réelles : vBall 6,3 %, spin 20,5 %, portée 10,4 % d'erreur moyenne (détails dans `Cpp/README.md`).
 
+## Index
+
+- **[Simulateur de vol de balle de golf — C++](Cpp/README.md)** — architecture, compilation, commandes, analyse radar d'une captation (vBall, V club, smash, spin 7 voies, launch angle ψ, back/side spin), sorties HTML 3D / SVG / PNG, genèse et validation chiffrée.
+- **[Documentation technique — hypothèses, modèles, essais, erreurs rencontrées](docs/README.md)** — document qui synthétise les hypothèses, modèles, essais et erreurs rencontrées du projet, en mettant en évidence les documents techniques fondamentaux.
+
 ## Simulateur Scilab
 <img src="sci/img/Pasted image 20250120171635.png"  width="560" height="380">
 
