@@ -10,3 +10,4 @@ Language: **EN** · [FR](README.md)
 - **[Cpp/README_EN.md](../Cpp/README_EN.md)** — documentation of the C++ simulator (architecture, multi-channel radar analysis, measurement ↔ inverse-model workflow, genesis and quantified validation).
 - **[sci/](../sci/)** — historical Scilab scripts (`Golfball.sci`, `FFT_Mat.sce`, `testsFFT.sci`, `comet3d2.sci`…) and real radar captures (`sci/*.csv`, `*.wav`).
 - **[tex/](../tex/)** — LaTeX documents (`VolBalleGolf.tex`: golf ball flight theory).
+- **[BRANCHES_EN.md](BRANCHES_EN.md)** — repository branch and tag map: `main`, release (v1.x) and milestone tags, and the preserved exploration branch `hauts-spins` (documented dead end, do not merge).
