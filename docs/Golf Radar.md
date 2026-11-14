@@ -67,11 +67,13 @@ flowchart LR
 
 ## 2.1 Radars
 
-Deux radars Doppler sont disposés horizontalement, avec une baseline d'environ :
+Deux radars Doppler sont disposés horizontalement, avec une baseline mesurée :
 
 $$
 \boxed{b = 0.30\;m}
 $$
+
+Mesures du 2026-11-14 : espacement centre à centre R1–R2 = **30 cm exactement** (b = 0,30 m confirmé) ; angle de la valise = **19°**.
 
 Les deux radars observent la même zone d'impact depuis deux positions latérales différentes.
 
@@ -254,6 +256,8 @@ $$
 $$
 
 Sur plusieurs coups, les valeurs radar observées étaient cohérentes avec des angles effectifs de l'ordre de 15 à 20 degrés.
+
+La mesure de l'angle de valise (19°, 2026-11-14) tombe dans cette plage et la précise : facteur de correction 1/cos(19°) = 1,0576, contre 1,0642 pour cos 20° (soit ~0,7 % de moins, ~1 km/h à 150 km/h).
 
 La géométrie finale doit cependant utiliser les vraies coordonnées 3D des radars et de la balle, pas une simple correction $\cos\theta$ globale.
 
@@ -1480,6 +1484,8 @@ Priorité élevée : mesurer en mètres :
 - hauteur des radars ;
 - azimut des modules ;
 - élévation des modules.
+
+Déjà mesuré le 2026-11-14 : espacement R1–R2 = 30 cm (b exact) et angle de la valise = 19°. Restent à mesurer : position d'impact, hauteur des radars, L₀, azimut/élévation fins des modules.
 
 ## Troisième radar
 

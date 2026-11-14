@@ -67,11 +67,13 @@ flowchart LR
 
 ## 2.1 Radars
 
-Two Doppler radars are placed horizontally, with a baseline of about:
+Two Doppler radars are placed horizontally, with a measured baseline:
 
 $$
 \boxed{b = 0.30\;m}
 $$
+
+Measured on 2026-11-14: centre-to-centre spacing R1–R2 = **30 cm exactly** (b = 0.30 m confirmed); case angle = **19°**.
 
 Both radars observe the same impact zone from two different lateral positions.
 
@@ -254,6 +256,8 @@ $$
 $$
 
 Over several shots, the observed radar values were consistent with effective angles of about 15 to 20 degrees.
+
+The measured case angle (19°, 2026-11-14) falls in this range and pins it down: correction factor 1/cos(19°) = 1.0576, vs 1.0642 for cos 20° (i.e. ~0.7 % less, ~1 km/h at 150 km/h).
 
 The final geometry must however use the true 3D coordinates of the radars and the ball, not a single global $\cos\theta$ correction.
 
@@ -1475,6 +1479,8 @@ High priority: measure in meters:
 - radar height;
 - module azimuth;
 - module elevation.
+
+Already measured on 2026-11-14: R1–R2 spacing = 30 cm (exact b) and case angle = 19°. Still to measure: impact position, radar height, L₀, fine module azimuth/elevation.
 
 ## Third radar
 
