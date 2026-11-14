@@ -73,7 +73,9 @@ $$
 \boxed{b = 0.30\;m}
 $$
 
-Measured on 2026-11-14: centre-to-centre spacing R1–R2 = **30 cm exactly** (b = 0.30 m confirmed); case angle = **19°**.
+Measured on 2026-11-14: centre-to-centre spacing R1–R2 = **30 cm exactly** (b = 0.30 m confirmed); case angle = **19°**; L₀ = **1.50 m**; radar height above ground h = **11 cm** (measured vertically, case at 19°).
+
+Resulting 3D geometry: line of sight |LOS| = 1.510 m, azimuth ±5.7°, elevation −3.4°; effective beam/velocity angle θ_eff ≈ **19.3°** (1/cos = 1.0595).
 
 Both radars observe the same impact zone from two different lateral positions.
 
@@ -95,7 +97,7 @@ $$
 L_0 \approx 1.50\;m
 $$
 
-This value must be measured precisely for a final version.
+Measured on 2026-11-14: **L₀ = 1.50 m** (confirmed), radar height h = **11 cm**.
 
 ## 2.2 Acquisition
 
@@ -257,7 +259,7 @@ $$
 
 Over several shots, the observed radar values were consistent with effective angles of about 15 to 20 degrees.
 
-The measured case angle (19°, 2026-11-14) falls in this range and pins it down: correction factor 1/cos(19°) = 1.0576, vs 1.0642 for cos 20° (i.e. ~0.7 % less, ~1 km/h at 150 km/h).
+The measured case angle (19°, 2026-11-14) falls in this range and pins it down: correction factor 1/cos(19°) = 1.0576, vs 1.0642 for cos 20° (i.e. ~0.7 % less, ~1 km/h at 150 km/h). In full 3D geometry (h = 11 cm, L₀ = 1.50 m), the effective beam/velocity angle is θ_eff ≈ 19.3° (1/cos = 1.0595): the height adds only 0.18 % (~0.3 km/h at 150 km/h).
 
 The final geometry must however use the true 3D coordinates of the radars and the ball, not a single global $\cos\theta$ correction.
 
@@ -1480,7 +1482,7 @@ High priority: measure in meters:
 - module azimuth;
 - module elevation.
 
-Already measured on 2026-11-14: R1–R2 spacing = 30 cm (exact b) and case angle = 19°. Still to measure: impact position, radar height, L₀, fine module azimuth/elevation.
+Already measured on 2026-11-14: R1–R2 spacing = 30 cm (exact b), case angle = 19°, L₀ = 1.50 m, radar height h = 11 cm. Still to measure: impact position, fine module azimuth/elevation.
 
 ## Third radar
 
@@ -1491,6 +1493,8 @@ V_x,V_y,V_z
 $$
 
 and therefore the vertical launch angle.
+
+Note (measured geometry 2026-11-14): with h = 11 cm and L₀ = 1.50 m, the line of sight has a −3.4° elevation, so V_r already contains sin(3.4°) ≈ **5.9 % of V_y** (≈ 1.7 % of V for a 16.5° launch) — a weak vertical channel already exists; a 3rd vertical radar would make it dominant and give a precise launch angle.
 
 But a third radar does not remove the need to track the lateral curvature long enough.
 

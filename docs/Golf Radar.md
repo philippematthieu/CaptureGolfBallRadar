@@ -73,7 +73,9 @@ $$
 \boxed{b = 0.30\;m}
 $$
 
-Mesures du 2026-11-14 : espacement centre à centre R1–R2 = **30 cm exactement** (b = 0,30 m confirmé) ; angle de la valise = **19°**.
+Mesures du 2026-11-14 : espacement centre à centre R1–R2 = **30 cm exactement** (b = 0,30 m confirmé) ; angle de la valise = **19°** ; L₀ = **1,50 m** ; hauteur des radars au-dessus du sol h = **11 cm** (mesurée verticalement, valise à 19°).
+
+Géométrie 3D résultante : ligne de visée |LOS| = 1,510 m, azimut ±5,7°, élévation −3,4° ; angle effectif faisceau/vitesse θ_eff ≈ **19,3°** (1/cos = 1,0595).
 
 Les deux radars observent la même zone d'impact depuis deux positions latérales différentes.
 
@@ -95,7 +97,7 @@ $$
 L_0 \approx 1.50\;m
 $$
 
-Cette valeur doit être mesurée précisément pour une version finale.
+Mesurée le 2026-11-14 : **L₀ = 1,50 m** (confirmé), hauteur des radars h = **11 cm**.
 
 ## 2.2 Acquisition
 
@@ -257,7 +259,7 @@ $$
 
 Sur plusieurs coups, les valeurs radar observées étaient cohérentes avec des angles effectifs de l'ordre de 15 à 20 degrés.
 
-La mesure de l'angle de valise (19°, 2026-11-14) tombe dans cette plage et la précise : facteur de correction 1/cos(19°) = 1,0576, contre 1,0642 pour cos 20° (soit ~0,7 % de moins, ~1 km/h à 150 km/h).
+La mesure de l'angle de valise (19°, 2026-11-14) tombe dans cette plage et la précise : facteur de correction 1/cos(19°) = 1,0576, contre 1,0642 pour cos 20° (soit ~0,7 % de moins, ~1 km/h à 150 km/h). En géométrie 3D complète (h = 11 cm, L₀ = 1,50 m), l'angle effectif faisceau/vitesse est θ_eff ≈ 19,3° (1/cos = 1,0595) : la hauteur n'ajoute que 0,18 % (~0,3 km/h à 150 km/h).
 
 La géométrie finale doit cependant utiliser les vraies coordonnées 3D des radars et de la balle, pas une simple correction $\cos\theta$ globale.
 
@@ -1485,7 +1487,7 @@ Priorité élevée : mesurer en mètres :
 - azimut des modules ;
 - élévation des modules.
 
-Déjà mesuré le 2026-11-14 : espacement R1–R2 = 30 cm (b exact) et angle de la valise = 19°. Restent à mesurer : position d'impact, hauteur des radars, L₀, azimut/élévation fins des modules.
+Déjà mesuré le 2026-11-14 : espacement R1–R2 = 30 cm (b exact), angle de la valise = 19°, L₀ = 1,50 m, hauteur des radars h = 11 cm. Restent à mesurer : position d'impact et azimut/élévation fins des modules.
 
 ## Troisième radar
 
@@ -1496,6 +1498,8 @@ V_x,V_y,V_z
 $$
 
 et donc le launch angle vertical.
+
+Nota (géométrie mesurée 2026-11-14) : avec h = 11 cm et L₀ = 1,50 m, la ligne de visée a une élévation de −3,4°, donc V_r contient déjà sin(3,4°) ≈ **5,9 % de V_y** (≈ 1,7 % de V pour un launch de 16,5°) — un canal vertical faible existe déjà ; un 3ᵉ radar vertical le rendrait dominant et donnerait le launch angle précis.
 
 Mais un troisième radar ne remplace pas la nécessité de suivre suffisamment longtemps la courbure latérale.
 
