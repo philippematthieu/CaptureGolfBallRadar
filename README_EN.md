@@ -19,9 +19,9 @@ Language: **EN** · [FR](README.md)
 Application `simu_headless --capture` (interactive 3D scene + radar measurements panel + docked/zoomable spectrogram):
 ```shell
 cd Cpp/build
-./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv F7 1.0 --caseangle_deg 11 --open
+./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv F7 1.0 --caseangle_deg 11 --open   # 2019 capture: suitcase at 11° (19° measured 2026-11-14 -> --caseangle_deg 19 for new captures)
 ```
-The **launch angle ψ is estimated directly from the capture** (ballistic fit of the post-impact ridge: smoothed instantaneous frequency of the ball lobe, 2D flight with White drag + gravity + Magnus, ψ = argmin SSE up to a free scale — ±0.75° on synthetic captures of known truth). Options: `--launch_deg 16` to force ψ, `--caseangle_deg 11` if the suitcase tilts the radar upward (v_r = V·cos(ψ−ε), ε added to the fit — the two options are mutually exclusive), `--live 2.0` to record the sound card (radar on audio input, saves `live_capture.wav` then analyzes it). Measured ψ drives the simulation when conf ≥ 0.5 (or `--caseangle_deg` given), otherwise fallback to the club loft.
+The **launch angle ψ is estimated directly from the capture** (ballistic fit of the post-impact ridge: smoothed instantaneous frequency of the ball lobe, 2D flight with White drag + gravity + Magnus, ψ = argmin SSE up to a free scale — ±0.75° on synthetic captures of known truth). Options: `--launch_deg 16` to force ψ, `--caseangle_deg 11` for the 2019 captures (suitcase at 11°; 19° measured 2026-11-14 for new ones) if the suitcase tilts the radar upward (v_r = V·cos(ψ−ε), ε added to the fit — the two options are mutually exclusive), `--live 2.0` to record the sound card (radar on audio input, saves `live_capture.wav` then analyzes it). Measured ψ drives the simulation when conf ≥ 0.5 (or `--caseangle_deg` given), otherwise fallback to the club loft.
 
 <img src="sci/img/capture_simu_headless_20261110.png" width="980">
 
@@ -32,7 +32,7 @@ The **launch angle ψ is estimated directly from the capture** (ballistic fit of
 
 ```python
 python Python/GolfBall.py sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --club F7 --caseangle_deg 11
-# options: --launch_deg 16 (forced ψ, mutually exclusive with --caseangle_deg), --caseangle_deg 11 (suitcase tilted upward)
+# options: --launch_deg 16 (forced ψ, mutually exclusive with --caseangle_deg), --caseangle_deg 11 (suitcase at 11° on the 2019 captures; 19° measured 2026-11-14 for new ones)
 ```
 
 <img src="sci/img/Simulateur_Python.png" width="980">

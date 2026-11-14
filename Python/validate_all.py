@@ -70,7 +70,7 @@ def main():
     ap.add_argument('--out', default=os.path.join(ROOT, 'sci', 'validation.html'))
     ap.add_argument('--glob', default='*-F7-*.csv')
     ap.add_argument('--caseangle_deg', type=float, default=None,
-                    help='inclinaison de la valise radar vers le haut (ex: 11), passée au C++ (--caseangle_deg)')
+                    help='inclinaison de la valise radar vers le haut (ex: 19, mesuré 2026-11-14), passée au C++ (--caseangle_deg)')
     args = ap.parse_args()
 
     files = sorted(glob.glob(os.path.join(ROOT, 'sci', args.glob)))
@@ -91,7 +91,7 @@ def main():
             continue
         try:
             est = G.analyze_capture_cpp(fn, club='F7', case_angle=args.caseangle_deg)
-            v_est = est['vball_corr_kmh']          # corrigée cos19° (+ case angle si --caseangle_deg)
+            v_est = est['vball_corr_kmh']          # corrigée cos20° plate (+ case angle si --caseangle_deg)
             spin_est = est['spin_rpm']
             back_est = est.get('backspin_est_rpm', float('nan'))
             side_est = est.get('sidespin_est_rpm', float('nan'))

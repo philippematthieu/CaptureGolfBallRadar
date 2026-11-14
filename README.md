@@ -19,9 +19,9 @@ Langue : **FR** · [EN](README_EN.md)
 Application `simu_headless --capture` (scène 3D interactive + panneau mesures radar + spectrogramme docké/zoomable) :
 ```shell
 cd Cpp/build
-./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv F7 1.0 --caseangle_deg 11 --open
+./simu_headless --capture ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv F7 1.0 --caseangle_deg 11 --open   # captation 2019 : valise à 11° (19° mesuré le 2026-11-14 -> --caseangle_deg 19 pour les nouvelles captations)
 ```
-Le **launch angle ψ est estimé directement depuis la captation** (fit balistique du ridge post-impact : fréquence instantanée du lobe balle lissée, vol 2D traînée de White + gravité + Magnus, ψ = argmin SSE à échelle libre — ±0,75° sur captations synthétiques de vérité connue). Options : `--launch_deg 16` pour forcer ψ, `--caseangle_deg 11` si la valise incline le radar vers le haut (v_r = V·cos(ψ−ε), ε rajouté au fit — les deux options sont exclusives), `--live 2.0` pour enregistrer la carte son (radar en entrée audio, sauve `live_capture.wav` puis analyse). ψ mesuré pilote la simu quand conf ≥ 0,5 (ou `--caseangle_deg` renseigné), sinon repli loft du club.
+Le **launch angle ψ est estimé directement depuis la captation** (fit balistique du ridge post-impact : fréquence instantanée du lobe balle lissée, vol 2D traînée de White + gravité + Magnus, ψ = argmin SSE à échelle libre — ±0,75° sur captations synthétiques de vérité connue). Options : `--launch_deg 16` pour forcer ψ, `--caseangle_deg 11` pour les captations 2019 (valise à 11° ; 19° mesuré le 2026-11-14 pour les nouvelles) si la valise incline le radar vers le haut (v_r = V·cos(ψ−ε), ε rajouté au fit — les deux options sont exclusives), `--live 2.0` pour enregistrer la carte son (radar en entrée audio, sauve `live_capture.wav` puis analyse). ψ mesuré pilote la simu quand conf ≥ 0,5 (ou `--caseangle_deg` renseigné), sinon repli loft du club.
 
 <img src="sci/img/capture_simu_headless_20261110.png" width="980">
 
@@ -32,7 +32,7 @@ Animation 3D matplotlib `Python/GolfBall.py [capture.csv|wav]` (vol + 3 rebonds 
 
 ```python
 python Python/GolfBall.py sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv --club F7 --caseangle_deg 11
-# options : --launch_deg 16 (ψ forcé, exclusif avec --caseangle_deg), --caseangle_deg 11 (valise inclinée vers le haut)
+# options : --launch_deg 16 (ψ forcé, exclusif avec --caseangle_deg), --caseangle_deg 11 (valise à 11° sur les captations 2019 ; 19° mesuré le 2026-11-14 pour les nouvelles)
 ```
 
 <img src="sci/img/Simulateur_Python.png" width="980">
