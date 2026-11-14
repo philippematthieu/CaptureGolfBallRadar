@@ -1,6 +1,6 @@
 # Tableau SideSpin — point délicat (identification des captations CSV)
 
-Généré par `pipe_validation.py` (mesures radar : α₀, Δα) + `Python/GolfBall.py` (Δα_sim avec β_ref).
+Généré par `Python/pipe_validation.py` (mesures radar : α₀, Δα) + `Python/GolfBall.py` (Δα_sim avec β_ref).
 Données : `sci/2019-02-24-F7-*.csv` (références dans le nom de fichier).
 
 | coup | ssRef (trm) | bsRef (trm) | β_ref | α₀ mes (°) | Δα mes (°) | signe mes | Δα_sim(β_ref) (°) | signe sim | verdict |
