@@ -87,7 +87,7 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
         e.launch_deg = launchOverrideDeg;   // --launch XX : override de la mesure (conf -1 = forcé)
         e.launch_conf = -1.0;
     }
-    printf("capture %s : vBall=%.1f km/h radiale (%.1f corr. cos19%s), spin=%.0f rpm, alpha0=%+.2f deg, dAlpha=%+.2f deg, launch=%.2f deg (conf %.2f), caseangle=%.1f deg, t0=%.3f s, %zu ech/canal\n",
+    printf("capture %s : vBall=%.1f km/h radiale (%.1f corr. cos20%s), spin=%.0f rpm, alpha0=%+.2f deg, dAlpha=%+.2f deg, launch=%.2f deg (conf %.2f), caseangle=%.1f deg, t0=%.3f s, %zu ech/canal\n",
            path, e.vball_kmh, e.vball_corr_kmh, e.case_deg != 0.0 ? "+case" : "", e.spin_rpm, e.alpha0_deg, e.dalpha_deg, e.launch_deg, e.launch_conf, e.case_deg, e.t0_s, c.r1.size());
     // club par défaut F7
     vector<Club> sac(13);
@@ -217,7 +217,7 @@ static int run_from_capture(Capture c, const std::string& label, const char* clu
            vclub_radar, vclub, (std::isnan(vclub_radar) ? NAN : e.vball_kmh / vclub_radar),
            e.alpha0_deg, e.dalpha_deg, e.z_radar_m, e.dalpha_int_deg, e.t0_s, e.launch_deg, e.launch_conf, e.case_deg, loftDynEst, shaftLeanEst, loftDynSpin, spinFromLoft, spinLoftRatio, coeffBsEmp, gfp_est, backspin_est, sidespin_est, da_est,
            mf.back()[0], theBall.getMaxHeight(), mf.back()[2], theBall.getTempsTotal(), spinFromLoft, loftConf);
-    { std::string inf = kv("vBall radar", fmt1(e.vball_kmh, "km/h") + "  (" + fmt1(e.vball_corr_kmh, "corr. cos19") + ")")
+    { std::string inf = kv("vBall radar", fmt1(e.vball_kmh, "km/h") + "  (" + fmt1(e.vball_corr_kmh, "corr. cos20") + ")")
   + kv("V club radar (passe-bande)", fmt1nan(vclub_radar, "km/h") + (std::isnan(vclub_radar) ? "  — lobe club non détecté" : ""))
   + kv("V club modèle (vBall/1.35)", fmt1(vclub_model, "km/h"))
   + kv("Smash mesuré (vBall/Vclub)", std::isnan(vclub_radar) ? std::string("NaN") : fmt1(e.vball_kmh / vclub_radar, ""))
@@ -332,7 +332,7 @@ int main(int argc, char *argv[]) {
                 "                  'standard' (patch Hilbert seul)\n"
                 "  --launch_deg deg (mode --capture, alias --launch) force l'angle de décollage ψ de la simu ;\n"
                 "                  sans --launch_deg, le launch est celui mesuré sur le ridge (fit + case angle)\n"
-                "  --caseangle_deg deg   inclinaison de la valise vers le haut (ex: 11, alias --caseangle) :\n"
+                "  --caseangle_deg deg   inclinaison de la valise vers le haut (ex: 19, mesuré 2026-11-14 ; alias --caseangle) :\n"
                 "                  v_r = V·cos(ψ−ε), le fit mesure ψ−ε et ε est rajouté au launch estimé (et à la\n"
                 "                  correction de vBall) ; avec --caseangle_deg renseigné, le launch estimé pilote\n"
                 "                  la simu même si conf < 0,5. EXCLUSIF avec --launch_deg (erreur si les deux)\n"

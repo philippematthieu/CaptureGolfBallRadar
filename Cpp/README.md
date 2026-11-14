@@ -67,7 +67,7 @@ cd Cpp/build   # les sorties (HTML/SVG) sont écrites dans ce répertoire
 ./simu_headless --live 2.0 F7 1.0 --source fichier.wav  # rejoue un fichier via le pipeline live (test)
 # parité Python : live_capture.wav se relit avec --capture ou Python/GolfBall.py (même ligne ESTIM parsée)
 ./simu_headless --capture <fichier> F7 1.0 --launch_deg 16.5  # force l'angle de décollage de la simu (conf=-1, prioritaire sur la mesure) ; sans --launch_deg, la simu utilise le launch mesuré sur le ridge quand conf ≥ 0,5, sinon le loft du club (repli, comme le 16,5° de GolfBall.py) — fit balistique ±0,75° en synthétique
-./simu_headless --capture <fichier> F7 1.0 --caseangle_deg 11  # valise inclinée de 11° vers le haut : v_r = V·cos(ψ−ε), le fit mesure ψ−ε et ε est rajouté (cs111 : 4° -> 15°), vBall corrigée aussi
+./simu_headless --capture <fichier> F7 1.0 --caseangle_deg 11  # captation 2019 : valise à 11° (19° mesuré le 2026-11-14 -> --caseangle_deg 19 pour les nouvelles captations) : v_r = V·cos(ψ−ε), le fit mesure ψ−ε et ε est rajouté (cs111 : 4° -> 15°), vBall corrigée aussi
 
 # spectres multi-panneaux d'une captation (8 panneaux, voir plus bas)
 ./spectres_html ../../sci/2019-02-24-F7-123m-150kmh-5274trm-210trm-cs111.csv -o
@@ -96,7 +96,7 @@ Toutes les briques sont dans `Capture.h` (header-only, FFT radix-2 maison) :
 
 | Mesure | Méthode | Fonction |
 |---|---|---|
-| **vBall** | ridge STFT (2048/1024) post-impact, médiane 50 ms, 2 canaux, correction cos19° (angle valise mesuré 2026-11-14). **2 passes** : 1ʳᵉ pleine bande 1000–6000 Hz, puis 2ᵉ restreinte à [0,85·f_D, 1,10·f_D] autour de la vitesse à priori — l'écho club (plus basse fréquence, très puissant, il décélère après l'impact) n'accroche plus le ridge des 1ʳᵉʳᵉˢ frames post-impact | `estimate()` |
+| **vBall** | ridge STFT (2048/1024) post-impact, médiane 50 ms, 2 canaux, correction cos20° plate (+ cos ε si `--caseangle_deg`). **2 passes** : 1ʳᵉ pleine bande 1000–6000 Hz, puis 2ᵉ restreinte à [0,85·f_D, 1,10·f_D] autour de la vitesse à priori — l'écho club (plus basse fréquence, très puissant, il décélère après l'impact) n'accroche plus le ridge des 1ʳᵉʳᵉˢ frames post-impact | `estimate()` |
 | **t0 (impact)** | frame d'énergie max | `estimate()` |
 | **V club** | **passe-bande FFT autour de vBall/1.35** sur la fenêtre [t0−0,3 s, t0] (le lobe Doppler de la tête de club est dans le signal avant l'impact), crête au quantile 90 % | `estimate_club_speed()` |
 | **smash** | vBall / Vclub mesuré | (dans `Simu_headless.cpp`) |
