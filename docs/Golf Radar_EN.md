@@ -379,7 +379,7 @@ $$
 The retained pair is:
 
 $$
-\boxed{(f_1^{*},f_2^{*})=\arg\min J_m(f_1,f_2)}
+\boxed{(f_1^\star,f_2^\star)=\arg\min J_m(f_1,f_2)}
 $$
 
 Experimental constraints used:
