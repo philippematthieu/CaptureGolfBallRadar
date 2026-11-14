@@ -672,7 +672,7 @@ $$
 
 Les coups analysés ont fourni les couples de référence suivants :
 
-| BackSpin | SideSpin | SpinTotal | $|\beta|$ |
+| BackSpin | SideSpin | SpinTotal | $\|\beta\|$ |
 |---:|---:|---:|---:|
 | 5274 | 210 | 5278 | 2.28° |
 | 5948 | 597 | 5978 | 5.73° |
