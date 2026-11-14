@@ -379,7 +379,7 @@ $$
 La paire retenue est :
 
 $$
-\boxed{(f_1^*,f_2^*)=\arg\min J_m(f_1,f_2)}
+\boxed{(f_1^{*},f_2^{*})=\arg\min J_m(f_1,f_2)}
 $$
 
 Contraintes expérimentales utilisées :
