@@ -75,6 +75,8 @@ $$
 
 Mesures du 2026-11-14 : espacement centre à centre R1–R2 = **30 cm exactement** (b = 0,30 m confirmé) ; angle de la valise = **19°** ; L₀ = **1,50 m** ; hauteur des radars au-dessus du sol h = **11 cm** (mesurée verticalement, valise à 19°).
 
+Convention d'angle de valise ε : **11° pour les captations 2019-02-24** (`--caseangle_deg 11`), **19° mesuré le 2026-11-14 pour les nouvelles captations** (`--caseangle_deg 19`). ε se règle **in situ par option**, pas en dur : seul le biais effectif/azimutal plat cos(20°) est câblé dans le code (`THETA_RADAR` / `THETA_DEG`).
+
 Géométrie 3D résultante : ligne de visée |LOS| = 1,510 m, azimut ±5,7°, élévation −3,4° ; angle effectif faisceau/vitesse θ_eff ≈ **19,3°** (1/cos = 1,0595).
 
 Les deux radars observent la même zone d'impact depuis deux positions latérales différentes.
@@ -1487,7 +1489,7 @@ Priorité élevée : mesurer en mètres :
 - azimut des modules ;
 - élévation des modules.
 
-Déjà mesuré le 2026-11-14 : espacement R1–R2 = 30 cm (b exact), angle de la valise = 19°, L₀ = 1,50 m, hauteur des radars h = 11 cm. Restent à mesurer : position d'impact et azimut/élévation fins des modules.
+Déjà mesuré le 2026-11-14 : espacement R1–R2 = 30 cm (b exact), angle de la valise = 19°, L₀ = 1,50 m, hauteur des radars h = 11 cm. Restent à mesurer : position d'impact et azimut/élévation fins des modules. L'inclinaison valise ε se règle par option (`--caseangle_deg` : 11° pour les CSV 2019, 19° pour les nouvelles captations), pas en dur.
 
 ## Troisième radar
 
@@ -1707,6 +1709,8 @@ C'est beaucoup plus solide que de forcer des équations directes entre chaque fe
 - coordonnées 3D de R2 ;
 - coordonnées de la balle ;
 - orientation des antennes.
+
+État au 2026-11-14 : b = 30 cm, L₀ = 1,50 m, h = 11 cm mesurés (§2.1) ; reste la position d'impact et les orientations fines. ε (valise) = option `--caseangle_deg` (11° pour les CSV 2019, 19° mesuré pour les nouvelles).
 
 ## Priorité 3 : durcir le tracker
 

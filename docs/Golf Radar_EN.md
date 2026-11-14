@@ -75,6 +75,8 @@ $$
 
 Measured on 2026-11-14: centre-to-centre spacing R1–R2 = **30 cm exactly** (b = 0.30 m confirmed); case angle = **19°**; L₀ = **1.50 m**; radar height above ground h = **11 cm** (measured vertically, case at 19°).
 
+Case-angle convention ε: **11° for the 2019-02-24 captures** (`--caseangle_deg 11`), **19° measured on 2026-11-14 for new captures** (`--caseangle_deg 19`). ε is set **in situ via the option**, not hardcoded: only the flat effective/azimuthal cos(20°) bias is in the code (`THETA_RADAR` / `THETA_DEG`).
+
 Resulting 3D geometry: line of sight |LOS| = 1.510 m, azimuth ±5.7°, elevation −3.4°; effective beam/velocity angle θ_eff ≈ **19.3°** (1/cos = 1.0595).
 
 Both radars observe the same impact zone from two different lateral positions.
@@ -1482,7 +1484,7 @@ High priority: measure in meters:
 - module azimuth;
 - module elevation.
 
-Already measured on 2026-11-14: R1–R2 spacing = 30 cm (exact b), case angle = 19°, L₀ = 1.50 m, radar height h = 11 cm. Still to measure: impact position, fine module azimuth/elevation.
+Already measured on 2026-11-14: R1–R2 spacing = 30 cm (exact b), case angle = 19°, L₀ = 1.50 m, radar height h = 11 cm. Still to measure: impact position, fine module azimuth/elevation. The case tilt ε is set via the option (`--caseangle_deg`: 11° for the 2019 CSVs, 19° for new captures), not hardcoded.
 
 ## Third radar
 
@@ -1702,6 +1704,8 @@ This is much more solid than forcing direct equations between each FFT feature a
 - 3D coordinates of R2;
 - ball coordinates;
 - antenna orientations.
+
+Status on 2026-11-14: b = 30 cm, L₀ = 1.50 m, h = 11 cm measured (§2.1); still to measure: impact position and fine orientations. ε (case) = `--caseangle_deg` option (11° for the 2019 CSVs, 19° measured for new captures).
 
 ## Priority 3: harden the tracker
 
